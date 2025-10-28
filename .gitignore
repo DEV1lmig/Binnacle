@@ -1,5 +1,7 @@
-/.github
+/.github/prompts
+/.github/copilot-instructions.md
 /openspec
 apps/backend/.cursor
 node_modules/
 /apps/web/.next
+/apps/web/.env.local
