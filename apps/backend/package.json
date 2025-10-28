@@ -1,0 +1,26 @@
+{
+  "name": "backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm run dev:backend",
+    "dev:backend": "convex dev",
+    "predev": "convex dev --until-success && convex dashboard",
+    "codegen": "convex codegen"
+  },
+  "dependencies": {
+    "@clerk/clerk-react": "^5.25.0",
+    "@clerk/nextjs": "^6.12.6",
+    "clerk": "^0.8.3",
+    "convex": "^1.27.0",
+    "svix": "^1.77.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "eslint": "^9",
+    "prettier": "^3.5.3",
+    "typescript": "^5"
+  }
+}

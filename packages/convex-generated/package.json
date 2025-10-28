@@ -1,0 +1,21 @@
+{
+  "name": "@binnacle/convex-generated",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared Convex generated API and data model typings for the monorepo.",
+  "type": "module",
+  "exports": {
+    "./api": {
+      "types": "./api.d.ts",
+      "default": "./api.js"
+    },
+    "./dataModel": {
+      "types": "./dataModel.d.ts",
+      "default": "./dataModel.js"
+    },
+    "./server": {
+      "types": "./server.d.ts",
+      "default": "./server.js"
+    }
+  }
+}
