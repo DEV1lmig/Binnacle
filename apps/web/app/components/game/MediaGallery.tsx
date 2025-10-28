@@ -43,7 +43,7 @@ export function MediaGallery({
       const parsed = JSON.parse(videos);
       // Videos are stored as {id, video_id, name} objects, extract video_id
       videoList = Array.isArray(parsed) 
-        ? parsed.map((v: any) => typeof v === "string" ? v : v.video_id).filter(Boolean)
+        ? parsed.map((v: { video_id?: string } | string) => typeof v === "string" ? v : v.video_id).filter((id): id is string => Boolean(id))
         : [];
     }
   } catch (e) {

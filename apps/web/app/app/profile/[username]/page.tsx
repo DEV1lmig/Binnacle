@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import { Doc, Id } from "@binnacle/convex-generated/dataModel";
 import { FavoritesGrid } from "@/app/components/FavoritesGrid";
 import { BacklogGrid } from "@/app/components/BacklogGrid";
-import { MediaGallery } from "@/app/components/game/MediaGallery";
 
 /**
  * User profile page showing reviews, stats, and social information.

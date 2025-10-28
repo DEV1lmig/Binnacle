@@ -6,12 +6,16 @@ import { Id } from "@binnacle/convex-generated/dataModel";
 import { useState } from "react";
 // Minimal inline BacklogModal component to avoid missing module error
 export function BacklogModal({
-  gameId,
-  existingItem,
   onClose,
 }: {
   gameId: Id<"games">;
-  existingItem?: any;
+  existingItem?: {
+    _id: Id<"backlogItems">;
+    status: string;
+    platform?: string;
+    notes?: string;
+    priority?: number;
+  };
   onClose: () => void;
 }) {
   return (

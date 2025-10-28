@@ -5,6 +5,7 @@ import { api } from "@binnacle/convex-generated/api";
 import { useState, useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import Image from "next/image";
 import { Id } from "@binnacle/convex-generated/dataModel";
 
 /**
@@ -17,7 +18,6 @@ export default function AppPage() {
     api.feed.timeline,
     currentUser ? { limit: 20 } : "skip"
   );
-  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-950/95 to-stone-900 text-white">
@@ -56,10 +56,12 @@ export default function AppPage() {
                 className="flex items-center gap-2 rounded-full border border-white/20 bg-stone-900/60 px-3 py-1.5 text-sm font-medium text-stone-200 transition hover:border-blue-400/70 hover:text-white"
               >
                 {user?.imageUrl && (
-                  <img
+                  <Image
                     src={user.imageUrl}
                     alt={currentUser.name}
-                    className="h-6 w-6 rounded-full object-cover"
+                    width={24}
+                    height={24}
+                    className="rounded-full object-cover"
                   />
                 )}
                 {currentUser.username}
@@ -225,10 +227,12 @@ function ReviewCard({
           className="flex items-center gap-3 transition hover:opacity-80"
         >
           {entry.author.avatarUrl ? (
-            <img
+            <Image
               src={entry.author.avatarUrl}
               alt={entry.author.name}
-              className="h-10 w-10 rounded-full object-cover"
+              width={40}
+              height={40}
+              className="rounded-full object-cover"
             />
           ) : (
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-sm font-semibold">
@@ -399,10 +403,12 @@ function CommentSection({ reviewId }: { reviewId: Id<"reviews"> }) {
           {comments.map((comment) => (
             <div key={comment._id} className="flex gap-3">
               {comment.author.avatarUrl && (
-                <img
+                <Image
                   src={comment.author.avatarUrl}
                   alt={comment.author.username}
-                  className="h-8 w-8 rounded-full"
+                  width={32}
+                  height={32}
+                  className="rounded-full"
                 />
               )}
               <div className="flex-1 space-y-1">
@@ -541,10 +547,12 @@ function DiscoverPeopleWidget() {
               className="flex items-center gap-3 transition hover:opacity-80"
             >
               {person.avatarUrl ? (
-                <img
+                <Image
                   src={person.avatarUrl}
                   alt={person.name}
-                  className="h-9 w-9 rounded-full object-cover"
+                  width={36}
+                  height={36}
+                  className="rounded-full object-cover"
                 />
               ) : (
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500 text-xs font-semibold">
