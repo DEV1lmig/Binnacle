@@ -57,6 +57,7 @@ export default defineSchema({
     languageSupports: v.optional(v.string()), // JSON array: [{ language, type }]
     multiplayerModes: v.optional(v.string()), // JSON array of multiplayer options
     similarGames: v.optional(v.string()), // JSON array of similar game IDs
+    dlcsAndExpansions: v.optional(v.string()), // JSON array: [{ id, title, releaseDate }] - DLCs and expansions for this game
   }).index("by_igdb_id", ["igdbId"]),
 
   // == Reviews Table (The core of the app) ==

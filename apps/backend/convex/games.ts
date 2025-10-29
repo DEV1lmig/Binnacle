@@ -35,6 +35,7 @@ export const upsertFromIgdb = internalMutation({
     languageSupports: v.optional(v.string()),
     multiplayerModes: v.optional(v.string()),
     similarGames: v.optional(v.string()),
+    dlcsAndExpansions: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existingGame = await ctx.db
@@ -66,6 +67,7 @@ export const upsertFromIgdb = internalMutation({
       languageSupports: args.languageSupports,
       multiplayerModes: args.multiplayerModes,
       similarGames: args.similarGames,
+      dlcsAndExpansions: args.dlcsAndExpansions,
       lastUpdated: Date.now(),
     };
 

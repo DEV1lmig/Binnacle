@@ -75,12 +75,56 @@ export const searchGames = action({
         languageSupports: game.languageSupports,
         multiplayerModes: game.multiplayerModes,
         similarGames: game.similarGames,
+        dlcsAndExpansions: game.dlcsAndExpansions,
       });
 
       hydratedGames.push({ ...game, convexId });
     }
 
     return hydratedGames;
+  },
+});
+
+/**
+ * Fetches DLCs and expansions for a game and stores them in the database.
+ */
+export const fetchDlcsForGame = action({
+  args: {
+    igdbId: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const { accessToken } = await getValidIgdbToken(ctx);
+    
+    // Query IGDB for DLCs and expansions that are part of this parent game
+    const response = await fetch("https://api.igdb.com/v4/games", {
+      method: "POST",
+      headers: {
+        "Client-ID": getClientId(),
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "text/plain",
+      },
+      body: `fields id,name,first_release_date;
+where parent_game = ${args.igdbId} & (game_status = (7, 8));
+limit 500;`,
+    });
+
+    if (!response.ok) {
+      const details = await safeReadError(response);
+      throw new Error(`IGDB request failed: ${response.status} ${details}`);
+    }
+
+    const dlcs = (await response.json()) as Array<{ id: number; name: string; first_release_date?: number }>;
+    
+    // Format DLCs for storage
+    const dlcList = dlcs.map((dlc) => ({
+      id: dlc.id,
+      title: dlc.name,
+      releaseDate: dlc.first_release_date
+        ? new Date(dlc.first_release_date * 1000).getUTCFullYear()
+        : undefined,
+    }));
+
+    return dlcList;
   },
 });
 
@@ -137,6 +181,7 @@ async function requestNewToken() {
 
 /**
  * Builds the IGDB query string for the search request with enriched fields.
+ * Filters to only return main games (excludes DLCs, expansions, etc.)
  */
 function buildQuery(query: string, limit: number) {
   const sanitizedQuery = query.replace(/"/g, "\\\"");
@@ -149,6 +194,7 @@ involved_companies.company.name,involved_companies.developer,involved_companies.
 aggregated_rating,aggregated_rating_count,age_ratings.rating,age_ratings.organization.*,
 game_status.*,language_supports.language.name,
 multiplayer_modes.*,similar_games.name;
+where game_status = (0);
 limit ${limit};`;
 }
 
@@ -214,6 +260,7 @@ function normalizeGames(rawGames: IgdbGame[]): NormalizedGame[] {
       languageSupports: game.language_supports ? JSON.stringify(game.language_supports) : undefined,
       multiplayerModes: game.multiplayer_modes ? JSON.stringify(game.multiplayer_modes) : undefined,
       similarGames: game.similar_games ? JSON.stringify(game.similar_games) : undefined,
+      dlcsAndExpansions: undefined, // Will be fetched separately with enrichGame action
     };
   });
 }
@@ -338,6 +385,7 @@ type NormalizedGame = {
   languageSupports?: string;
   multiplayerModes?: string;
   similarGames?: string;
+  dlcsAndExpansions?: string;
 };
 
 type CachedGame = NormalizedGame & {
@@ -389,6 +437,36 @@ multiplayer_modes.*,similar_games.name`;
 
     const [normalizedGame] = normalizeGames(rawGames);
     
+    // Fetch DLCs and expansions for this game
+    let dlcsAndExpansionsJson: string | undefined;
+    try {
+      const dlcResponse = await fetch("https://api.igdb.com/v4/games", {
+        method: "POST",
+        headers: {
+          "Client-ID": clientId,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "text/plain",
+        },
+        body: `fields id,name,first_release_date;
+where parent_game = ${args.igdbId} & (game_status = (7, 8));
+limit 500;`,
+      });
+
+      if (dlcResponse.ok) {
+        const dlcs = (await dlcResponse.json()) as Array<{ id: number; name: string; first_release_date?: number }>;
+        const dlcList = dlcs.map((dlc) => ({
+          id: dlc.id,
+          title: dlc.name,
+          releaseDate: dlc.first_release_date
+            ? new Date(dlc.first_release_date * 1000).getUTCFullYear()
+            : undefined,
+        }));
+        dlcsAndExpansionsJson = dlcList.length > 0 ? JSON.stringify(dlcList) : undefined;
+      }
+    } catch (error) {
+      console.error("Failed to fetch DLCs for game", args.igdbId, error);
+    }
+    
     // Update the game in the database with enriched data
     const convexId: Id<"games"> = await ctx.runMutation(internal.games.upsertFromIgdb, {
       igdbId: normalizedGame.igdbId,
@@ -415,8 +493,9 @@ multiplayer_modes.*,similar_games.name`;
       languageSupports: normalizedGame.languageSupports,
       multiplayerModes: normalizedGame.multiplayerModes,
       similarGames: normalizedGame.similarGames,
+      dlcsAndExpansions: dlcsAndExpansionsJson,
     });
 
-    return { ...normalizedGame, convexId };
+    return { ...normalizedGame, convexId, dlcsAndExpansions: dlcsAndExpansionsJson };
   },
 });

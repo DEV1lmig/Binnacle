@@ -14,6 +14,7 @@ import { CreditsSection } from "@/app/components/game/CreditsSection";
 import { ExternalLinks } from "@/app/components/game/ExternalLinks";
 import { RatingsDisplay } from "@/app/components/game/RatingsDisplay";
 import { SimilarGamesCarousel } from "@/app/components/game/SimilarGamesCarousel";
+import { DlcExpansionSection } from "@/app/components/game/DlcExpansionSection";
 import { useEffect } from "react";
 
 /**
@@ -179,6 +180,9 @@ export default function GameDetailPage() {
 
             {/* External Links */}
             <ExternalLinks websites={game.websites} />
+
+            {/* DLCs & Expansions */}
+            <DlcExpansionSection dlcsAndExpansions={game.dlcsAndExpansions} gameTitle={game.title} />
 
             {/* Ratings Display */}
             <RatingsDisplay
