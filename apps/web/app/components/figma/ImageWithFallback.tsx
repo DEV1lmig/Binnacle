@@ -11,7 +11,7 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
     setDidError(true)
   }
 
-  const { src, alt, style, className, width, height, ...rest } = props
+  const { src, alt, style, className, width, height } = props
 
   // If src is missing, empty, or null, show the fallback immediately
   const hasSrc = src && typeof src === 'string' && src.trim() !== ''

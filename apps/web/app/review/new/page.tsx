@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -22,7 +22,7 @@ import {
 } from "@/app/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/app/components/ui/radio-group";
 
-export default function NewReviewPage() {
+function NewReviewPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -423,5 +423,17 @@ export default function NewReviewPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function NewReviewPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] flex items-center justify-center">
+        <div className="text-[var(--bkl-color-text-secondary)]">Loading...</div>
+      </div>
+    }>
+      <NewReviewPageContent />
+    </Suspense>
   );
 }
