@@ -284,7 +284,13 @@ function ChartLegendContent(
     payload,
     verticalAlign = "bottom",
     nameKey,
-  } = props as any;
+  } = props as {
+    className?: string;
+    hideIcon?: boolean;
+    payload?: Array<Record<string, unknown>>;
+    verticalAlign?: "top" | "bottom";
+    nameKey?: string;
+  };
   const { config } = useChart();
 
   if (!payload?.length) {

@@ -11,10 +11,14 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
     setDidError(true)
   }
 
-  const { src, alt, style, className, ...rest } = props
+  const { src, alt, style, className, width, height, ...rest } = props
 
   // If src is missing, empty, or null, show the fallback immediately
   const hasSrc = src && typeof src === 'string' && src.trim() !== ''
+
+  // Default dimensions
+  const imgWidth = typeof width === 'number' ? width : typeof width === 'string' ? parseInt(width) : 500
+  const imgHeight = typeof height === 'number' ? height : typeof height === 'string' ? parseInt(height) : 500
 
   return !hasSrc || didError ? (
     <div
@@ -22,11 +26,24 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
       style={style}
     >
       <div className="flex items-center justify-center w-full h-full">
-        <img src={ERROR_IMG_SRC} alt="Error loading image" {...rest} data-original-url={src as string} />
+        <Image 
+          src={ERROR_IMG_SRC} 
+          alt="Error loading image" 
+          width={imgWidth} 
+          height={imgHeight}
+          data-original-url={src as string} 
+        />
       </div>
     </div>
   ) : (
-    <Image src={src as string} alt={alt || 'Image'} className={className} {...rest} onError={handleError} width={500} height={500} />
+    <Image 
+      src={src as string} 
+      alt={alt || 'Image'} 
+      className={className} 
+      width={imgWidth} 
+      height={imgHeight}
+      onError={handleError} 
+    />
   )
 }
 
