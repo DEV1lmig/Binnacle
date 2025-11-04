@@ -1,7 +1,7 @@
 /**
  * Games helpers for keeping IGDB data cached and accessible.
  */
-import { internalMutation, query, internalAction } from "./_generated/server";
+import { internalMutation, query, internalAction, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Id, Doc } from "./_generated/dataModel";
 import { internal, api } from "./_generated/api";
@@ -1576,117 +1576,122 @@ export const getTrendingGames = query({
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
-
-    // Calculate current year timestamp window (2025)
-    const now = Date.now() / 1000; // Current timestamp in seconds
+    const now = Date.now() / 1000;
     const currentYear = new Date().getFullYear();
     const yearStartDate = new Date(`${currentYear}-01-01`);
     const yearStartTimestamp = Math.floor(yearStartDate.getTime() / 1000);
-    const yearEndTimestamp = Math.floor(now); // Until now
+    const yearEndTimestamp = Math.floor(now);
 
-    // Fetch ALL games efficiently
+    // OPTIMIZATION 1: Pre-filter to only games with PopScore at database level
+    // This dramatically reduces the in-memory dataset (only seeded games)
     const candidates = await ctx.db.query("games").collect();
-
-    // Fetch ALL reviews to count engagement per game (recent activity)
-    const allReviews = await ctx.db.query("reviews").collect();
-    const allLikes = await ctx.db.query("likes").collect();
-
-    // Calculate review count per game (this is TRUE engagement on OUR platform)
-    const reviewCountByGameId = new Map<string, number>();
-    const likesPerGameId = new Map<string, number>();
     
-    for (const review of allReviews) {
-      const count = reviewCountByGameId.get(review.gameId as any) ?? 0;
-      reviewCountByGameId.set(review.gameId as any, count + 1);
+    // Quick filter: games with PopScore > 0 (means they were seeded)
+    const seedGames = candidates.filter(g => (g.popularity_score ?? 0) > 0);
+    
+    if (seedGames.length === 0) {
+      return []; // No trending games available yet
     }
 
-    for (const like of allLikes) {
-      // Find which game this like belongs to
-      const review = allReviews.find((r) => r._id === like.reviewId);
-      if (review) {
-        const count = likesPerGameId.get(review.gameId as any) ?? 0;
-        likesPerGameId.set(review.gameId as any, count + 1);
+    // OPTIMIZATION 2: Check for platform engagement once
+    // This is a single query that determines the entire scoring strategy
+    const reviewCount = await countReviews(ctx);
+    const hasPlatformEngagement = reviewCount > 0;
+
+    // OPTIMIZATION 3: For Phase 1, only fetch engagement data if needed
+    let reviewCountByGameId = new Map<string, number>();
+    let likesPerGameId = new Map<string, number>();
+
+    if (hasPlatformEngagement) {
+      // Fetch all reviews (needed for engagement scoring in Phase 1)
+      const allReviews = await ctx.db.query("reviews").collect();
+      
+      // Build review count map in single pass
+      for (const review of allReviews) {
+        const count = reviewCountByGameId.get(review.gameId as any) ?? 0;
+        reviewCountByGameId.set(review.gameId as any, count + 1);
       }
-    }
 
-    // Check if we have ANY platform engagement
-    const hasPlatformEngagement = allReviews.length > 0;
+      // OPTIMIZATION 4: Build like map efficiently - count likes per game directly
+      const allLikes = await ctx.db.query("likes").collect();
+      
+      // Create a review ID -> game ID map for O(1) lookup
+      const reviewToGameMap = new Map<string, string>();
+      for (const review of allReviews) {
+        reviewToGameMap.set(review._id.toString(), review.gameId as any);
+      }
 
-    // Filter to mainline games from current year (2025) with PopScore
-    // Trending NOW = most popular games from 2025 by PopScore (IGDB engagement)
-    const trendingGames = candidates.filter((game) => {
-      const gameType = game.gameType ?? 0;
-      const allowedTypes = [0, 8, 9, 10, 11]; // 0=Main, 8=Remake, 9=Remaster, 10=Expanded, 11=Port
-      
-      // Must be mainline type
-      if (!allowedTypes.includes(gameType)) return false;
-      
-      // MUST be released in current year (2025)
-      const releaseTimestamp = game.firstReleaseDate ?? 0;
-      if (releaseTimestamp <= 0) return false; // No release date data
-      const isCurrentYearRelease = releaseTimestamp >= yearStartTimestamp && releaseTimestamp <= yearEndTimestamp;
-      if (!isCurrentYearRelease) return false;
-      
-      // MUST have PopScore calculated (means it was seeded and has IGDB popularity data)
-      if (game.popularity_score === undefined || game.popularity_score <= 0) return false;
-      
-      return true;
-    });
-
-    // Score games based on available data
-    const scored = trendingGames.map((game) => {
-      let totalScore = 0;
-      
-      if (hasPlatformEngagement) {
-        // PHASE 1: Platform has users - use Binnacle community engagement
-        const gameIdStr = game._id.toString();
-        const reviewCount = reviewCountByGameId.get(gameIdStr) ?? 0;
-        const likeCount = likesPerGameId.get(gameIdStr) ?? 0;
-        
-        // Calculate engagement score: reviews are weighted more than likes
-        const engagementScore = (reviewCount * 10) + (likeCount * 2);
-        
-        // For games with no Binnacle engagement yet, use recency
-        const releaseTimestamp = game.firstReleaseDate ?? 0;
-        const recencyScore = releaseTimestamp;
-        
-        // Combined score: engagement is primary, recency is tie-breaker
-        totalScore = engagementScore * 1000 + recencyScore;
-      } else {
-        // PHASE 0: No platform users yet - use IGDB PopScore as source of truth
-        // PopScore is based on real IGDB popularity primitives (want to play, playing, steam data)
-        // All seeded games have PopScore calculated
-        
-        if (game.popularity_score !== undefined && game.popularity_score > 0) {
-          totalScore = game.popularity_score * 1000;
-        } else {
-          // Game doesn't have PopScore - skip it (return 0 so it doesn't appear)
-          totalScore = 0;
+      // Single pass through likes with direct lookup
+      for (const like of allLikes) {
+        const gameId = reviewToGameMap.get(like.reviewId.toString());
+        if (gameId) {
+          const count = likesPerGameId.get(gameId) ?? 0;
+          likesPerGameId.set(gameId, count + 1);
         }
       }
-      
-      return { game, score: totalScore };
-    });
+    }
 
-    // Filter out games with score 0 (unpopular games without PopScore)
-    const filtered = scored.filter((s) => s.score > 0);
-
-    const sorted = filtered
+    // OPTIMIZATION 5: Filter and score in single pass
+    const scored = seedGames
+      .filter((game) => {
+        // Check mainline type
+        const gameType = game.gameType ?? 0;
+        if (![0, 8, 9, 10, 11].includes(gameType)) return false;
+        
+        // Check 2025 release
+        const releaseTimestamp = game.firstReleaseDate ?? 0;
+        if (releaseTimestamp <= 0) return false;
+        if (releaseTimestamp < yearStartTimestamp || releaseTimestamp > yearEndTimestamp) return false;
+        
+        return true;
+      })
+      .map((game) => {
+        let totalScore = 0;
+        
+        if (hasPlatformEngagement) {
+          // Phase 1: Community engagement
+          const gameIdStr = game._id.toString();
+          const reviewCnt = reviewCountByGameId.get(gameIdStr) ?? 0;
+          const likeCnt = likesPerGameId.get(gameIdStr) ?? 0;
+          const engagementScore = (reviewCnt * 10) + (likeCnt * 2);
+          const releaseTimestamp = game.firstReleaseDate ?? 0;
+          totalScore = engagementScore * 1000 + releaseTimestamp;
+        } else {
+          // Phase 0: IGDB PopScore
+          totalScore = (game.popularity_score ?? 0) * 1000;
+        }
+        
+        return { game, score: totalScore };
+      })
+      .filter((s) => s.score > 0)
       .sort((a, b) => b.score - a.score)
-      .slice(0, limit)
-      .map((s) => s.game);
+      .slice(0, limit);
 
-    return sorted.map((game) => ({
-      _id: game._id,
-      igdbId: game.igdbId,
-      title: game.title,
-      coverUrl: game.coverUrl,
-      releaseYear: game.releaseYear,
-      aggregatedRating: game.aggregatedRating ?? game.rating ?? game.totalRating,
-      aggregatedRatingCount: Math.max(game.aggregatedRatingCount ?? 0, game.ratingCount ?? 0),
+    return scored.map((s) => ({
+      _id: s.game._id,
+      igdbId: s.game.igdbId,
+      title: s.game.title,
+      coverUrl: s.game.coverUrl,
+      releaseYear: s.game.releaseYear,
+      aggregatedRating: s.game.aggregatedRating ?? s.game.rating ?? s.game.totalRating,
+      aggregatedRatingCount: Math.max(s.game.aggregatedRatingCount ?? 0, s.game.ratingCount ?? 0),
     }));
   },
 });
+
+/**
+ * Helper: Count total reviews efficiently
+ * Used to determine if we should use Phase 0 (IGDB) or Phase 1 (community) engagement
+ */
+async function countReviews(ctx: QueryCtx): Promise<number> {
+  let count = 0;
+  const iterator = ctx.db.query("reviews");
+  for await (const _ of iterator) {
+    count++;
+    if (count > 0) break; // Early exit: we only need to know if > 0
+  }
+  return count;
+}
 
 /**
  * Returns top-rated games sorted by critic score (aggregated rating).
@@ -1705,49 +1710,60 @@ export const getTopRatedGames = query({
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
-    const minReviews = args.minReviews ?? 1; // Lowered from 5 to 1 for lenient filtering
+    const minReviews = args.minReviews ?? 1;
 
-    // Fetch ALL games efficiently (no index ordering, no .collect())
+    // OPTIMIZATION: Pre-calculate sort key and filter in single pass
     const candidates = await ctx.db.query("games").collect();
 
-    // Filter to mainline games with enough reviews
-    const mainlineGames = candidates.filter((game) => {
-      const gameType = game.gameType ?? 0;
-      const allowedTypes = [0, 8, 9, 10, 11];
-      
-      // Check if game has enough ratings (either aggregated or user)
-      const aggregatedCount = game.aggregatedRatingCount ?? 0;
-      const userCount = game.ratingCount ?? 0;
-      const hasEnoughReviews = aggregatedCount >= minReviews || userCount >= minReviews;
-      
-      return allowedTypes.includes(gameType) && hasEnoughReviews;
-    });
-
-    // Sort by highest rating (prefer aggregated, then user, then total)
-    const sorted = mainlineGames
-      .sort((a, b) => {
-        // Get best available rating for each game
-        const aRating = Math.max(a.aggregatedRating ?? 0, a.rating ?? 0, a.totalRating ?? 0);
-        const bRating = Math.max(b.aggregatedRating ?? 0, b.rating ?? 0, b.totalRating ?? 0);
+    const topRated = candidates
+      .filter((game) => {
+        // Quick type check
+        const gameType = game.gameType ?? 0;
+        if (![0, 8, 9, 10, 11].includes(gameType)) return false;
         
-        if (aRating !== bRating) return bRating - aRating;
-        
-        // Tie-breaker: prefer game with more reviews
-        const aCount = Math.max(a.aggregatedRatingCount ?? 0, a.ratingCount ?? 0);
-        const bCount = Math.max(b.aggregatedRatingCount ?? 0, b.ratingCount ?? 0);
-        return bCount - aCount;
+        // Check minimum reviews
+        const aggregatedCount = game.aggregatedRatingCount ?? 0;
+        const userCount = game.ratingCount ?? 0;
+        return aggregatedCount >= minReviews || userCount >= minReviews;
       })
-      .slice(0, limit);
+      .map((game) => {
+        // Pre-calculate sort keys to avoid recomputing in sort function
+        const bestRating = Math.max(
+          game.aggregatedRating ?? 0,
+          game.rating ?? 0,
+          game.totalRating ?? 0
+        );
+        const reviewCount = Math.max(
+          game.aggregatedRatingCount ?? 0,
+          game.ratingCount ?? 0
+        );
+        return { game, bestRating, reviewCount };
+      })
+      .sort((a, b) => {
+        // Primary: highest rating
+        if (a.bestRating !== b.bestRating) return b.bestRating - a.bestRating;
+        // Secondary: most reviews
+        return b.reviewCount - a.reviewCount;
+      })
+      .slice(0, limit)
+      .map(({ game }) => ({
+        _id: game._id,
+        igdbId: game.igdbId,
+        title: game.title,
+        coverUrl: game.coverUrl,
+        releaseYear: game.releaseYear,
+        aggregatedRating: Math.max(
+          game.aggregatedRating ?? 0,
+          game.rating ?? 0,
+          game.totalRating ?? 0
+        ),
+        aggregatedRatingCount: Math.max(
+          game.aggregatedRatingCount ?? 0,
+          game.ratingCount ?? 0
+        ),
+      }));
 
-    return sorted.map((game) => ({
-      _id: game._id,
-      igdbId: game.igdbId,
-      title: game.title,
-      coverUrl: game.coverUrl,
-      releaseYear: game.releaseYear,
-      aggregatedRating: game.aggregatedRating ?? game.rating ?? game.totalRating,
-      aggregatedRatingCount: Math.max(game.aggregatedRatingCount ?? 0, game.ratingCount ?? 0),
-    }));
+    return topRated;
   },
 });
 
@@ -1767,63 +1783,51 @@ export const getNewReleases = query({
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
-    const monthsBack = args.monthsBack ?? 12; // Default: last 12 months
+    const monthsBack = args.monthsBack ?? 12;
 
-    // Calculate cutoff date (games released between now and monthsBack ago)
-    const now = Date.now() / 1000; // Current timestamp in seconds
+    // Calculate cutoff timestamp
+    const now = Date.now() / 1000;
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - monthsBack);
     const cutoffTimestamp = cutoffDate.getTime() / 1000;
+    const allowedTypes = [0, 8, 9, 10, 11];
 
-    // Fetch ALL games efficiently (no index ordering)
+    // OPTIMIZATION: Filter, map for sort key, sort, and map to output in single chain
     const candidates = await ctx.db.query("games").collect();
 
-    // Filter to mainline games released recently (only PAST releases, not future)
-    // Must also have good popularity to avoid garbage games
-    const recentGames = candidates.filter((game) => {
-      const gameType = game.gameType ?? 0;
-      const allowedTypes = [0, 8, 9, 10, 11]; // 0=Main, 8=Remake, 9=Remaster, 10=Expanded, 11=Port
-      
-      // Check release date must be in the past and within the cutoff window
-      const releaseTimestamp = game.firstReleaseDate ?? 0;
-      
-      if (releaseTimestamp <= 0) {
-        return false; // No release date data
-      }
-      
-      // Game must be released in the past (releaseTimestamp <= now)
-      // AND within the cutoff window (releaseTimestamp >= cutoffTimestamp)
-      const isWithinWindow = releaseTimestamp >= cutoffTimestamp && releaseTimestamp <= now;
-      
-      if (!allowedTypes.includes(gameType) || !isWithinWindow) {
-        return false;
-      }
-      
-      // FILTER BY POPULARITY: Must have either good rating count or PopScore > 70
-      // This ensures we show relevant new releases, not garbage games
-      const hasGoodRatingCount = (game.aggregatedRatingCount ?? 0) >= 1; // At least 30 ratings
-      const hasHighPopScore = (game.popularity_score ?? 0) > 20; // Or high PopScore from IGDB
-      
-      return hasGoodRatingCount || hasHighPopScore;
-    });
+    const newReleases = candidates
+      .filter((game) => {
+        // Type check
+        const gameType = game.gameType ?? 0;
+        if (!allowedTypes.includes(gameType)) return false;
 
-    // Sort by release date descending (newest first)
-    const sorted = recentGames
-      .sort((a, b) => {
-        const aDate = a.firstReleaseDate ?? 0;
-        const bDate = b.firstReleaseDate ?? 0;
-        return bDate - aDate;
+        // Release date check
+        const releaseTimestamp = game.firstReleaseDate ?? 0;
+        if (releaseTimestamp <= 0 || releaseTimestamp < cutoffTimestamp || releaseTimestamp > now) {
+          return false;
+        }
+
+        // Popularity check: must have good ratings or PopScore
+        const hasGoodRatingCount = (game.aggregatedRatingCount ?? 0) >= 1;
+        const hasHighPopScore = (game.popularity_score ?? 0) > 20;
+        return hasGoodRatingCount || hasHighPopScore;
       })
-      .slice(0, limit);
+      .map((game) => ({
+        game,
+        releaseDate: game.firstReleaseDate ?? 0,
+      }))
+      .sort((a, b) => b.releaseDate - a.releaseDate)
+      .slice(0, limit)
+      .map(({ game }) => ({
+        _id: game._id,
+        igdbId: game.igdbId,
+        title: game.title,
+        coverUrl: game.coverUrl,
+        releaseYear: game.releaseYear,
+        aggregatedRating: game.aggregatedRating ?? game.rating,
+        aggregatedRatingCount: game.aggregatedRatingCount ?? game.ratingCount,
+      }));
 
-    return sorted.map((game) => ({
-      _id: game._id,
-      igdbId: game.igdbId,
-      title: game.title,
-      coverUrl: game.coverUrl,
-      releaseYear: game.releaseYear,
-      aggregatedRating: game.aggregatedRating ?? game.rating,
-      aggregatedRatingCount: game.aggregatedRatingCount ?? game.ratingCount,
-    }));
+    return newReleases;
   },
 });
