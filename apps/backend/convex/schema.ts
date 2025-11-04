@@ -47,9 +47,13 @@ export default defineSchema({
     developers: v.optional(v.string()), // JSON array: [{ id, name, role }]
     publishers: v.optional(v.string()), // JSON array: [{ id, name, role }]
 
-    // Ratings & status
+    // Ratings & status (Multiple rating systems from IGDB)
     aggregatedRating: v.optional(v.number()), // Critic score (0-100)
     aggregatedRatingCount: v.optional(v.number()), // Number of critic reviews
+    rating: v.optional(v.number()), // IGDB user rating (0-100)
+    ratingCount: v.optional(v.number()), // Number of IGDB user ratings
+    totalRating: v.optional(v.number()), // Combined critic + user rating (0-120)
+    totalRatingCount: v.optional(v.number()), // Combined count of all ratings
     ageRatings: v.optional(v.string()), // JSON array: [{ category, rating }]
     gameStatus: v.optional(v.string()), // e.g., "Released", "Early Access"
 
@@ -58,6 +62,20 @@ export default defineSchema({
     multiplayerModes: v.optional(v.string()), // JSON array of multiplayer options
     similarGames: v.optional(v.string()), // JSON array of similar game IDs
     dlcsAndExpansions: v.optional(v.string()), // JSON array: [{ id, title, releaseDate }] - DLCs and expansions for this game
+    
+    // Classification fields (used for filtering and sorting)
+    gameType: v.optional(v.number()), // IGDB game_type enum (0=main, 1=dlc, 2=expansion, etc.)
+    category: v.optional(v.number()), // IGDB category enum (for additional classification)
+
+    // Franchise fields (for intelligent franchise-based sorting)
+    franchise: v.optional(v.string()), // Main franchise (e.g., "The Legend of Zelda")
+    franchises: v.optional(v.string()), // JSON array of franchises (secondary franchises)
+    hypes: v.optional(v.number()), // Pre-release hype count (from IGDB)
+    firstReleaseDate: v.optional(v.number()), // Unix timestamp of first release
+    parentGame: v.optional(v.number()), // IGDB ID of parent game (for DLC/expansions)
+    
+    // PopScore popularity (weighted combination of primitives)
+    popularity_score: v.optional(v.number()), // Weighted PopScore: 0.4*WantToPlay + 0.3*Playing + 0.2*Steam24hrPeak + 0.1*SteamTotalReviews
   }).index("by_igdb_id", ["igdbId"]),
 
   // == Reviews Table (The core of the app) ==
@@ -162,4 +180,38 @@ export default defineSchema({
     .index("by_user_id", ["userId"])
     .index("by_game_id", ["gameId"])
     .index("by_user_and_game", ["userId", "gameId"]), // For quick duplicate checking
+
+  // == Search Terms Table ==
+  // Maps normalized search terms (keywords, phrases, franchises) to associated mainline games
+  // Enables fast cache-first search before hitting IGDB API
+  searchTerms: defineTable({
+    term: v.string(), // Normalized term key (e.g., "zelda", "legend of zelda")
+    tokens: v.string(), // JSON array of individual tokens
+    termType: v.string(), // "title" | "franchise" | "alias" | "token"
+    associatedGameIds: v.optional(v.string()), // JSON array of game IDs in priority order
+    weights: v.optional(v.string()), // JSON map { gameId: weight } for ranking
+    tokenFrequencies: v.optional(v.string()), // Optional stats for debugging/IDF computation
+    lastUpdated: v.number(), // Timestamp of last update
+    sources: v.optional(v.string()), // JSON map of source counts (enriched, backfill, manual)
+  }).index("by_term", ["term"]),
+
+  // == Search Aliases Table ==
+  // Manual franchise/alias mappings to handle edge cases and multi-token searches
+  // E.g., "zelda" -> "legend of zelda" franchise
+  searchAliases: defineTable({
+    alias: v.string(), // User-entered or detected alias
+    canonicalTerm: v.string(), // Canonical term to redirect to
+    gameIds: v.optional(v.string()), // Optional preferred game IDs for this alias
+    note: v.optional(v.string()), // Admin note on why this alias exists
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_alias", ["alias"]),
+
+  // == Search Index Metadata ==
+  // Stores stats and progress for backfill/reindex operations
+  searchIndexMetadata: defineTable({
+    key: v.string(), // "tokenFrequencies", "lastBackfill", etc.
+    value: v.string(), // JSON-serialized value
+    lastUpdated: v.number(),
+  }).index("by_key", ["key"]),
 });

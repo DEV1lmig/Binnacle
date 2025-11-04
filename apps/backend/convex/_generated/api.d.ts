@@ -14,6 +14,7 @@ import type * as comments from "../comments.js";
 import type * as favorites from "../favorites.js";
 import type * as feed from "../feed.js";
 import type * as followers from "../followers.js";
+import type * as franchiseRanking from "../franchiseRanking.js";
 import type * as friends from "../friends.js";
 import type * as games from "../games.js";
 import type * as igdb from "../igdb.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   favorites: typeof favorites;
   feed: typeof feed;
   followers: typeof followers;
+  franchiseRanking: typeof franchiseRanking;
   friends: typeof friends;
   games: typeof games;
   igdb: typeof igdb;

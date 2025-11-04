@@ -141,6 +141,7 @@ export function MediaGallery({
               alt={`${title} - ${activeTab}`}
               fill
               className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 80vw"
               priority
             />
           </div>
@@ -163,6 +164,7 @@ export function MediaGallery({
                     alt={`Thumbnail ${idx + 1}`}
                     fill
                     className="object-cover"
+                    sizes="80px"
                   />
                 </button>
               ))}

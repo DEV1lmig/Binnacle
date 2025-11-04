@@ -5,3 +5,4 @@ apps/backend/.cursor
 node_modules/
 /apps/web/.next
 /apps/web/.env.local
+*.md

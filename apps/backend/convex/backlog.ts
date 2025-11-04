@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, QueryCtx } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 
 // Valid backlog status values
 export const BACKLOG_STATUSES = [
@@ -16,6 +17,8 @@ export type BacklogStatus = typeof BACKLOG_STATUSES[number];
 /**
  * Adds a game to the user's backlog or updates an existing backlog item.
  * Uses upsert semantics: if the user already has the game in their backlog, update it.
+ * 
+ * Phase 1 Caching: Auto-caches the full IGDB data for the game being added to backlog.
  */
 export const add = mutation({
   args: {
@@ -43,10 +46,22 @@ export const add = mutation({
       throw new Error("User not found in database");
     }
 
-    // Verify game exists
+    // Verify game exists and get its IGDB ID
     const game = await ctx.db.get(args.gameId);
     if (!game) {
       throw new Error("Game not found");
+    }
+
+    // Phase 1 Caching: Auto-cache full IGDB data (non-blocking)
+    if (game.igdbId) {
+      try {
+        await ctx.runMutation(internal.games.cacheGameFromIgdb, {
+          igdbId: game.igdbId,
+        });
+      } catch (error) {
+        // Log but don't block backlog addition if caching fails
+        console.warn(`[backlog.add] Failed to cache game ${game.igdbId}:`, error);
+      }
     }
 
     // Check if backlog item already exists
@@ -279,6 +294,7 @@ export const listForUser = query({
                 title: game.title,
                 coverUrl: game.coverUrl,
                 releaseYear: game.releaseYear,
+                aggregatedRating: game.aggregatedRating,
               }
             : null,
         };

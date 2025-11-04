@@ -108,6 +108,47 @@ export const getByUsername = query({
 });
 
 /**
+ * Searches for users by name or username.
+ */
+export const search = query({
+  args: {
+    query: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const searchQuery = args.query.toLowerCase();
+    const limit = args.limit ?? 20;
+
+    if (!searchQuery) {
+      // Return discover results if no query
+      const allUsers = await ctx.db
+        .query("users")
+        .order("desc")
+        .take(limit);
+      return allUsers;
+    }
+
+    // OPTIMIZATION: Take a reasonable maximum instead of collecting all users
+    // Take 10x limit to account for filtering, max 500
+    const maxCandidates = Math.min(limit * 10, 500);
+    const allUsers = await ctx.db
+      .query("users")
+      .order("desc")
+      .take(maxCandidates);
+    
+    const results = allUsers
+      .filter(
+        (user) =>
+          user.name.toLowerCase().includes(searchQuery) ||
+          user.username.toLowerCase().includes(searchQuery)
+      )
+      .slice(0, limit);
+
+    return results;
+  },
+});
+
+/**
  * Discovers users for the authenticated user to follow.
  */
 export const discover = query({
