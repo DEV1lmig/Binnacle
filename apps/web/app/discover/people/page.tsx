@@ -80,7 +80,7 @@ export default function DiscoverPeoplePage() {
               className="text-[var(--bkl-color-text-disabled)]"
               style={{ fontSize: "var(--bkl-font-size-base)" }}
             >
-              No users found matching "{searchQuery}"
+              No users found matching &quot;{searchQuery}&quot;
             </p>
           </div>
         ) : (

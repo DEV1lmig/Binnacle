@@ -353,7 +353,7 @@ export default function NewReviewPage() {
               Add to Your Backlog
             </DialogTitle>
             <DialogDescription className="text-[var(--bkl-color-text-secondary)]">
-              Before publishing, let's add this game to your backlog. Select a status that best describes your experience:
+              Before publishing, let&apos;s add this game to your backlog. Select a status that best describes your experience:
             </DialogDescription>
           </DialogHeader>
 
@@ -379,7 +379,7 @@ export default function NewReviewPage() {
                 <RadioGroupItem value="completed" id="completed" />
                 <Label htmlFor="completed" className="cursor-pointer flex-1">
                   <p className="font-semibold text-[var(--bkl-color-text-primary)]">Completed ✓</p>
-                  <p className="text-sm text-[var(--bkl-color-text-secondary)]">You've finished this game (recommended)</p>
+                  <p className="text-sm text-[var(--bkl-color-text-secondary)]">You&apos;ve finished this game (recommended)</p>
                 </Label>
               </div>
 

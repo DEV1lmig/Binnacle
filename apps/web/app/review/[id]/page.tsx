@@ -16,7 +16,6 @@ import {
   ArrowLeft,
   Send,
   Share2,
-  ThumbsUp,
   Twitter,
   Facebook,
   Link as LinkIcon,

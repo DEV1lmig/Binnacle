@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 
 interface DLC {
   id: number;
@@ -11,7 +11,6 @@ interface DLC {
 
 interface DlcExpansionSectionProps {
   dlcsAndExpansions?: string;
-  gameTitle: string;
   relatedContent?: Array<{
     id: number;
     title: string;
@@ -41,7 +40,7 @@ const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
 /**
  * Displays DLCs, expansions, mods and related content for a game in categorized sections.
  */
-export function DlcExpansionSection({ dlcsAndExpansions, gameTitle, relatedContent }: DlcExpansionSectionProps) {
+export function DlcExpansionSection({ dlcsAndExpansions, relatedContent }: DlcExpansionSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Memoize the parsed DLC list to avoid re-parsing on every render

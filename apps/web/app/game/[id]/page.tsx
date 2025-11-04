@@ -503,9 +503,36 @@ export default function GameDetailPage() {
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {(() => {
-                      const genres = typeof game.genres === 'string' ? JSON.parse(game.genres) : game.genres;
-                      return (genres || []).map((genre: any, index: number) => {
-                        const genreName = typeof genre === 'string' ? genre : genre.name || String(genre);
+                      const genres: Array<string | Record<string, unknown>> = (() => {
+                        if (typeof game.genres === "string") {
+                          try {
+                            const parsed = JSON.parse(game.genres);
+                            return Array.isArray(parsed)
+                              ? (parsed as Array<string | Record<string, unknown>>)
+                              : [];
+                          } catch (error) {
+                            console.error("Failed to parse genres", error);
+                            return [];
+                          }
+                        }
+
+                        return Array.isArray(game.genres)
+                          ? (game.genres as Array<string | Record<string, unknown>>)
+                          : [];
+                      })();
+
+                      return genres.map((genre, index) => {
+                        const genreObject =
+                          typeof genre === "object" && genre !== null
+                            ? (genre as Record<string, unknown>)
+                            : undefined;
+                        const genreName =
+                          typeof genre === "string"
+                            ? genre
+                            : typeof genreObject?.name === "string"
+                              ? genreObject.name
+                              : String(genre);
+
                         return (
                           <Badge key={`genre-${index}-${genreName}`} className="bg-[var(--bkl-color-accent-primary)]">
                             {genreName}
@@ -586,7 +613,6 @@ export default function GameDetailPage() {
 
           <DlcExpansionSection
             dlcsAndExpansions={game.dlcsAndExpansions ?? undefined}
-            gameTitle={game.title}
             relatedContent={relatedContentEntries}
           />
 

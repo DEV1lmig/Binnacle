@@ -55,7 +55,7 @@ export default function FeedPage() {
             className="text-[var(--bkl-color-text-secondary)]"
             style={{ fontSize: "var(--bkl-font-size-base)" }}
           >
-            Here's what's new in your gaming journey
+            Here&apos;s what&apos;s new in your gaming journey
           </p>
         </div>
 

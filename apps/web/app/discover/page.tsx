@@ -2,13 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useCurrentUser } from "@/app/context/CurrentUserContext";
-import { GameCard } from "@/app/components/GameCard";
+import { GameCard, type GameCardGame } from "@/app/components/GameCard";
 import { AdSpace } from "@/app/components/AdSpace";
 import { Input } from "@/app/components/ui/input";
-import { Skeleton } from "@/app/components/ui/skeleton";
 import { Search, TrendingUp, Star, Calendar, Users, ArrowRight, AlertCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 
@@ -68,7 +67,33 @@ export default function DiscoverPage() {
   const topRated = topRatedData || [];
   const newReleases = newReleasesData || [];
 
-  return (
+const mapToGameCardGame = (game: {
+  _id: string | { toString(): string };
+  title?: string | null;
+  cover?: string | null;
+  coverUrl?: string | null;
+  rating?: number | null;
+  aggregatedRating?: number | null;
+  releaseYear?: number | null;
+  status?: string | null;
+}): GameCardGame => {
+  const validStatuses = ["backlog", "playing", "completed", "dropped", "onhold"] as const;
+  const status = game.status && validStatuses.includes(game.status as typeof validStatuses[number])
+    ? (game.status as typeof validStatuses[number])
+    : undefined;
+  
+  return {
+    id: String(game._id),
+    _id: String(game._id),
+    title: game.title ?? "Unknown Title",
+    cover: game.cover ?? undefined,
+    coverUrl: game.coverUrl ?? undefined,
+    rating: game.rating ?? undefined,
+    aggregatedRating: game.aggregatedRating ?? undefined,
+    releaseYear: game.releaseYear ?? undefined,
+    status,
+  };
+};  return (
     <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] pb-20 md:pb-8">
 
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
@@ -113,7 +138,7 @@ export default function DiscoverPage() {
                     className="text-[var(--bkl-color-text-primary)]"
                     style={{ fontSize: "var(--bkl-font-size-2xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
                   >
-                    Search Results for "{searchQuery}"
+                    Search Results for &quot;{searchQuery}&quot;
                   </h2>
                   {isEnriching && (
                     <div className="flex items-center gap-2 text-[var(--bkl-color-accent-primary)] animate-pulse">
@@ -138,13 +163,7 @@ export default function DiscoverPage() {
                       {gameResults.map((game) => (
                         <GameCard
                           key={game._id}
-                          game={{
-                            _id: game._id,
-                            title: game.title,
-                            coverUrl: game.coverUrl,
-                            releaseYear: game.releaseYear,
-                            aggregatedRating: game.aggregatedRating,
-                          } as any}
+                          game={mapToGameCardGame(game)}
                           variant="compact"
                           onClick={() => router.push(`/game/${game._id}`)}
                         />
@@ -166,7 +185,7 @@ export default function DiscoverPage() {
                         className="text-[var(--bkl-color-text-disabled)] mt-2"
                         style={{ fontSize: "var(--bkl-font-size-sm)" }}
                       >
-                        We're checking the IGDB database for you...
+                        We&apos;re checking the IGDB database for you...
                       </p>
                     )}
                   </div>
@@ -292,13 +311,7 @@ export default function DiscoverPage() {
                     trendingGames.map((game) => (
                       <GameCard
                         key={game._id}
-                        game={{
-                          _id: game._id,
-                          title: game.title,
-                          coverUrl: game.coverUrl,
-                          releaseYear: game.releaseYear,
-                          aggregatedRating: game.aggregatedRating,
-                        } as any}
+                        game={mapToGameCardGame(game)}
                         variant="compact"
                         onClick={() => router.push(`/game/${game._id}`)}
                       />
@@ -335,13 +348,7 @@ export default function DiscoverPage() {
                     topRated.map((game) => (
                       <GameCard
                         key={game._id}
-                        game={{
-                          _id: game._id,
-                          title: game.title,
-                          coverUrl: game.coverUrl,
-                          releaseYear: game.releaseYear,
-                          aggregatedRating: game.aggregatedRating,
-                        } as any}
+                        game={mapToGameCardGame(game)}
                         variant="compact"
                         onClick={() => router.push(`/game/${game._id}`)}
                       />
@@ -383,13 +390,7 @@ export default function DiscoverPage() {
                     newReleases.map((game) => (
                       <GameCard
                         key={game._id}
-                        game={{
-                          _id: game._id,
-                          title: game.title,
-                          coverUrl: game.coverUrl,
-                          releaseYear: game.releaseYear,
-                          aggregatedRating: game.aggregatedRating,
-                        } as any}
+                        game={mapToGameCardGame(game)}
                         variant="compact"
                         onClick={() => router.push(`/game/${game._id}`)}
                       />

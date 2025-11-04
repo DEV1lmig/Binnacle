@@ -9,8 +9,7 @@ import { GameCard } from "@/app/components/GameCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Button } from "@/app/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
-import { Skeleton } from "@/app/components/ui/skeleton";
-import { Settings, Users, Star, Trophy, Clock, Gamepad2 } from "lucide-react";
+import { Settings, Users, Trophy, Gamepad2 } from "lucide-react";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -22,8 +21,6 @@ export default function ProfilePage() {
     api.backlog.listForUser,
     currentUser ? { userId: currentUser._id } : "skip"
   );
-
-  const isLoading = !currentUser || userBacklog === undefined;
 
   // Calculate stats
   const completedCount = userBacklog?.filter((item) => item.status === "completed").length || 0;

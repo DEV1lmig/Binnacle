@@ -13,15 +13,18 @@ interface GameCardProps {
     rating?: number;
     aggregatedRating?: number;
     status?: string;
+    releaseYear?: number;
   };
   onClick?: () => void;
   variant?: 'default' | 'compact';
 }
 
+export type GameCardGame = GameCardProps["game"];
+
 export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) {
   // Handle both mock data and backend data
-  const coverImage = (game as any).cover || (game as any).coverUrl || '';
-  const rating = (game as any).rating || (game as any).aggregatedRating || 0;
+  const coverImage = game.cover || game.coverUrl || '';
+  const rating = game.rating || game.aggregatedRating || 0;
   
   if (variant === 'compact') {
     return (
