@@ -46,17 +46,15 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
             </div>
           )}
 
-          {rating && (
-            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-[var(--bkl-color-bg-primary)]/80 backdrop-blur-sm px-2 py-1 rounded-[var(--bkl-radius-sm)]">
-              <Star className="w-3 h-3 fill-[var(--bkl-color-accent-secondary)] text-[var(--bkl-color-accent-secondary)]" />
-              <span 
-                className="text-[var(--bkl-color-text-primary)]"
-                style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
-              >
-                {(rating / 10).toFixed(1)}
-              </span>
-            </div>
-          )}
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-[var(--bkl-color-bg-primary)]/80 backdrop-blur-sm px-2 py-1 rounded-[var(--bkl-radius-sm)]">
+            <Star className="w-3 h-3 fill-[var(--bkl-color-accent-secondary)] text-[var(--bkl-color-accent-secondary)]" />
+            <span 
+              className="text-[var(--bkl-color-text-primary)]"
+              style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+            >
+              {rating ? (rating / 10).toFixed(1) : '0.0'}
+            </span>
+          </div>
         </div>
         
         <div className="p-3">

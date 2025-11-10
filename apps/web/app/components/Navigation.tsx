@@ -1,16 +1,26 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, Search, Clipboard, User as UserIcon } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Home, Search, Clipboard, User as UserIcon, Settings, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { useUser } from '@clerk/nextjs';
+import { useAuth, useUser, useClerk } from '@clerk/nextjs';
 import { useCurrentUser } from '@/app/context/CurrentUserContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 export function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isSignedIn } = useAuth();
   const { user: clerkUser } = useUser();
   const { currentUser: convexUser } = useCurrentUser();
+  const { signOut } = useClerk();
 
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(path.endsWith('/') ? path : `${path}/`);
@@ -22,6 +32,54 @@ export function Navigation() {
     { path: '/profile', icon: UserIcon, label: 'Profile' },
   ];
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  // Logged-out navigation state
+  if (!isSignedIn) {
+    return (
+      <nav className="border-b border-[var(--bkl-color-border)] bg-[var(--bkl-color-bg-primary)] px-4 py-4 md:px-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-[var(--bkl-color-accent-primary)] hover:text-[var(--bkl-color-accent-hover)] transition-colors"
+            style={{ fontSize: 'var(--bkl-font-size-xl)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+          >
+            Binnacle
+          </Link>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/sign-in"
+              className="px-4 py-2 rounded-lg border border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)] hover:border-[var(--bkl-color-accent-primary)] hover:text-[var(--bkl-color-accent-primary)] transition-all"
+              style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/sign-up"
+              className="px-4 py-2 rounded-lg bg-[var(--bkl-color-accent-primary)] text-white hover:bg-[var(--bkl-color-accent-hover)] transition-all"
+              style={{ 
+                fontSize: 'var(--bkl-font-size-sm)', 
+                fontWeight: 'var(--bkl-font-weight-medium)',
+                boxShadow: '0 0 20px rgba(102, 192, 244, 0.3)'
+              }}
+            >
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
+  // Logged-in navigation state (existing)
   return (
     <>
       <nav className="border-b border-[var(--bkl-color-border)] bg-[var(--bkl-color-bg-primary)] px-4 py-4 md:px-6">
@@ -71,20 +129,55 @@ export function Navigation() {
             </div>
           </div>
 
-          <Link href="/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Avatar className="h-8 w-8 border border-[var(--bkl-color-border)]">
-              <AvatarImage src={clerkUser?.imageUrl} alt={clerkUser?.fullName || 'User'} />
-              <AvatarFallback className="bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]">
-                {clerkUser?.firstName?.charAt(0).toUpperCase() ?? 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <span
-              className="hidden md:inline text-[var(--bkl-color-text-primary)]"
-              style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-3 hover:opacity-80 transition-opacity outline-none">
+                <Avatar className="h-8 w-8 border border-[var(--bkl-color-border)]">
+                  <AvatarImage src={clerkUser?.imageUrl} alt={clerkUser?.fullName || 'User'} />
+                  <AvatarFallback className="bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]">
+                    {clerkUser?.firstName?.charAt(0).toUpperCase() ?? 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <span
+                  className="hidden md:inline text-[var(--bkl-color-text-primary)]"
+                  style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
+                >
+                  {convexUser?.username || clerkUser?.username || 'User'}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="end" 
+              className="w-56 bg-[var(--bkl-color-bg-secondary)] border-[var(--bkl-color-border)]"
             >
-              {convexUser?.username || clerkUser?.username || 'User'}
-            </span>
-          </Link>
+              <DropdownMenuItem asChild>
+                <Link 
+                  href="/profile" 
+                  className="flex items-center gap-2 cursor-pointer text-[var(--bkl-color-text-primary)] hover:text-[var(--bkl-color-accent-primary)]"
+                >
+                  <UserIcon className="w-4 h-4" />
+                  <span>Profile</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link 
+                  href="/settings" 
+                  className="flex items-center gap-2 cursor-pointer text-[var(--bkl-color-text-primary)] hover:text-[var(--bkl-color-accent-primary)]"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-[var(--bkl-color-border)]" />
+              <DropdownMenuItem 
+                onClick={handleSignOut}
+                className="flex items-center gap-2 cursor-pointer text-[var(--bkl-color-text-secondary)] hover:text-red-500"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </nav>
 

@@ -15,60 +15,75 @@ export default function DiscoverPage() {
   const router = useRouter();
   const { currentUser } = useCurrentUser();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isEnriching, setIsEnriching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  // Fetch search results when user types (only if searchQuery is not empty)
-  const searchResults = useQuery(
-    api.games.searchCached,
-    searchQuery ? { query: searchQuery, limit: 20 } : "skip"
-  );
+  // Search action that handles both cache and IGDB fallback
+  const searchAction = useAction(api.igdb.searchOptimizedWithFallback);
 
-  // Background enrichment action (doesn't block UI)
-  const enrichCache = useAction(api.igdb.searchOptimizedWithFallback);
-
-  // Trigger background enrichment if results are insufficient
+  // Trigger search when query changes
   useEffect(() => {
-    const triggerEnrichment = async () => {
-      if (!searchQuery || !searchResults) return;
+    const performSearch = async () => {
+      if (!searchQuery) {
+        setSearchResults([]);
+        return;
+      }
       
-      const MIN_RESULTS_THRESHOLD = 3;
-      
-      // If we have very few results, trigger background IGDB fetch
-      if (searchResults.length < MIN_RESULTS_THRESHOLD && !isEnriching) {
-        setIsEnriching(true);
-        try {
-          await enrichCache({
-            query: searchQuery,
-            limit: 20,
-            minCachedResults: MIN_RESULTS_THRESHOLD,
-          });
-        } catch (error) {
-          console.error("Background enrichment failed:", error);
-        } finally {
-          setIsEnriching(false);
-        }
+      setIsSearching(true);
+      try {
+        const result = await searchAction({
+          query: searchQuery,
+          limit: 24,
+          minCachedResults: 10, // Trigger franchise check if we have fewer than 10 results
+        });
+        setSearchResults(result.results || []);
+      } catch (error) {
+        console.error("Search failed:", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
       }
     };
 
-    // Debounce enrichment to avoid spamming IGDB
-    const timeoutId = setTimeout(triggerEnrichment, 1000);
+    // Debounce search to avoid excessive API calls
+    const timeoutId = setTimeout(performSearch, 500);
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, searchResults, enrichCache, isEnriching]);
+  }, [searchQuery, searchAction]);
 
-  // Fetch curated data from Convex (always available)
-  const discoverPeople = useQuery(api.users.search, { query: "", limit: 15 });
-  const trendingGamesData = useQuery(api.games.getTrendingGames, { limit: 24 });
-  const topRatedData = useQuery(api.games.getTopRatedGames, { limit: 24 });
-  const newReleasesData = useQuery(api.games.getNewReleases, { limit: 24 });
+  // Fetch curated data from Convex (skip when searching)
+  const isActivelySearching = searchQuery.trim().length > 0;
+  
+  const discoverPeople = useQuery(
+    api.users.search, 
+    isActivelySearching ? "skip" : { query: "", limit: 15 }
+  );
+  const trendingGamesData = useQuery(
+    api.games.getTrendingGames, 
+    isActivelySearching ? "skip" : { limit: 24 }
+  );
+  const topRatedData = useQuery(
+    api.games.getTopRatedGames, 
+    isActivelySearching ? "skip" : { limit: 24 }
+  );
+  const newReleasesData = useQuery(
+    api.games.getNewReleases, 
+    isActivelySearching ? "skip" : { limit: 24 }
+  );
   
   const mockUsers = (discoverPeople || []).filter((user) => !currentUser || user._id !== currentUser._id);
-  const gameResults = searchResults || [];
-  const trendingGames = trendingGamesData || [];
-  const topRated = topRatedData || [];
-  const newReleases = newReleasesData || [];
+  const gameResults = searchResults;
+  
+  // Type-safe defaults for pagination results
+  // Note: Convex types will update after running 'npx convex dev'
+  type PaginatedGames = { games: any[]; hasMore: boolean; nextCursor: string | null };
+  const trendingGames = (trendingGamesData ?? { games: [], hasMore: false, nextCursor: null }) as PaginatedGames;
+  const topRated = (topRatedData ?? { games: [], hasMore: false, nextCursor: null }) as PaginatedGames;
+  const newReleases = (newReleasesData ?? { games: [], hasMore: false, nextCursor: null }) as PaginatedGames;
 
 const mapToGameCardGame = (game: {
-  _id: string | { toString(): string };
+  _id?: string | { toString(): string };
+  convexId?: string | { toString(): string };
+  igdbId?: number;
   title?: string | null;
   cover?: string | null;
   coverUrl?: string | null;
@@ -82,9 +97,12 @@ const mapToGameCardGame = (game: {
     ? (game.status as typeof validStatuses[number])
     : undefined;
   
+  // Use convexId if available, otherwise igdbId or _id
+  const gameId = game.convexId ? String(game.convexId) : game.igdbId ? String(game.igdbId) : String(game._id || "");
+  
   return {
-    id: String(game._id),
-    _id: String(game._id),
+    id: gameId,
+    _id: gameId,
     title: game.title ?? "Unknown Title",
     cover: game.cover ?? undefined,
     coverUrl: game.coverUrl ?? undefined,
@@ -140,10 +158,10 @@ const mapToGameCardGame = (game: {
                   >
                     Search Results for &quot;{searchQuery}&quot;
                   </h2>
-                  {isEnriching && (
+                  {isSearching && (
                     <div className="flex items-center gap-2 text-[var(--bkl-color-accent-primary)] animate-pulse">
                       <AlertCircle className="w-4 h-4" />
-                      <span style={{ fontSize: "var(--bkl-font-size-sm)" }}>Searching IGDB...</span>
+                      <span style={{ fontSize: "var(--bkl-font-size-sm)" }}>Searching...</span>
                     </div>
                   )}
                 </div>
@@ -153,19 +171,14 @@ const mapToGameCardGame = (game: {
                       <p className="text-[var(--bkl-color-text-secondary)]" style={{ fontSize: "var(--bkl-font-size-sm)" }}>
                         Found {gameResults.length} game{gameResults.length !== 1 ? 's' : ''}
                       </p>
-                      {gameResults.length < 3 && isEnriching && (
-                        <p className="text-[var(--bkl-color-accent-primary)]" style={{ fontSize: "var(--bkl-font-size-sm)" }}>
-                          Looking for more results...
-                        </p>
-                      )}
                     </div>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                       {gameResults.map((game) => (
                         <GameCard
-                          key={game._id}
+                          key={game.igdbId || game._id}
                           game={mapToGameCardGame(game)}
                           variant="compact"
-                          onClick={() => router.push(`/game/${game._id}`)}
+                          onClick={() => router.push(`/game/${game.convexId || game._id}`)}
                         />
                       ))}
                     </div>
@@ -176,11 +189,11 @@ const mapToGameCardGame = (game: {
                       className="text-[var(--bkl-color-text-secondary)]"
                       style={{ fontSize: "var(--bkl-font-size-lg)" }}
                     >
-                      {isEnriching 
+                      {isSearching 
                         ? "Searching for games..." 
                         : `No games found matching "${searchQuery}". Try a different search term.`}
                     </p>
-                    {isEnriching && (
+                    {isSearching && (
                       <p
                         className="text-[var(--bkl-color-text-disabled)] mt-2"
                         style={{ fontSize: "var(--bkl-font-size-sm)" }}
@@ -307,8 +320,8 @@ const mapToGameCardGame = (game: {
                     Array(24).fill(0).map((_, i) => (
                       <div key={i} className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse" />
                     ))
-                  ) : trendingGames.length > 0 ? (
-                    trendingGames.map((game) => (
+                  ) : trendingGames.games?.length > 0 ? (
+                    trendingGames.games.map((game: any) => (
                       <GameCard
                         key={game._id}
                         game={mapToGameCardGame(game)}
@@ -344,8 +357,8 @@ const mapToGameCardGame = (game: {
                     Array(24).fill(0).map((_, i) => (
                       <div key={i} className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse" />
                     ))
-                  ) : topRated.length > 0 ? (
-                    topRated.map((game) => (
+                  ) : topRated.games?.length > 0 ? (
+                    topRated.games.map((game: any) => (
                       <GameCard
                         key={game._id}
                         game={mapToGameCardGame(game)}
@@ -386,8 +399,8 @@ const mapToGameCardGame = (game: {
                     Array(24).fill(0).map((_, i) => (
                       <div key={i} className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse" />
                     ))
-                  ) : newReleases.length > 0 ? (
-                    newReleases.map((game) => (
+                  ) : newReleases.games?.length > 0 ? (
+                    newReleases.games.map((game: any) => (
                       <GameCard
                         key={game._id}
                         game={mapToGameCardGame(game)}

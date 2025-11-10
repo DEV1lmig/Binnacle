@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import ConvexClientProvider from "@/app/components/ConvexClientProvider"; // Adjust path if needed
 import { CurrentUserProvider } from "@/app/context/CurrentUserContext";
-import { Navigation } from "@/app/components/Navigation";
+import { ConditionalNavigation } from "@/app/components/ConditionalNavigation";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,7 +22,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ConvexClientProvider>
           <CurrentUserProvider>
-            <Navigation />
+            <ConditionalNavigation />
             {children}
           </CurrentUserProvider>
         </ConvexClientProvider>

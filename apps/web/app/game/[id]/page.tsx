@@ -9,7 +9,8 @@ import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
 import { DlcExpansionSection } from "@/app/components/game/DlcExpansionSection";
-import { Star, Calendar, Gamepad2, Heart, Bookmark, ChevronLeft } from "lucide-react";
+import { Calendar, Gamepad2, Heart, Bookmark, ChevronLeft } from "lucide-react";
+import { getHighResCoverUrl } from "@/lib/igdb-images";
 import {
   Select,
   SelectContent,
@@ -139,69 +140,16 @@ export default function GameDetailPage() {
   }, [backlogItem]);
 
   const cachedRelatedContent = useMemo<RelatedContentItem[]>(() => {
-    if (!game?.dlcsAndExpansions) {
-      return [];
-    }
-
-    try {
-      const parsed =
-        typeof game.dlcsAndExpansions === "string"
-          ? JSON.parse(game.dlcsAndExpansions)
-          : game.dlcsAndExpansions;
-
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-
-      const normalized: RelatedContentItem[] = [];
-      const seen = new Set<number>();
-
-      parsed.forEach((item) => {
-        if (!item) {
-          return;
-        }
-
-        const idValue = typeof item.id === "number" ? item.id : undefined;
-        const titleValue = typeof item.title === "string" ? item.title : undefined;
-
-        if (!idValue || !titleValue) {
-          return;
-        }
-
-        if (seen.has(idValue)) {
-          return;
-        }
-
-        seen.add(idValue);
-        normalized.push({
-          id: idValue,
-          title: titleValue,
-          releaseDate: typeof item.releaseDate === "number" ? item.releaseDate : undefined,
-          category: typeof item.category === "string" ? item.category : "related",
-        });
-      });
-
-      return normalized;
-    } catch (error) {
-      console.error("[GameDetailPage] Failed to parse cached related content", error);
-      return [];
-    }
-  }, [game?.dlcsAndExpansions]);
-
+    // dlcsAndExpansions field was removed from schema in Phase 2B optimization
+    // Return empty array to maintain compatibility
+    return [];
+  }, []);
+        
   const screenshots = useMemo(() => {
-    if (!game?.screenshots) {
-      return [];
-    }
-
-    try {
-      const parsed =
-        typeof game.screenshots === "string" ? JSON.parse(game.screenshots) : game.screenshots;
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.error("[GameDetailPage] Failed to parse screenshots", error);
-      return [];
-    }
-  }, [game?.screenshots]);
+    // screenshots field was removed from schema in Phase 2B optimization
+    // Return empty array to maintain compatibility
+    return [];
+  }, []);
 
   const developers = useMemo(() => parseCreditField(game?.developers), [game?.developers]);
   const publishers = useMemo(() => parseCreditField(game?.publishers), [game?.publishers]);
@@ -283,8 +231,8 @@ export default function GameDetailPage() {
 
   if (!game) {
     return (
-      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] flex items-center justify-center">
-        <p className="text-[var(--bkl-color-text-secondary)]">Loading game details...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading game details...</p>
       </div>
     );
   }
@@ -292,26 +240,29 @@ export default function GameDetailPage() {
   const hasRelatedContent = relatedContentEntries.length > 0;
 
   return (
-    <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] pb-20 md:pb-8">
+    <div className="min-h-screen bg-background pb-20 md:pb-8">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-accent-primary)] mb-6 transition-colors"
+          className="flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
-          <span style={{ fontSize: "var(--bkl-font-size-sm)" }}>Back</span>
+          <span className="text-sm">Back</span>
         </button>
 
         {/* Hero Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Cover */}
           <div className="lg:col-span-1">
-            <div className="aspect-[2/3] rounded-[var(--bkl-radius-lg)] overflow-hidden shadow-[var(--bkl-shadow-lg)] sticky top-4">
+            <div className="aspect-[2/3] rounded-lg overflow-hidden shadow-lg sticky top-4">
               <ImageWithFallback
-                src={game.coverUrl}
+                src={getHighResCoverUrl(game.coverUrl)}
                 alt={game.title}
                 className="w-full h-full object-cover"
+                width={1280}
+                height={720}
+                quality={95}
               />
             </div>
           </div>
@@ -319,27 +270,24 @@ export default function GameDetailPage() {
           {/* Game Info */}
           <div className="lg:col-span-2 space-y-6">
             <div>
-              <h1
-                className="text-[var(--bkl-color-text-primary)] mb-3"
-                style={{ fontSize: "var(--bkl-font-size-4xl)", fontWeight: "var(--bkl-font-weight-bold)" }}
-              >
+              <h1 className="text-foreground mb-3 text-4xl font-bold">
                 {game.title}
               </h1>
 
               {/* Metadata */}
               <div className="flex flex-wrap items-center gap-4 mb-4">
                 {game.releaseYear && (
-                  <div className="flex items-center gap-2 text-[var(--bkl-color-text-secondary)]">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    <span style={{ fontSize: "var(--bkl-font-size-sm)" }}>
+                    <span className="text-sm">
                       {game.releaseYear}
                     </span>
                   </div>
                 )}
                 {game.platforms && (
-                  <div className="flex items-center gap-2 text-[var(--bkl-color-text-secondary)]">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Gamepad2 className="w-4 h-4" />
-                    <span style={{ fontSize: "var(--bkl-font-size-sm)" }}>
+                    <span className="text-sm">
                       Multi-platform
                     </span>
                   </div>
@@ -348,24 +296,9 @@ export default function GameDetailPage() {
 
               {/* Rating Display */}
               {game.aggregatedRating && (
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`w-6 h-6 ${
-                          star <= Math.round((game.aggregatedRating || 0) / 20)
-                            ? "fill-[var(--bkl-color-accent-secondary)] text-[var(--bkl-color-accent-secondary)]"
-                            : "text-[var(--bkl-color-border)]"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span
-                    className="text-[var(--bkl-color-text-primary)]"
-                    style={{ fontSize: "var(--bkl-font-size-lg)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-                  >
-                    {game.aggregatedRating?.toFixed(1)} / 100
+                <div className="mb-6">
+                  <span className="text-foreground text-lg font-semibold">
+                    {"rating by multiple sources: " + game.aggregatedRating?.toFixed(1)} / 100
                   </span>
                 </div>
               )}
@@ -400,8 +333,8 @@ export default function GameDetailPage() {
                 }}
                 disabled={isUpdatingBacklog}
               >
-                <SelectTrigger className="w-[200px] bg-[var(--bkl-color-accent-primary)] border-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)] disabled:opacity-50">
-                  <SelectValue placeholder="Add to Backlog" />
+                <SelectTrigger className="w-[200px] bg-primary border-primary text-primary-foreground disabled:opacity-50">
+                  <SelectValue className="text-primary-foreground" placeholder="Add to Backlog" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="want_to_play">Want to Play</SelectItem>
@@ -415,10 +348,10 @@ export default function GameDetailPage() {
 
               <Button
                 variant="outline"
-                className={`border-[var(--bkl-color-border)] ${
+                className={`border-border ${
                   isWishlist
-                    ? "bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]"
-                    : "text-[var(--bkl-color-text-primary)]"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground"
                 }`}
                 onClick={() => setIsWishlist(!isWishlist)}
               >
@@ -428,10 +361,10 @@ export default function GameDetailPage() {
 
               <Button
                 variant="outline"
-                className={`border-[var(--bkl-color-border)] ${
+                className={`border-border ${
                   isFavorite
-                    ? "bg-[var(--bkl-color-feedback-error)] text-white"
-                    : "text-[var(--bkl-color-text-primary)]"
+                    ? "bg-destructive text-white"
+                    : "text-foreground"
                 }`}
                 onClick={() => setIsFavorite(!isFavorite)}
               >
@@ -440,21 +373,15 @@ export default function GameDetailPage() {
             </div>
 
             {/* Review CTA */}
-            <div className="bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-lg)] p-6">
-              <h2
-                className="text-[var(--bkl-color-text-primary)] mb-2"
-                style={{ fontSize: "var(--bkl-font-size-base)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-              >
+            <div className="bg-card border border-border rounded-lg p-6">
+              <h2 className="text-foreground mb-2 text-base font-semibold">
                 Ready to share your experience?
               </h2>
-              <p
-                className="text-[var(--bkl-color-text-secondary)] mb-4"
-                style={{ fontSize: "var(--bkl-font-size-sm)" }}
-              >
+              <p className="text-muted-foreground mb-4 text-sm">
                 Head over to the full review editor to capture your thoughts, rating, and playtime in one place.
               </p>
               <Button
-                className="bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-primary)]/90"
+                className="bg-primary hover:bg-primary/90"
                 onClick={() => router.push(`/review/new?gameId=${game._id}`)}
               >
                 Write a Review
@@ -467,38 +394,26 @@ export default function GameDetailPage() {
         <div className="space-y-8">
           {/* Summary */}
           {game.summary && (
-            <section className="bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-lg)] p-6">
-              <h2
-                className="text-[var(--bkl-color-text-primary)] mb-3"
-                style={{ fontSize: "var(--bkl-font-size-2xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-              >
+            <section className="bg-card border border-border rounded-lg p-6">
+              <h2 className="text-foreground mb-3 text-2xl font-semibold">
                 Summary
               </h2>
-              <p
-                className="text-[var(--bkl-color-text-secondary)]"
-                style={{ fontSize: "var(--bkl-font-size-base)" }}
-              >
+              <p className="text-muted-foreground text-base">
                 {game.summary}
               </p>
             </section>
           )}
 
           {/* About This Game */}
-          <section className="bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-lg)] p-6">
-            <h2
-              className="text-[var(--bkl-color-text-primary)] mb-4"
-              style={{ fontSize: "var(--bkl-font-size-2xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-            >
+          <section className="bg-card border border-border rounded-lg p-6">
+            <h2 className="text-foreground mb-4 text-2xl font-semibold">
               About This Game
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {game.genres && (
                 <div>
-                  <h3
-                    className="text-[var(--bkl-color-text-primary)] mb-2"
-                    style={{ fontSize: "var(--bkl-font-size-sm)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-                  >
+                  <h3 className="text-foreground mb-2 text-sm font-semibold">
                     GENRES
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -534,7 +449,7 @@ export default function GameDetailPage() {
                               : String(genre);
 
                         return (
-                          <Badge key={`genre-${index}-${genreName}`} className="bg-[var(--bkl-color-accent-primary)]">
+                          <Badge key={`genre-${index}-${genreName}`} className="bg-primary">
                             {genreName}
                           </Badge>
                         );
@@ -546,17 +461,14 @@ export default function GameDetailPage() {
 
               {developers.length > 0 && (
                 <div>
-                  <h3
-                    className="text-[var(--bkl-color-text-primary)] mb-2"
-                    style={{ fontSize: "var(--bkl-font-size-sm)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-                  >
+                  <h3 className="text-foreground mb-2 text-sm font-semibold">
                     DEVELOPERS
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {developers.map((developer, index) => (
                       <Badge
                         key={`developer-${developer.id ?? index}`}
-                        className="bg-[var(--bkl-color-bg-tertiary)] border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
+                        className="bg-secondary border-border text-foreground"
                       >
                         {developer.role
                           ? `${developer.name} · ${developer.role}`
@@ -569,17 +481,14 @@ export default function GameDetailPage() {
 
               {publishers.length > 0 && (
                 <div>
-                  <h3
-                    className="text-[var(--bkl-color-text-primary)] mb-2"
-                    style={{ fontSize: "var(--bkl-font-size-sm)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-                  >
+                  <h3 className="text-foreground mb-2 text-sm font-semibold">
                     PUBLISHERS
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {publishers.map((publisher, index) => (
                       <Badge
                         key={`publisher-${publisher.id ?? index}`}
-                        className="bg-[var(--bkl-color-bg-tertiary)] border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
+                        className="bg-secondary border-border text-foreground"
                       >
                         {publisher.role
                           ? `${publisher.name} · ${publisher.role}`
@@ -593,44 +502,44 @@ export default function GameDetailPage() {
           </section>
 
           {isRelatedLoading && !hasRelatedContent && (
-            <section className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-stone-900/40 p-6">
-              <h2 className="text-lg font-semibold text-[var(--bkl-color-text-primary)]">
+            <section className="flex flex-col gap-2 rounded-2xl border border-border/50 bg-secondary/40 p-6">
+              <h2 className="text-lg font-semibold text-foreground">
                 Checking for related content
               </h2>
-              <p className="text-sm text-[var(--bkl-color-text-secondary)]">
+              <p className="text-sm text-muted-foreground">
                 Pulling expansions, DLC, and enhanced releases from IGDB…
               </p>
             </section>
           )}
 
           {relatedError && !hasRelatedContent && (
-            <section className="rounded-2xl border border-[var(--bkl-color-feedback-error)]/40 bg-[var(--bkl-color-feedback-error)]/10 p-4">
-              <p className="text-sm text-[var(--bkl-color-feedback-error)]">
+            <section className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4">
+              <p className="text-sm text-destructive">
                 Could not fetch related content right now. {relatedError}
               </p>
             </section>
           )}
 
           <DlcExpansionSection
-            dlcsAndExpansions={game.dlcsAndExpansions ?? undefined}
+            dlcsAndExpansions={undefined}
             relatedContent={relatedContentEntries}
           />
 
           {/* Similar Games */}
           {screenshots && screenshots.length > 0 && (
-            <section className="bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-lg)] p-6">
-              <h2
-                className="text-[var(--bkl-color-text-primary)] mb-4"
-                style={{ fontSize: "var(--bkl-font-size-2xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-              >
+            <section className="bg-card border border-border rounded-lg p-6">
+              <h2 className="text-foreground mb-4 text-2xl font-semibold">
                 Screenshots
               </h2>
               <div className="space-y-4">
-                <div className="w-full rounded-lg overflow-hidden">
+                <div className="w-full rounded-lg overflow-hidden bg-black">
                   <ImageWithFallback
                     src={screenshots[selectedScreenshot]}
                     alt="Game screenshot"
-                    className="w-full h-auto object-cover max-h-96"
+                    className="w-full h-auto object-contain max-h-[720px]"
+                    width={1920}
+                    height={1080}
+                    quality={100}
                   />
                 </div>
                 {screenshots.length > 1 && (
@@ -641,8 +550,8 @@ export default function GameDetailPage() {
                         onClick={() => setSelectedScreenshot(index)}
                         className={`flex-shrink-0 w-24 h-16 rounded border-2 overflow-hidden transition-colors ${
                           selectedScreenshot === index
-                            ? "border-[var(--bkl-color-accent-primary)]"
-                            : "border-[var(--bkl-color-border)]"
+                            ? "border-primary"
+                            : "border-border"
                         }`}
                       >
                         <ImageWithFallback

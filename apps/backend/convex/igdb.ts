@@ -5,9 +5,15 @@ import { action, ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { internal, api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
+import { measureQuerySize } from "./lib/bandwidthMonitor";
 
 const minimumTokenTtlMs = 60_000;
 const defaultLimit = 10;
+
+// IGDB enforces a hard cap of 500 records per request. Use pagination to go beyond that.
+const IGDB_MAX_PAGE_SIZE = 500;
+const DEFAULT_SEED_LIMIT = 5000;
+const MAX_SEED_LIMIT = 5000;
 
 /**
  * Searches IGDB for games and caches the results in the Convex database.
@@ -316,8 +322,144 @@ export const searchOptimizedWithFallback = action({
 
     console.log(`[searchOptimizedWithFallback] Cache: ${cachedResults.results.length} results, source=${cachedResults.source}`);
 
-    // STEP 2: Check if we need IGDB fallback
-    if (cachedResults.results.length < minCachedResults && cachedResults.source !== "live") {
+    // STEP 2: Determine if we need IGDB fallback using intelligent franchise-aware logic
+    let shouldFetchFromIgdb = false;
+    
+    console.log(`[searchOptimizedWithFallback] Checking thresholds: ${cachedResults.results.length} < ${minCachedResults}? ${cachedResults.results.length < minCachedResults}`);
+    
+    if (cachedResults.results.length === 0) {
+      // No cached results at all - definitely fetch from IGDB
+      shouldFetchFromIgdb = true;
+      console.log(`[searchOptimizedWithFallback] No cached results - will fetch from IGDB`);
+    } else if (cachedResults.results.length < minCachedResults) {
+      console.log(`[searchOptimizedWithFallback] Below threshold (${cachedResults.results.length} < ${minCachedResults}), checking franchise...`);
+      // Few results - analyze franchise completeness using actual franchise data from cached games
+      try {
+        // Try to extract franchise name from ANY cached game (no extra DB queries needed!)
+        let franchiseName: string | null = null;
+        
+        for (const result of cachedResults.results) {
+          // Check franchises field directly from search results (no DB query!)
+          if (result.franchises) {
+            try {
+              const franchisesArray = JSON.parse(result.franchises);
+              if (Array.isArray(franchisesArray) && franchisesArray.length > 0) {
+                // Get the first franchise from the array
+                const firstFranchise = franchisesArray[0];
+                franchiseName = typeof firstFranchise === 'string' 
+                  ? firstFranchise 
+                  : firstFranchise?.name;
+                
+                if (franchiseName) {
+                  console.log(`[searchOptimizedWithFallback] Found franchise from search results: "${franchiseName}"`);
+                  break; // Found franchise, stop searching
+                }
+              }
+            } catch (e) {
+              console.warn(`[searchOptimizedWithFallback] Failed to parse franchises field`);
+            }
+          }
+        }
+        
+        if (franchiseName) {
+          console.log(`[searchOptimizedWithFallback] Analyzing franchise: "${franchiseName}"`);
+          
+          // Count how many games we have for this franchise in our database
+          const franchiseGamesInDb = await ctx.runQuery(api.games.countGamesByFranchise, {
+            franchiseName,
+          });
+          
+          console.log(`[searchOptimizedWithFallback] Franchise "${franchiseName}": ${franchiseGamesInDb} games in DB, ${cachedResults.results.length} in search results`);
+          
+          // Check if we have metadata cached for this franchise
+            const franchiseMetadata = await ctx.runQuery(internal.franchiseMetadata.getFranchiseMetadata, {
+              franchiseName,
+            });
+
+            // Use cached metadata only if it's valid (not stale AND has valid data)
+            if (franchiseMetadata && !franchiseMetadata.isStale && franchiseMetadata.totalGamesOnIgdb > 0) {
+              // We have recent metadata - use it to make decision
+              const cachePercentage = (franchiseGamesInDb / franchiseMetadata.totalGamesOnIgdb) * 100;
+              
+              console.log(`[searchOptimizedWithFallback] Franchise metadata (cached): ${franchiseGamesInDb} cached / ${franchiseMetadata.totalGamesOnIgdb} total (${cachePercentage.toFixed(1)}%)`);
+              
+              // Fetch from IGDB if:
+              // - We have less than 80% of the franchise cached
+              // - OR if the franchise has more than 5 games and we have less than 5 cached
+              if (
+                cachePercentage < 80 || 
+                (franchiseMetadata.totalGamesOnIgdb > 5 && franchiseGamesInDb < 5)
+              ) {
+                shouldFetchFromIgdb = true;
+                console.log(`[searchOptimizedWithFallback] Franchise incomplete - will fetch from IGDB`);
+              } else {
+                console.log(`[searchOptimizedWithFallback] Franchise mostly cached (${cachePercentage.toFixed(1)}%) - using cache only`);
+              }
+            } else {
+              // No metadata, stale, or invalid (totalGamesOnIgdb = 0) - fetch count from IGDB
+              console.log(`[searchOptimizedWithFallback] Metadata ${!franchiseMetadata ? 'missing' : franchiseMetadata.isStale ? 'stale' : 'invalid (0 games)'} - querying IGDB...`);
+              const { accessToken } = await getValidIgdbToken(ctx);
+              const sanitizedFranchise = franchiseName.replace(/"/g, "\\\"");
+              
+              // Query IGDB for total games in this franchise
+              // Since franchises is an array field, we need to use the search approach
+              // Search for games and filter by franchise name
+              const countResponse = await fetch("https://api.igdb.com/v4/games/count", {
+                method: "POST",
+                headers: {
+                  "Client-ID": getClientId(),
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "text/plain",
+                },
+                // Use search with franchise filter instead of direct where clause
+                body: `search "${sanitizedFranchise}"; where category = 0;`,
+              });
+              
+              if (countResponse.ok) {
+                const totalCount = await countResponse.json();
+                
+                // If search returned 0, it means the franchise name might not match or there's an issue
+                // In this case, just fetch from IGDB to be safe
+                if (totalCount.count === 0) {
+                  console.log(`[searchOptimizedWithFallback] IGDB count returned 0 - will fetch from IGDB to find more games`);
+                  shouldFetchFromIgdb = true;
+                } else {
+                  const cachePercentage = (franchiseGamesInDb / (totalCount.count || 1)) * 100;
+                  
+                  console.log(`[searchOptimizedWithFallback] Franchise analysis (IGDB): ${franchiseGamesInDb} cached / ${totalCount.count} total (${cachePercentage.toFixed(1)}%)`);
+                  
+                  // Store metadata for next time
+                  await ctx.runMutation(internal.franchiseMetadata.updateFranchiseMetadata, {
+                    franchiseName,
+                    totalGamesOnIgdb: totalCount.count || 0,
+                    cachedGamesCount: franchiseGamesInDb,
+                  });
+                  
+                  // Fetch from IGDB if we have less than 80% of the franchise cached
+                  // OR if the franchise has more than 5 games and we have less than 5 cached
+                  if (cachePercentage < 80 || (totalCount.count > 5 && franchiseGamesInDb < 5)) {
+                    shouldFetchFromIgdb = true;
+                    console.log(`[searchOptimizedWithFallback] Franchise incomplete - will fetch from IGDB`);
+                  } else {
+                    console.log(`[searchOptimizedWithFallback] Franchise mostly cached (${cachePercentage.toFixed(1)}%) - using cache only`);
+                  }
+                }
+              }
+            }
+        } else {
+          // No franchise data - fall back to simple threshold
+          console.log(`[searchOptimizedWithFallback] No franchise data found, using simple threshold`);
+          shouldFetchFromIgdb = cachedResults.results.length < minCachedResults;
+        }
+      } catch (error) {
+        console.error(`[searchOptimizedWithFallback] Franchise analysis failed:`, error);
+        // Fallback to simple threshold if metadata check fails
+        shouldFetchFromIgdb = cachedResults.results.length < minCachedResults;
+      }
+    }
+
+    // STEP 3: Fetch from IGDB if needed
+    if (shouldFetchFromIgdb && cachedResults.source !== "live") {
       console.log(`[searchOptimizedWithFallback] Insufficient cache, fetching from IGDB...`);
 
       // Check for in-flight searches to prevent duplicate API calls (race condition fix)
@@ -358,6 +500,7 @@ export const searchOptimizedWithFallback = action({
               title: game.title,
               coverUrl: game.coverUrl,
               releaseYear: game.releaseYear,
+              aggregatedRating: game.aggregatedRating,
               aggregatedRatingCount: game.aggregatedRatingCount,
               category: game.category,
               gameType: game.gameType,
@@ -896,17 +1039,18 @@ function normalizeGames(rawGames: IgdbGame[]): NormalizedGame[] {
       .map((ic) => ({ id: ic.company.id, name: ic.company.name, role: "Publisher" }));
 
     // Build image URLs for artworks and screenshots
+    // Use t_1080p for maximum quality (1920x1080)
     const artworks = game.artworks?.map((art) => {
       const filename = art.url.split("/").pop() || "";
       // Don't add .jpg if filename already has an extension
       const urlWithExtension = filename.includes(".") ? filename : `${filename}.jpg`;
-      return `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${urlWithExtension}`;
+      return `https://images.igdb.com/igdb/image/upload/t_1080p/${urlWithExtension}`;
     });
     const screenshots = game.screenshots?.map((screenshot) => {
       const filename = screenshot.url.split("/").pop() || "";
       // Don't add .jpg if filename already has an extension
       const urlWithExtension = filename.includes(".") ? filename : `${filename}.jpg`;
-      return `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${urlWithExtension}`;
+      return `https://images.igdb.com/igdb/image/upload/t_1080p/${urlWithExtension}`;
     });
 
     // Build game status string
@@ -1307,73 +1451,77 @@ async function fetchPopularityPrimitives(
 ): Promise<Record<number, { wantToPlay: number; playing: number; steam24hr: number; steamTotal: number }>> {
   if (gameIds.length === 0) return {};
 
-  const popQuery = `fields game_id,popularity_type.name,external_popularity_source.name,value;
-where game_id = (${gameIds.join(",")});
-limit 500;`;
+  interface PopularityPrimitive {
+    game_id: number;
+    popularity_type?: { name?: string };
+    external_popularity_source?: { name?: string };
+    value?: number;
+  }
 
-  try {
-    const response: Response = await fetch("https://api.igdb.com/v4/popularity_primitives", {
-      method: "POST",
-      headers: {
-        "Client-ID": clientId,
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "text/plain",
-      },
-      body: popQuery,
-    });
+  const result: Record<number, { wantToPlay: number; playing: number; steam24hr: number; steamTotal: number }> = {};
 
-    if (!response.ok) {
-      console.warn(`[fetchPopularityPrimitives] API error: ${response.status}`);
-      return {};
-    }
+  // Initialize all game IDs with zero values so missing primitives default to 0
+  for (const gameId of gameIds) {
+    result[gameId] = { wantToPlay: 0, playing: 0, steam24hr: 0, steamTotal: 0 };
+  }
 
-    interface PopularityPrimitive {
-      game_id: number;
-      popularity_type?: { name?: string };
-      external_popularity_source?: { name?: string };
-      value?: number;
-    }
+  const chunkSize = Math.min(IGDB_MAX_PAGE_SIZE, 400);
+  for (let i = 0; i < gameIds.length; i += chunkSize) {
+    const chunk = gameIds.slice(i, i + chunkSize);
+    const popQuery = `fields game_id,popularity_type.name,external_popularity_source.name,value;
+where game_id = (${chunk.join(",")});
+limit ${Math.min(chunk.length, IGDB_MAX_PAGE_SIZE)};`;
 
-    const primitives = (await response.json()) as PopularityPrimitive[];
-    const result: Record<number, { wantToPlay: number; playing: number; steam24hr: number; steamTotal: number }> = {};
+    try {
+      const response: Response = await fetch("https://api.igdb.com/v4/popularity_primitives", {
+        method: "POST",
+        headers: {
+          "Client-ID": clientId,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "text/plain",
+        },
+        body: popQuery,
+      });
 
-    // Initialize all game IDs with zero values
-    for (const gameId of gameIds) {
-      result[gameId] = { wantToPlay: 0, playing: 0, steam24hr: 0, steamTotal: 0 };
-    }
-
-    // Map primitives to categories
-    for (const prim of primitives) {
-      if (!prim.game_id) continue;
-      if (!result[prim.game_id]) {
-        result[prim.game_id] = { wantToPlay: 0, playing: 0, steam24hr: 0, steamTotal: 0 };
+      if (!response.ok) {
+        console.warn(`[fetchPopularityPrimitives] API error: ${response.status}`);
+        continue;
       }
 
-      const typeName = prim.popularity_type?.name || "";
-      const sourceName = prim.external_popularity_source?.name || "";
-      const value = prim.value ?? 0;
+      const primitives = (await response.json()) as PopularityPrimitive[];
 
-      // Map IGDB types: 2=Want to Play, 3=Playing
-      if (typeName.toLowerCase().includes("want") || typeName === "2") {
-        result[prim.game_id].wantToPlay = value;
-      } else if (typeName.toLowerCase().includes("playing") || typeName === "3") {
-        result[prim.game_id].playing = value;
-      }
-      // Map Steam types: 5=24hr Peak, 8=Total Reviews
-      else if (sourceName.toLowerCase().includes("steam")) {
-        if (typeName.includes("24") || typeName.toLowerCase().includes("peak")) {
-          result[prim.game_id].steam24hr = value;
-        } else if (typeName.includes("total") || typeName.includes("reviews")) {
-          result[prim.game_id].steamTotal = value;
+      // Map primitives to categories
+      for (const prim of primitives) {
+        if (!prim.game_id) continue;
+        if (!result[prim.game_id]) {
+          result[prim.game_id] = { wantToPlay: 0, playing: 0, steam24hr: 0, steamTotal: 0 };
+        }
+
+        const typeName = prim.popularity_type?.name || "";
+        const sourceName = prim.external_popularity_source?.name || "";
+        const value = prim.value ?? 0;
+
+        // Map IGDB types: 2=Want to Play, 3=Playing
+        if (typeName.toLowerCase().includes("want") || typeName === "2") {
+          result[prim.game_id].wantToPlay = value;
+        } else if (typeName.toLowerCase().includes("playing") || typeName === "3") {
+          result[prim.game_id].playing = value;
+        }
+        // Map Steam types: 5=24hr Peak, 8=Total Reviews
+        else if (sourceName.toLowerCase().includes("steam")) {
+          if (typeName.includes("24") || typeName.toLowerCase().includes("peak")) {
+            result[prim.game_id].steam24hr = value;
+          } else if (typeName.includes("total") || typeName.includes("reviews")) {
+            result[prim.game_id].steamTotal = value;
+          }
         }
       }
+    } catch (error) {
+      console.error("[fetchPopularityPrimitives] Error:", error);
     }
-
-    return result;
-  } catch (error) {
-    console.error("[fetchPopularityPrimitives] Error:", error);
-    return {};
   }
+
+  return result;
 }
 
 /**
@@ -1395,6 +1543,57 @@ function calculatePopScore(primitives: { wantToPlay: number; playing: number; st
   return Math.min(100, Math.max(0, logScore));
 }
 
+async function fetchGamesWithPagination(options: {
+  limit: number;
+  accessToken: string;
+  clientId: string;
+  category: string;
+  buildQuery: (batchSize: number, offset: number) => string;
+}): Promise<IgdbGame[]> {
+  const { limit, accessToken, clientId, category, buildQuery } = options;
+  const results: IgdbGame[] = [];
+  let offset = 0;
+
+  while (results.length < limit) {
+    const remaining = limit - results.length;
+    const batchSize = Math.min(remaining, IGDB_MAX_PAGE_SIZE);
+    const query = buildQuery(batchSize, offset);
+
+    const response: Response = await fetch("https://api.igdb.com/v4/games", {
+      method: "POST",
+      headers: {
+        "Client-ID": clientId,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "text/plain",
+      },
+      body: query,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`[${category}] IGDB API error: ${response.status} - ${errorBody}`);
+    }
+
+    const batch = (await response.json()) as IgdbGame[];
+    if (batch.length === 0) {
+      break;
+    }
+
+    results.push(...batch);
+    if (batch.length < batchSize) {
+      break;
+    }
+
+    offset += batchSize;
+  }
+
+  if (results.length > limit) {
+    return results.slice(0, limit);
+  }
+
+  return results;
+}
+
 /**
  * Seed trending games using weighted PopScore popularity primitives.
  * Weights: Steam 24hr Peak (0.4) + Playing (0.35) + Want to Play (0.2) + Steam Total Reviews (0.05)
@@ -1406,10 +1605,11 @@ export const seedTrendingGames = action({
     dryRun: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<{ success: boolean; gamesCached?: number; gamesProcessed?: number; dryRun?: boolean; error?: string; timestamp: number }> => {
-    const limit = Math.min(args.limit ?? 100, 500);
+    const requestedLimit = args.limit ?? DEFAULT_SEED_LIMIT;
+    const limit = Math.min(Math.max(1, requestedLimit), MAX_SEED_LIMIT);
     const dryRun = args.dryRun ?? false;
 
-    console.log(`[seedTrendingGames] Starting${dryRun ? " (DRY RUN)" : ""}. Limit: ${limit}`);
+    console.log(`[seedTrendingGames] Starting${dryRun ? " (DRY RUN)" : ""}. Limit: ${limit}${requestedLimit !== limit ? ` (requested ${requestedLimit})` : ""}`);
 
     const { accessToken }: { accessToken: string } = await getValidIgdbToken(ctx);
     const clientId = getClientId();
@@ -1421,7 +1621,7 @@ export const seedTrendingGames = action({
       const year2025End = now; // Until now
       
       // Fetch 2025 games sorted by engagement (most popular first)
-      const trendingQuery = `fields id,name,first_release_date,cover.image_id,category,game_type,version_parent,parent_game,
+      const buildTrendingQuery = (batchSize: number, offset: number) => `fields id,name,first_release_date,cover.image_id,category,game_type,version_parent,parent_game,
   summary,storyline,genres.name,platforms.name,themes.name,
   player_perspectives.name,game_modes.name,artworks.url,screenshots.url,
   videos.video_id,websites.category,websites.url,
@@ -1433,25 +1633,16 @@ export const seedTrendingGames = action({
   multiplayer_modes.*,similar_games.name;
 where first_release_date >= ${year2025Start} & first_release_date <= ${year2025End} & (aggregated_rating_count >= 10 | rating_count >= 10);
 sort aggregated_rating_count desc;
-limit ${limit};`;
+offset ${offset};
+limit ${batchSize};`;
 
-      const response: Response = await fetch("https://api.igdb.com/v4/games", {
-        method: "POST",
-        headers: {
-          "Client-ID": clientId,
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "text/plain",
-        },
-        body: trendingQuery,
+      const games = await fetchGamesWithPagination({
+        limit,
+        accessToken,
+        clientId,
+        category: "seedTrendingGames",
+        buildQuery: buildTrendingQuery,
       });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error(`[seedTrendingGames] Failed: ${response.status} - ${errorBody}`);
-        return { success: false, error: `IGDB API error: ${response.status}`, timestamp: Date.now() };
-      }
-
-      const games = (await response.json()) as IgdbGame[];
       console.log(`[seedTrendingGames] Fetched ${games.length} games from IGDB`);
 
       if (games.length === 0) {
@@ -1520,10 +1711,12 @@ limit ${limit};`;
           gamesCached++;
         }
 
-        return { success: true, gamesCached, gamesProcessed: normalized.length, timestamp: Date.now() };
+        const result = { success: true, gamesCached, gamesProcessed: normalized.length, timestamp: Date.now() };
+        return measureQuerySize(result, "seedTrendingGames");
       }
 
-      return { success: true, gamesCached: games.length, dryRun: true, timestamp: Date.now() };
+      const result = { success: true, gamesCached: games.length, dryRun: true, timestamp: Date.now() };
+      return measureQuerySize(result, "seedTrendingGames (dry run)");
     } catch (error) {
       console.error("[seedTrendingGames] Error:", error);
       return { success: false, error: String(error), timestamp: Date.now() };
@@ -1540,10 +1733,11 @@ export const seedNewReleases = action({
     dryRun: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<{ success: boolean; gamesCached?: number; gamesProcessed?: number; dryRun?: boolean; error?: string; timestamp: number }> => {
-    const limit = Math.min(args.limit ?? 100, 500);
+    const requestedLimit = args.limit ?? DEFAULT_SEED_LIMIT;
+    const limit = Math.min(Math.max(1, requestedLimit), MAX_SEED_LIMIT);
     const dryRun = args.dryRun ?? false;
 
-    console.log(`[seedNewReleases] Starting${dryRun ? " (DRY RUN)" : ""}. Limit: ${limit}`);
+    console.log(`[seedNewReleases] Starting${dryRun ? " (DRY RUN)" : ""}. Limit: ${limit}${requestedLimit !== limit ? ` (requested ${requestedLimit})` : ""}`);
 
     const { accessToken }: { accessToken: string } = await getValidIgdbToken(ctx);
     const clientId = getClientId();
@@ -1553,7 +1747,7 @@ export const seedNewReleases = action({
     const oneYearAgoTimestamp = Math.floor(oneYearAgo.getTime() / 1000);
 
     try {
-      const newReleasesQuery = `fields id,name,first_release_date,cover.image_id,category,game_type,version_parent,parent_game,
+      const buildNewReleasesQuery = (batchSize: number, offset: number) => `fields id,name,first_release_date,cover.image_id,category,game_type,version_parent,parent_game,
   summary,storyline,genres.name,platforms.name,themes.name,
   player_perspectives.name,game_modes.name,artworks.url,screenshots.url,
   videos.video_id,websites.category,websites.url,
@@ -1565,25 +1759,16 @@ export const seedNewReleases = action({
   multiplayer_modes.*,similar_games.name;
 where first_release_date >= ${oneYearAgoTimestamp} & first_release_date <= ${now};
 sort first_release_date desc;
-limit ${limit};`;
+offset ${offset};
+limit ${batchSize};`;
 
-      const response: Response = await fetch("https://api.igdb.com/v4/games", {
-        method: "POST",
-        headers: {
-          "Client-ID": clientId,
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "text/plain",
-        },
-        body: newReleasesQuery,
+      const games = await fetchGamesWithPagination({
+        limit,
+        accessToken,
+        clientId,
+        category: "seedNewReleases",
+        buildQuery: buildNewReleasesQuery,
       });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error(`[seedNewReleases] Failed: ${response.status} - ${errorBody}`);
-        return { success: false, error: `IGDB API error: ${response.status}`, timestamp: Date.now() };
-      }
-
-      const games = (await response.json()) as IgdbGame[];
       console.log(`[seedNewReleases] Fetched ${games.length} games from IGDB`);
 
       if (games.length === 0) {
@@ -1636,10 +1821,12 @@ limit ${limit};`;
           gamesCached++;
         }
 
-        return { success: true, gamesCached, gamesProcessed: normalized.length, timestamp: Date.now() };
+        const result = { success: true, gamesCached, gamesProcessed: normalized.length, timestamp: Date.now() };
+        return measureQuerySize(result, "seedNewReleases");
       }
 
-      return { success: true, gamesCached: games.length, dryRun: true, timestamp: Date.now() };
+      const result = { success: true, gamesCached: games.length, dryRun: true, timestamp: Date.now() };
+      return measureQuerySize(result, "seedNewReleases (dry run)");
     } catch (error) {
       console.error("[seedNewReleases] Error:", error);
       return { success: false, error: String(error), timestamp: Date.now() };
@@ -1656,17 +1843,18 @@ export const seedTopRatedGames = action({
     dryRun: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<{ success: boolean; gamesCached?: number; gamesProcessed?: number; dryRun?: boolean; error?: string; timestamp: number }> => {
-    const limit = Math.min(args.limit ?? 100, 500);
+    const requestedLimit = args.limit ?? DEFAULT_SEED_LIMIT;
+    const limit = Math.min(Math.max(1, requestedLimit), MAX_SEED_LIMIT);
     const dryRun = args.dryRun ?? false;
 
-    console.log(`[seedTopRatedGames] Starting${dryRun ? " (DRY RUN)" : ""}. Limit: ${limit}`);
+    console.log(`[seedTopRatedGames] Starting${dryRun ? " (DRY RUN)" : ""}. Limit: ${limit}${requestedLimit !== limit ? ` (requested ${requestedLimit})` : ""}`);
 
     const { accessToken }: { accessToken: string } = await getValidIgdbToken(ctx);
     const clientId = getClientId();
     const now = Math.floor(Date.now() / 1000);
 
     try {
-      const topRatedQuery = `fields id,name,first_release_date,cover.image_id,category,game_type,version_parent,parent_game,
+      const buildTopRatedQuery = (batchSize: number, offset: number) => `fields id,name,first_release_date,cover.image_id,category,game_type,version_parent,parent_game,
   summary,storyline,genres.name,platforms.name,themes.name,
   player_perspectives.name,game_modes.name,artworks.url,screenshots.url,
   videos.video_id,websites.category,websites.url,
@@ -1678,25 +1866,16 @@ export const seedTopRatedGames = action({
   multiplayer_modes.*,similar_games.name;
 where aggregated_rating >= 75 & aggregated_rating_count >= 5 & first_release_date > 0 & first_release_date <= ${now};
 sort aggregated_rating desc;
-limit ${limit};`;
+offset ${offset};
+limit ${batchSize};`;
 
-      const response: Response = await fetch("https://api.igdb.com/v4/games", {
-        method: "POST",
-        headers: {
-          "Client-ID": clientId,
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "text/plain",
-        },
-        body: topRatedQuery,
+      const games = await fetchGamesWithPagination({
+        limit,
+        accessToken,
+        clientId,
+        category: "seedTopRatedGames",
+        buildQuery: buildTopRatedQuery,
       });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error(`[seedTopRatedGames] Failed: ${response.status} - ${errorBody}`);
-        return { success: false, error: `IGDB API error: ${response.status}`, timestamp: Date.now() };
-      }
-
-      const games = (await response.json()) as IgdbGame[];
       console.log(`[seedTopRatedGames] Fetched ${games.length} games from IGDB`);
 
       if (games.length === 0) {
@@ -1749,13 +1928,435 @@ limit ${limit};`;
           gamesCached++;
         }
 
-        return { success: true, gamesCached, gamesProcessed: normalized.length, timestamp: Date.now() };
+        const result = { success: true, gamesCached, gamesProcessed: normalized.length, timestamp: Date.now() };
+        return measureQuerySize(result, "seedTopRatedGames");
       }
 
-      return { success: true, gamesCached: games.length, dryRun: true, timestamp: Date.now() };
+      const result = { success: true, gamesCached: games.length, dryRun: true, timestamp: Date.now() };
+      return measureQuerySize(result, "seedTopRatedGames (dry run)");
     } catch (error) {
       console.error("[seedTopRatedGames] Error:", error);
       return { success: false, error: String(error), timestamp: Date.now() };
+    }
+  },
+});
+
+/**
+ * Seed previously unseeded games. Category argument is preserved for backwards compatibility
+ * but the implementation now ignores category-specific filters.
+ */
+export const seedGamesByCategory = action({
+  args: {
+    category: v.union(
+      v.literal("trending"),
+      v.literal("newReleases"),
+      v.literal("topRated")
+    ),
+    limit: v.optional(v.number()),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<{
+    category: "trending" | "newReleases" | "topRated";
+    requestedLimit: number | null;
+    appliedLimit: number;
+    success: boolean;
+    gamesCached?: number;
+    gamesProcessed?: number;
+    dryRun?: boolean;
+    error?: string;
+    timestamp: number;
+    title?: string;
+    message?: string;
+  }> => {
+    if (process.env.ENVIRONMENT === "production" || !process.env.ALLOW_SEEDING) {
+      console.error("❌ [seedGamesByCategory] BLOCKED: Seeding is disabled in production or without ALLOW_SEEDING flag");
+      throw new Error("Seeding is disabled in production. Enable ALLOW_SEEDING in development.");
+    }
+
+    const requestedLimit = args.limit ?? DEFAULT_SEED_LIMIT;
+    const appliedLimit = Math.min(Math.max(1, requestedLimit), MAX_SEED_LIMIT);
+    const dryRun = args.dryRun ?? false;
+
+    console.log(
+      `[seedGamesByCategory] Starting${dryRun ? " (DRY RUN)" : ""} for ${args.category} | limit=${appliedLimit}${requestedLimit !== appliedLimit ? ` (requested ${requestedLimit})` : ""} | ignoring category filters`
+    );
+
+    try {
+      const seenIgdbIds = new Set<number>();
+      let existingChecks = 0;
+
+      const { accessToken }: { accessToken: string } = await getValidIgdbToken(ctx);
+      const clientId = getClientId();
+
+      const collected: IgdbGame[] = [];
+      const maxIterations = 40; // Prevent runaway pagination (40 * 500 = 20,000 records)
+      let iteration = 0;
+      let offset = 0;
+
+      const buildUnfilteredQuery = (batchSize: number, currentOffset: number) => `fields id,name,first_release_date,cover.image_id,category,game_type,version_parent,parent_game,
+  summary,storyline,genres.name,platforms.name,themes.name,
+  player_perspectives.name,game_modes.name,artworks.url,screenshots.url,
+  videos.video_id,websites.category,websites.url,
+  involved_companies.company.name,involved_companies.developer,involved_companies.publisher,
+  aggregated_rating,aggregated_rating_count,rating,rating_count,total_rating,total_rating_count,hypes,
+  franchise.name,franchises.name,
+  age_ratings.rating,age_ratings.organization.*,
+  game_status.*,language_supports.language.name,
+  multiplayer_modes.*,similar_games.name;
+sort total_rating_count desc;
+offset ${currentOffset};
+limit ${batchSize};`;
+
+      while (collected.length < appliedLimit && iteration < maxIterations) {
+        iteration++;
+  const remainingNeeded = appliedLimit - collected.length;
+  const batchSize = Math.min(IGDB_MAX_PAGE_SIZE, Math.max(100, remainingNeeded * 3));
+        const query = buildUnfilteredQuery(batchSize, offset);
+
+        const response: Response = await fetch("https://api.igdb.com/v4/games", {
+          method: "POST",
+          headers: {
+            "Client-ID": clientId,
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "text/plain",
+          },
+          body: query,
+        });
+
+        if (!response.ok) {
+          const errorBody = await safeReadError(response);
+          throw new Error(`[seedGamesByCategory] IGDB API error: ${response.status} - ${errorBody}`);
+        }
+
+        const batch = (await response.json()) as IgdbGame[];
+        if (batch.length === 0) {
+          break;
+        }
+
+        for (const game of batch) {
+          if (seenIgdbIds.has(game.id)) {
+            continue;
+          }
+
+          seenIgdbIds.add(game.id);
+          const alreadyCached = await ctx.runQuery(internal.games.getGameIdByIgdbId, {
+            igdbId: game.id,
+          });
+          existingChecks++;
+
+          if (alreadyCached) {
+            continue;
+          }
+
+          collected.push(game);
+
+          if (collected.length >= appliedLimit) {
+            break;
+          }
+        }
+
+        if (batch.length < batchSize) {
+          break;
+        }
+
+        offset += batchSize;
+      }
+
+      console.log(
+        `[seedGamesByCategory] Prepared ${collected.length} new games (requested ${appliedLimit}) | checked ${existingChecks} existing entries`
+      );
+
+      if (collected.length === 0) {
+        const result = {
+          category: args.category,
+          requestedLimit: args.limit ?? null,
+          appliedLimit,
+          success: true,
+          gamesCached: 0,
+          gamesProcessed: 0,
+          dryRun,
+          timestamp: Date.now(),
+          message: "No unseeded games were found in the requested range.",
+        };
+
+        return measureQuerySize(result, "seedGamesByCategory");
+      }
+
+      const normalized = normalizeGames(collected);
+      let gamesCached = 0;
+
+      if (!dryRun) {
+        for (const game of normalized) {
+          await ctx.runMutation(internal.games.upsertFromIgdb, {
+            igdbId: game.igdbId,
+            title: game.title,
+            coverUrl: game.coverUrl,
+            releaseYear: game.releaseYear,
+            firstReleaseDate: game.firstReleaseDate,
+            summary: game.summary,
+            storyline: game.storyline,
+            genres: game.genres,
+            platforms: game.platforms,
+            themes: game.themes,
+            playerPerspectives: game.playerPerspectives,
+            gameModes: game.gameModes,
+            artworks: game.artworks,
+            screenshots: game.screenshots,
+            videos: game.videos,
+            websites: game.websites,
+            developers: game.developers,
+            publishers: game.publishers,
+            aggregatedRating: game.aggregatedRating,
+            aggregatedRatingCount: game.aggregatedRatingCount,
+            rating: game.rating,
+            ratingCount: game.ratingCount,
+            totalRating: game.totalRating,
+            totalRatingCount: game.totalRatingCount,
+            ageRatings: game.ageRatings,
+            gameStatus: game.gameStatus,
+            languageSupports: game.languageSupports,
+            multiplayerModes: game.multiplayerModes,
+            similarGames: game.similarGames,
+            dlcsAndExpansions: game.dlcsAndExpansions,
+            gameType: game.gameType,
+            category: game.category,
+            hypes: game.hypes,
+            franchise: game.franchise,
+            franchises: game.franchises,
+            popularity_score: undefined,
+          });
+          gamesCached++;
+        }
+      }
+
+      const result = {
+        category: args.category,
+        requestedLimit: args.limit ?? null,
+        appliedLimit,
+        success: true,
+        gamesCached: dryRun ? collected.length : gamesCached,
+        gamesProcessed: collected.length,
+        dryRun,
+        timestamp: Date.now(),
+        message:
+          collected.length < appliedLimit
+            ? `Seeded ${collected.length} new games; ${appliedLimit - collected.length} additional games were already cached or unavailable.`
+            : undefined,
+      };
+
+      return measureQuerySize(result, "seedGamesByCategory");
+    } catch (error) {
+      console.error("[seedGamesByCategory] Error while seeding unfiltered games:", error);
+
+      const result = {
+        category: args.category,
+        requestedLimit: args.limit ?? null,
+        appliedLimit,
+        success: false,
+        gamesCached: 0,
+        gamesProcessed: 0,
+        dryRun,
+        error: String(error),
+        timestamp: Date.now(),
+      };
+
+      return measureQuerySize(result, "seedGamesByCategory (error)");
+    }
+  },
+});
+
+/**
+ * Seed a specific game by IGDB ID. Useful for manual backfilling via admin panel.
+ */
+export const seedGameById = action({
+  args: {
+    igdbId: v.number(),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    igdbId: number;
+    title?: string;
+    gamesCached?: number;
+    dryRun?: boolean;
+    error?: string;
+    popularityScore?: number;
+    timestamp: number;
+    message?: string;
+  }> => {
+    if (process.env.ENVIRONMENT === "production" || !process.env.ALLOW_SEEDING) {
+      console.error("❌ [seedGameById] BLOCKED: Seeding is disabled in production or without ALLOW_SEEDING flag");
+      return {
+        success: false,
+        igdbId: args.igdbId,
+        error: "Seeding is disabled. Enable ALLOW_SEEDING in non-production environments.",
+        timestamp: Date.now(),
+      };
+    }
+
+    const igdbId = Math.floor(args.igdbId);
+    if (!Number.isFinite(igdbId) || igdbId <= 0) {
+      return {
+        success: false,
+        igdbId,
+        error: "Invalid IGDB game ID. Provide a positive integer.",
+        timestamp: Date.now(),
+      };
+    }
+
+    const dryRun = args.dryRun ?? false;
+
+    console.log(`[seedGameById] Starting${dryRun ? " (DRY RUN)" : ""} for IGDB ID ${igdbId}`);
+
+    const { accessToken }: { accessToken: string } = await getValidIgdbToken(ctx);
+    const clientId = getClientId();
+
+    const singleGameQuery = `fields id,name,slug,first_release_date,cover.image_id,category,game_type,version_parent,parent_game,
+  summary,storyline,genres.name,platforms.name,themes.name,
+  player_perspectives.name,game_modes.name,artworks.url,screenshots.url,
+  videos.video_id,websites.category,websites.url,
+  involved_companies.company.name,involved_companies.developer,involved_companies.publisher,
+  aggregated_rating,aggregated_rating_count,rating,rating_count,total_rating,total_rating_count,hypes,
+  franchise.name,franchises.name,
+  age_ratings.rating,age_ratings.organization.*,
+  game_status.*,language_supports.language.name,
+  multiplayer_modes.*,similar_games.name;
+where id = ${igdbId};
+limit 1;`;
+
+    try {
+      const response: Response = await fetch("https://api.igdb.com/v4/games", {
+        method: "POST",
+        headers: {
+          "Client-ID": clientId,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "text/plain",
+        },
+        body: singleGameQuery,
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`[seedGameById] Failed: ${response.status} - ${errorBody}`);
+        return measureQuerySize(
+          {
+            success: false,
+            igdbId,
+            error: `IGDB API error: ${response.status}`,
+            timestamp: Date.now(),
+          },
+          "seedGameById (error)"
+        );
+      }
+
+      const games = (await response.json()) as IgdbGame[];
+      if (games.length === 0) {
+        return measureQuerySize(
+          {
+            success: false,
+            igdbId,
+            error: "Game not found on IGDB.",
+            timestamp: Date.now(),
+          },
+          "seedGameById (not found)"
+        );
+      }
+
+      const normalized = normalizeGames(games);
+      const game = normalized[0];
+
+      if (!game) {
+        return measureQuerySize(
+          {
+            success: false,
+            igdbId,
+            error: "Unable to normalize IGDB game payload.",
+            timestamp: Date.now(),
+          },
+          "seedGameById (normalize error)"
+        );
+      }
+
+      if (dryRun) {
+        const result = {
+          success: true,
+          igdbId,
+          title: game.title,
+          dryRun: true,
+          message: "Dry run complete. No data cached.",
+          timestamp: Date.now(),
+        };
+        return measureQuerySize(result, "seedGameById (dry run)");
+      }
+
+      const popScores = await fetchPopularityPrimitives([igdbId], accessToken, clientId);
+      const primitives = popScores[igdbId] ?? {
+        wantToPlay: 0,
+        playing: 0,
+        steam24hr: 0,
+        steamTotal: 0,
+      };
+      const popularityScore = calculatePopScore(primitives);
+
+      await ctx.runMutation(internal.games.upsertFromIgdb, {
+        igdbId: game.igdbId,
+        title: game.title,
+        coverUrl: game.coverUrl,
+        releaseYear: game.releaseYear,
+        firstReleaseDate: game.firstReleaseDate,
+        summary: game.summary,
+        storyline: game.storyline,
+        genres: game.genres,
+        platforms: game.platforms,
+        themes: game.themes,
+        playerPerspectives: game.playerPerspectives,
+        gameModes: game.gameModes,
+        artworks: game.artworks,
+        screenshots: game.screenshots,
+        videos: game.videos,
+        websites: game.websites,
+        developers: game.developers,
+        publishers: game.publishers,
+        aggregatedRating: game.aggregatedRating,
+        aggregatedRatingCount: game.aggregatedRatingCount,
+        rating: game.rating,
+        ratingCount: game.ratingCount,
+        totalRating: game.totalRating,
+        totalRatingCount: game.totalRatingCount,
+        ageRatings: game.ageRatings,
+        gameStatus: game.gameStatus,
+        languageSupports: game.languageSupports,
+        multiplayerModes: game.multiplayerModes,
+        similarGames: game.similarGames,
+        dlcsAndExpansions: game.dlcsAndExpansions,
+        gameType: game.gameType,
+        category: game.category,
+        hypes: game.hypes,
+        franchise: game.franchise,
+        franchises: game.franchises,
+        popularity_score: popularityScore,
+      });
+
+      const result = {
+        success: true,
+        igdbId,
+        title: game.title,
+        gamesCached: 1,
+        popularityScore,
+        timestamp: Date.now(),
+      };
+      return measureQuerySize(result, "seedGameById");
+    } catch (error) {
+      console.error("[seedGameById] Error:", error);
+      return measureQuerySize(
+        {
+          success: false,
+          igdbId,
+          error: String(error),
+          timestamp: Date.now(),
+        },
+        "seedGameById (exception)"
+      );
     }
   },
 });

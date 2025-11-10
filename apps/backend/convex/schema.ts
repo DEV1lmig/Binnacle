@@ -37,12 +37,6 @@ export default defineSchema({
     gameModes: v.optional(v.string()), // JSON array: [{ id, name }]
     platforms: v.optional(v.string()), // JSON array: [{ id, name }]
 
-    // Media assets (arrays of URLs or metadata)
-    artworks: v.optional(v.string()), // JSON array of artwork URLs
-    screenshots: v.optional(v.string()), // JSON array of screenshot URLs
-    videos: v.optional(v.string()), // JSON array: [{ id, title }]
-    websites: v.optional(v.string()), // JSON array: [{ type, url }]
-
     // Credits
     developers: v.optional(v.string()), // JSON array: [{ id, name, role }]
     publishers: v.optional(v.string()), // JSON array: [{ id, name, role }]
@@ -57,12 +51,6 @@ export default defineSchema({
     ageRatings: v.optional(v.string()), // JSON array: [{ category, rating }]
     gameStatus: v.optional(v.string()), // e.g., "Released", "Early Access"
 
-    // Additional metadata
-    languageSupports: v.optional(v.string()), // JSON array: [{ language, type }]
-    multiplayerModes: v.optional(v.string()), // JSON array of multiplayer options
-    similarGames: v.optional(v.string()), // JSON array of similar game IDs
-    dlcsAndExpansions: v.optional(v.string()), // JSON array: [{ id, title, releaseDate }] - DLCs and expansions for this game
-    
     // Classification fields (used for filtering and sorting)
     gameType: v.optional(v.number()), // IGDB game_type enum (0=main, 1=dlc, 2=expansion, etc.)
     category: v.optional(v.number()), // IGDB category enum (for additional classification)
@@ -76,7 +64,25 @@ export default defineSchema({
     
     // PopScore popularity (weighted combination of primitives)
     popularity_score: v.optional(v.number()), // Weighted PopScore: 0.4*WantToPlay + 0.3*Playing + 0.2*Steam24hrPeak + 0.1*SteamTotalReviews
-  }).index("by_igdb_id", ["igdbId"]),
+
+    // PHASE 2B Migration: Temporary fields for data cleanup (will be removed after migration)
+    // These fields are deprecated but kept optional to allow existing documents to be read/migrated
+    artworks: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
+    screenshots: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
+    videos: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
+    websites: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
+    languageSupports: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
+    multiplayerModes: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
+    dlcsAndExpansions: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
+    similarGames: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
+  })
+    .index("by_igdb_id", ["igdbId"])
+    // Compound indexes for common filtering patterns
+    .index("by_rating_descending", ["aggregatedRating"])
+    .index("by_release_year", ["releaseYear"])
+    .index("by_popularity", ["popularity_score"])
+    .index("by_game_type", ["gameType"])
+    .index("by_franchise", ["franchise"]),
 
   // == Reviews Table (The core of the app) ==
   // A user's log entry for a specific game
@@ -89,7 +95,9 @@ export default defineSchema({
     playtimeHours: v.optional(v.number()),
   })
     .index("by_user_id", ["userId"])
-    .index("by_game_id", ["gameId"]),
+    .index("by_game_id", ["gameId"])
+    // Compound indexes for common queries
+    .index("by_user_and_game", ["userId", "gameId"]),  // Check if user reviewed game
 
   // == Likes Table ==
   // Tracks likes on reviews
@@ -179,7 +187,10 @@ export default defineSchema({
   })
     .index("by_user_id", ["userId"])
     .index("by_game_id", ["gameId"])
-    .index("by_user_and_game", ["userId", "gameId"]), // For quick duplicate checking
+    .index("by_user_and_game", ["userId", "gameId"]) // For quick duplicate checking
+    // Compound indexes for common filters
+    .index("by_user_and_status", ["userId", "status"])  // Filter by user + status
+    .index("by_user_and_priority", ["userId", "priority"]),  // Sort by priority
 
   // == Search Terms Table ==
   // Maps normalized search terms (keywords, phrases, franchises) to associated mainline games
@@ -214,4 +225,15 @@ export default defineSchema({
     value: v.string(), // JSON-serialized value
     lastUpdated: v.number(),
   }).index("by_key", ["key"]),
+
+  // == Franchise Metadata ==
+  // Tracks franchise completeness to optimize search fallback decisions
+  franchiseMetadata: defineTable({
+    franchiseName: v.string(), // Normalized franchise name (e.g., "zelda", "final fantasy")
+    totalGamesOnIgdb: v.number(), // Total main games in franchise on IGDB
+    cachedGamesCount: v.number(), // Number of games we have cached
+    lastCheckedAt: v.number(), // When we last counted IGDB
+    lastUpdatedAt: v.number(), // When we last added games
+    cacheCompleteness: v.number(), // Percentage (0-100) of franchise cached
+  }).index("by_franchise_name", ["franchiseName"]),
 });

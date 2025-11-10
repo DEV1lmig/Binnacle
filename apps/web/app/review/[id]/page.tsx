@@ -7,6 +7,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
+import { getStandardCoverUrl } from "@/lib/igdb-images";
 import { Button } from "@/app/components/ui/button";
 import { Textarea } from "@/app/components/ui/textarea";
 import { Skeleton } from "@/app/components/ui/skeleton";
@@ -178,7 +179,7 @@ export default function ReviewDetailPage() {
           >
             <div className="w-24 h-32 rounded-[var(--bkl-radius-md)] overflow-hidden flex-shrink-0">
               <ImageWithFallback
-                src={review.game?.coverUrl || ""}
+                src={getStandardCoverUrl(review.game?.coverUrl) || ""}
                 alt={review.game?.title || "Game"}
                 className="w-full h-full object-cover"
               />

@@ -121,35 +121,114 @@
     --font-size: 16px;
 }
 
-@theme inline {
+@theme {
+    --color-bg: {
+        primary: var(--bkl-color-bg-primary);
+        secondary: var(--bkl-color-bg-secondary);
+        tertiary: var(--bkl-color-bg-tertiary);
+    }
+    --color-text: {
+        primary: var(--bkl-color-text-primary);
+        secondary: var(--bkl-color-text-secondary);
+        disabled: var(--bkl-color-text-disabled);
+    }
+    --color-accent: {
+        primary: var(--bkl-color-accent-primary);
+        hover: var(--bkl-color-accent-hover);
+        secondary: var(--bkl-color-accent-secondary);
+    }
+    --color-status: {
+        playing: var(--bkl-color-status-playing);
+        completed: var(--bkl-color-status-completed);
+        backlog: var(--bkl-color-status-backlog);
+        onhold: var(--bkl-color-status-onhold);
+        dropped: var(--bkl-color-status-dropped);
+    }
+    --color-feedback: {
+        error: var(--bkl-color-feedback-error);
+        success: var(--bkl-color-feedback-success);
+    }
+    --color-border: var(--bkl-color-border);
+    --color-white: var(--bkl-color-white);
+    
+    /* Shadcn compatibility */
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --color-card: var(--card);
     --color-card-foreground: var(--card-foreground);
-    --color-popover: var(--popover);
-    --color-popover-foreground: var(--popover-foreground);
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-foreground);
-    --color-accent: var(--accent);
-    --color-accent-foreground: var(--accent-foreground);
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
-    --color-border: var(--border);
-    --color-input: var(--input);
+    --color-input: var(--color-input);
     --color-ring: var(--ring);
-    --radius-sm: calc(var(--radius) - 4px);
-    --radius-md: var(--radius);
-    --radius-lg: calc(var(--radius) + 8px);
-    --radius-xl: calc(var(--radius) + 12px);
+    
+    /* Font Sizes */
+    --font-size-xs: var(--bkl-font-size-xs);
+    --font-size-sm: var(--bkl-font-size-sm);
+    --font-size-base: var(--bkl-font-size-base);
+    --font-size-lg: var(--bkl-font-size-lg);
+    --font-size-xl: var(--bkl-font-size-xl);
+    --font-size-2xl: var(--bkl-font-size-2xl);
+    --font-size-3xl: var(--bkl-font-size-3xl);
+    --font-size-4xl: var(--bkl-font-size-4xl);
+    --font-size-5xl: var(--bkl-font-size-5xl);
+    
+    /* Font Weights */
+    --font-weight-regular: var(--bkl-font-weight-regular);
+    --font-weight-medium: var(--bkl-font-weight-medium);
+    --font-weight-semibold: var(--bkl-font-weight-semibold);
+    --font-weight-bold: var(--bkl-font-weight-bold);
+    
+    /* Line Heights */
+    --line-height-none: var(--bkl-leading-none);
+    --line-height-tight: var(--bkl-leading-tight);
+    --line-height-snug: var(--bkl-leading-snug);
+    --line-height-normal: var(--bkl-leading-normal);
+    --line-height-relaxed: var(--bkl-leading-relaxed);
+    
+    /* Spacing */
+    --spacing-0: var(--bkl-space-0);
+    --spacing-1: var(--bkl-space-1);
+    --spacing-2: var(--bkl-space-2);
+    --spacing-3: var(--bkl-space-3);
+    --spacing-4: var(--bkl-space-4);
+    --spacing-5: var(--bkl-space-5);
+    --spacing-6: var(--bkl-space-6);
+    --spacing-8: var(--bkl-space-8);
+    --spacing-10: var(--bkl-space-10);
+    --spacing-12: var(--bkl-space-12);
+    --spacing-16: var(--bkl-space-16);
+    --spacing-24: var(--bkl-space-24);
+    
+    /* Border Radius */
+    --radius-none: var(--bkl-radius-none);
+    --radius-sm: var(--bkl-radius-sm);
+    --radius-md: var(--bkl-radius-md);
+    --radius-lg: var(--bkl-radius-lg);
+    --radius-full: var(--bkl-radius-full);
+    
+    /* Shadows */
+    --shadow-sm: var(--bkl-shadow-sm);
+    --shadow-md: var(--bkl-shadow-md);
+    --shadow-lg: var(--bkl-shadow-lg);
+    --shadow-glow: var(--bkl-shadow-glow);
+    
+    /* Computed radius values */
+    --radius-sm-calc: calc(var(--radius) - 4px);
+    --radius-md-calc: var(--radius);
+    --radius-lg-calc: calc(var(--radius) + 8px);
+    --radius-xl-calc: calc(var(--radius) + 12px);
 }
 
 @layer base {
     * {
-        @apply border-border outline-ring/50;
+        border-color: var(--border);
+        outline-color: var(--ring);
     }
 
     body {

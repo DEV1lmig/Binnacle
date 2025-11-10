@@ -11,6 +11,7 @@ import { Textarea } from "@/app/components/ui/textarea";
 import { Label } from "@/app/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
+import { getStandardCoverUrl } from "@/lib/igdb-images";
 import { cn } from "@/app/components/ui/utils";
 import { ChevronLeft } from "lucide-react";
 import {
@@ -176,7 +177,7 @@ function NewReviewPageContent() {
               <section className="flex gap-4 items-center bg-[var(--bkl-color-bg-tertiary)]/60 border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-md)] p-4">
                 <div className="w-16 h-24 rounded-[var(--bkl-radius-sm)] overflow-hidden flex-shrink-0">
                   <ImageWithFallback
-                    src={game.coverUrl ?? ""}
+                    src={getStandardCoverUrl(game.coverUrl) ?? ""}
                     alt={game.title}
                     className="w-full h-full object-cover"
                   />

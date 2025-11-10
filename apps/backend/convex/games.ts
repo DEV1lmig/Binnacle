@@ -1,11 +1,14 @@
 /**
  * Games helpers for keeping IGDB data cached and accessible.
  */
-import { internalMutation, query, internalAction, QueryCtx } from "./_generated/server";
+import { internalMutation, query, internalAction, internalQuery, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Id, Doc } from "./_generated/dataModel";
 import { internal, api } from "./_generated/api";
 import { groupByFranchiseAndRank } from "./franchiseRanking";
+import { queryCache, cacheKey } from "./utils/queryCache";
+import { paginateArray } from "./utils/pagination";
+import { measureQuerySize } from "./lib/bandwidthMonitor";
 
 const defaultSearchLimit = 20;
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -129,7 +132,6 @@ export const updateRelatedContent = internalMutation({
 
     if (game) {
       await ctx.db.patch(game._id, {
-        dlcsAndExpansions: args.relatedContent,
         lastUpdated: Date.now(),
       });
     }
@@ -213,6 +215,47 @@ export const cacheGameFromIgdb = internalMutation({
   },
 });
 
+/**
+ * Paginated helper returning cached IGDB IDs.
+ * Enables actions to diff against already seeded games without direct DB access.
+ */
+export const listIgdbIdsPage = internalQuery({
+  args: {
+    cursor: v.optional(v.string()),
+    pageSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(Math.max(1, args.pageSize ?? 1000), 5000);
+
+    const page = await ctx.db
+      .query("games")
+      .withIndex("by_igdb_id")
+      .paginate({
+        numItems: limit,
+        cursor: args.cursor ?? null,
+      });
+
+    return {
+      igdbIds: page.page.map((game) => game.igdbId),
+      cursor: page.continueCursor,
+    };
+  },
+});
+
+export const getGameIdByIgdbId = internalQuery({
+  args: {
+    igdbId: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("games")
+      .withIndex("by_igdb_id", (q) => q.eq("igdbId", args.igdbId))
+      .unique();
+
+    return existing ? existing._id : null;
+  },
+});
+
 
 /**
  * Returns a cached game by its Convex identifier.
@@ -222,7 +265,48 @@ export const getById = query({
     gameId: v.id("games"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.gameId);
+    const game = await ctx.db.get(args.gameId);
+    return measureQuerySize(game, "getById");
+  },
+});
+
+/**
+ * Count games by franchise name (internal use only for franchise metadata)
+ * Searches the franchises JSON field for matching franchise names
+ * Note: This still requires fetching all games, but it's only called when metadata is stale
+ */
+export const countGamesByFranchise = query({
+  args: {
+    franchiseName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Since franchises is a JSON field, we need to fetch games and check the parsed field
+    // This is less efficient than an index, but franchises is a JSON array so we can't index it directly
+    // Only the franchises field is needed for counting
+    const allGames = await ctx.db.query("games").collect();
+    
+    let count = 0;
+    for (const game of allGames) {
+      // Check franchises field (JSON array of {id, name})
+      if (game.franchises) {
+        try {
+          const franchisesArray = JSON.parse(game.franchises);
+          if (Array.isArray(franchisesArray)) {
+            const hasMatchingFranchise = franchisesArray.some((f: any) => {
+              const name = typeof f === 'string' ? f : f?.name;
+              return name === args.franchiseName;
+            });
+            if (hasMatchingFranchise) {
+              count++;
+            }
+          }
+        } catch (e) {
+          // Skip games with invalid JSON
+        }
+      }
+    }
+    
+    return count;
   },
 });
 
@@ -232,6 +316,7 @@ export const getById = query({
  * Only returns mainline games and enhanced releases (bundles, DLC, mods, etc. are filtered out).
  * 
  * OPTIMIZED: Limits database queries and uses early termination
+ * CACHED: Results are cached for 30 minutes to reduce database reads
  */
 export const searchCached = query({
   args: {
@@ -241,6 +326,15 @@ export const searchCached = query({
   handler: async (ctx, args) => {
     const sanitizedQuery = sanitizeQuery(args.query);
     const limit = sanitizeLimit(args.limit);
+    
+    // CACHE CHECK: Try cache first
+    const cacheKey_search = cacheKey("search", sanitizedQuery, limit);
+    const cached = queryCache.get<Doc<"games">[]>(cacheKey_search);
+    if (cached) {
+      console.log(`[searchCached] Cache HIT for "${sanitizedQuery}" (${cached.length} results)`);
+      return cached;
+    }
+    
     const normalizedQuery = normalizeText(sanitizedQuery);
     const queryTokens = tokenize(normalizedQuery);
 
@@ -330,7 +424,13 @@ export const searchCached = query({
       return b.game.lastUpdated - a.game.lastUpdated;
     });
 
-    return ranked.map((r) => r.game).slice(0, limit);
+    const results = ranked.map((r) => r.game).slice(0, limit);
+    
+    // CACHE STORE: Cache for 30 minutes
+    queryCache.set(cacheKey_search, results, 30 * 60 * 1000);
+    console.log(`[searchCached] Cache MISS for "${sanitizedQuery}" (${results.length} results, cached for 30 min)`);
+    
+    return measureQuerySize(results, "searchCached");
   },
 });
 
@@ -834,7 +934,7 @@ export const searchCachedByTerm = query({
     }
 
     console.log(`[searchCachedByTerm] Query "${query}" (${confidence}) -> ${games.length} results from: ${foundTerms.join(", ")}. Top scores: ${gameScores.slice(0, 3).map(s => `${s.title.slice(0, 20)}(${s.score.toFixed(1)})`).join(", ")}`);
-    return games;
+    return measureQuerySize(games, "searchCachedByTerm");
   },
 });
 
@@ -1383,16 +1483,18 @@ export const searchOptimized = query({
 
       const latencyMs = Date.now() - startTime;
 
-      return {
+      const result = {
         results: paginatedResults.map((g) => ({
           convexId: g._id,
           igdbId: g.igdbId,
           title: g.title,
           coverUrl: g.coverUrl,
           releaseYear: g.releaseYear,
+          aggregatedRating: g.aggregatedRating,
           aggregatedRatingCount: g.aggregatedRatingCount,
           category: g.category,
           gameType: g.gameType,
+          franchises: g.franchises, // Include franchises for franchise detection
         })),
         total: finalResults.length,
         source,
@@ -1405,9 +1507,11 @@ export const searchOptimized = query({
           liveResults: 0, // Will be filled by action if fallback needed
         },
       };
+      
+      return measureQuerySize(result, "searchOptimized");
     } catch (error) {
       console.error("[searchOptimized] Error:", error);
-      return {
+      const result = {
         results: [],
         total: 0,
         source: "none" as const,
@@ -1417,6 +1521,7 @@ export const searchOptimized = query({
         latencyMs: Date.now() - startTime,
         debug: { cacheResults: 0, liveResults: 0, error: String(error) },
       };
+      return measureQuerySize(result, "searchOptimized (error)");
     }
   },
 });
@@ -1573,6 +1678,7 @@ export const enrichSearchCache = internalAction({
 export const getTrendingGames = query({
   args: {
     limit: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
@@ -1664,18 +1770,26 @@ export const getTrendingGames = query({
         return { game, score: totalScore };
       })
       .filter((s) => s.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
+      .sort((a, b) => b.score - a.score);
 
-    return scored.map((s) => ({
-      _id: s.game._id,
-      igdbId: s.game.igdbId,
-      title: s.game.title,
-      coverUrl: s.game.coverUrl,
-      releaseYear: s.game.releaseYear,
-      aggregatedRating: s.game.aggregatedRating ?? s.game.rating ?? s.game.totalRating,
-      aggregatedRatingCount: Math.max(s.game.aggregatedRatingCount ?? 0, s.game.ratingCount ?? 0),
-    }));
+    const pageNumber = args.pageNumber ?? 1;
+    const paginated = paginateArray(scored, limit, pageNumber);
+
+    const result = {
+      games: paginated.items.map((s) => ({
+        _id: s.game._id,
+        igdbId: s.game.igdbId,
+        title: s.game.title,
+        coverUrl: s.game.coverUrl,
+        releaseYear: s.game.releaseYear,
+        aggregatedRating: s.game.aggregatedRating ?? s.game.rating ?? s.game.totalRating,
+        aggregatedRatingCount: Math.max(s.game.aggregatedRatingCount ?? 0, s.game.ratingCount ?? 0),
+      })),
+      hasMore: paginated.hasMore,
+      nextCursor: paginated.cursor,
+    };
+    
+    return measureQuerySize(result, "getTrendingGames");
   },
 });
 
@@ -1707,6 +1821,7 @@ export const getTopRatedGames = query({
   args: {
     limit: v.optional(v.number()),
     minReviews: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
@@ -1744,26 +1859,35 @@ export const getTopRatedGames = query({
         if (a.bestRating !== b.bestRating) return b.bestRating - a.bestRating;
         // Secondary: most reviews
         return b.reviewCount - a.reviewCount;
-      })
-      .slice(0, limit)
-      .map(({ game }) => ({
-        _id: game._id,
-        igdbId: game.igdbId,
-        title: game.title,
-        coverUrl: game.coverUrl,
-        releaseYear: game.releaseYear,
-        aggregatedRating: Math.max(
-          game.aggregatedRating ?? 0,
-          game.rating ?? 0,
-          game.totalRating ?? 0
-        ),
-        aggregatedRatingCount: Math.max(
-          game.aggregatedRatingCount ?? 0,
-          game.ratingCount ?? 0
-        ),
-      }));
+      });
 
-    return topRated;
+    const pageNumber = args.pageNumber ?? 1;
+    const sorted = topRated.map(({ game }) => ({
+      _id: game._id,
+      igdbId: game.igdbId,
+      title: game.title,
+      coverUrl: game.coverUrl,
+      releaseYear: game.releaseYear,
+      aggregatedRating: Math.max(
+        game.aggregatedRating ?? 0,
+        game.rating ?? 0,
+        game.totalRating ?? 0
+      ),
+      aggregatedRatingCount: Math.max(
+        game.aggregatedRatingCount ?? 0,
+        game.ratingCount ?? 0
+      ),
+    }));
+
+    const paginated = paginateArray(sorted, limit, pageNumber);
+
+    const result = {
+      games: paginated.items,
+      hasMore: paginated.hasMore,
+      nextCursor: paginated.cursor,
+    };
+    
+    return measureQuerySize(result, "getTopRatedGames");
   },
 });
 
@@ -1780,10 +1904,12 @@ export const getNewReleases = query({
   args: {
     limit: v.optional(v.number()),
     monthsBack: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
     const monthsBack = args.monthsBack ?? 12;
+    const pageNumber = args.pageNumber ?? 1;
 
     // Calculate cutoff timestamp
     const now = Date.now() / 1000;
@@ -1795,7 +1921,7 @@ export const getNewReleases = query({
     // OPTIMIZATION: Filter, map for sort key, sort, and map to output in single chain
     const candidates = await ctx.db.query("games").collect();
 
-    const newReleases = candidates
+    const newReleasesRaw = candidates
       .filter((game) => {
         // Type check
         const gameType = game.gameType ?? 0;
@@ -1817,7 +1943,6 @@ export const getNewReleases = query({
         releaseDate: game.firstReleaseDate ?? 0,
       }))
       .sort((a, b) => b.releaseDate - a.releaseDate)
-      .slice(0, limit)
       .map(({ game }) => ({
         _id: game._id,
         igdbId: game.igdbId,
@@ -1828,6 +1953,15 @@ export const getNewReleases = query({
         aggregatedRatingCount: game.aggregatedRatingCount ?? game.ratingCount,
       }));
 
-    return newReleases;
+    // Apply pagination
+    const paginationResult = paginateArray(newReleasesRaw, limit, pageNumber);
+
+    const result = {
+      games: paginationResult.items,
+      hasMore: paginationResult.hasMore,
+      nextCursor: paginationResult.cursor,
+    };
+    
+    return measureQuerySize(result, "getNewReleases");
   },
 });

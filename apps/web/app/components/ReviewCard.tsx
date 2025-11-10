@@ -7,6 +7,7 @@ import { useUser } from "@clerk/nextjs";
 import { Heart, MessageCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { getStandardCoverUrl } from "@/lib/igdb-images";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
@@ -142,7 +143,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
       <div className="flex gap-3 mb-4">
         <div className="w-16 h-24 rounded-[var(--bkl-radius-sm)] overflow-hidden flex-shrink-0">
           <ImageWithFallback
-            src={review.game.coverUrl ?? ""}
+            src={getStandardCoverUrl(review.game.coverUrl) ?? ""}
             alt={review.game.title}
             className="w-full h-full object-cover"
           />
