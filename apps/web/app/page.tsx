@@ -183,7 +183,7 @@ export default function LandingPage() {
                 Write Reviews
               </h3>
               <p className="text-[var(--bkl-color-text-secondary)]">
-                Share your thoughts on games you've played. Rate, review, and help others discover great games.
+                Share your thoughts on games you&apos;ve played. Rate, review, and help others discover great games.
               </p>
             </div>
 
@@ -209,7 +209,7 @@ export default function LandingPage() {
                 Connect with Gamers
               </h3>
               <p className="text-[var(--bkl-color-text-secondary)]">
-                Follow other gamers, see what they're playing, and engage with their reviews and recommendations.
+                Follow other gamers, see what they&apos;re playing, and engage with their reviews and recommendations.
               </p>
             </div>
 
@@ -280,7 +280,7 @@ export default function LandingPage() {
                 Add Games
               </h3>
               <p className="text-[var(--bkl-color-text-secondary)]">
-                Search and add games to your backlog, mark what you're playing, and track completions.
+                Search and add games to your backlog, mark what you&apos;re playing, and track completions.
               </p>
             </div>
 

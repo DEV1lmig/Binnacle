@@ -120,7 +120,7 @@ export default function SignInPage() {
               </SignIn.Action>
               
               <p className="text-center text-sm text-[var(--bkl-color-text-secondary)]">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Clerk.Link
                   navigate="sign-up"
                   className="text-[var(--bkl-color-accent-primary)] hover:text-[var(--bkl-color-accent-hover)] font-medium transition-colors"

@@ -11,11 +11,24 @@ import { Input } from "@/app/components/ui/input";
 import { Search, TrendingUp, Star, Calendar, Users, ArrowRight, AlertCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 
+type DiscoverGame = {
+  _id?: string | { toString(): string };
+  convexId?: string | { toString(): string };
+  igdbId?: number;
+  title?: string | null;
+  cover?: string | null;
+  coverUrl?: string | null;
+  rating?: number | null;
+  aggregatedRating?: number | null;
+  releaseYear?: number | null;
+  status?: string | null;
+};
+
 export default function DiscoverPage() {
   const router = useRouter();
   const { currentUser } = useCurrentUser();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<DiscoverGame[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
   // Search action that handles both cache and IGDB fallback
@@ -36,7 +49,10 @@ export default function DiscoverPage() {
           limit: 24,
           minCachedResults: 10, // Trigger franchise check if we have fewer than 10 results
         });
-        setSearchResults(result.results || []);
+        const normalizedResults = Array.isArray(result?.results)
+          ? (result.results as DiscoverGame[])
+          : [];
+        setSearchResults(normalizedResults);
       } catch (error) {
         console.error("Search failed:", error);
         setSearchResults([]);
@@ -75,30 +91,56 @@ export default function DiscoverPage() {
   
   // Type-safe defaults for pagination results
   // Note: Convex types will update after running 'npx convex dev'
-  type PaginatedGames = { games: any[]; hasMore: boolean; nextCursor: string | null };
+  type PaginatedGames = { games: DiscoverGame[]; hasMore: boolean; nextCursor: string | null };
   const trendingGames = (trendingGamesData ?? { games: [], hasMore: false, nextCursor: null }) as PaginatedGames;
   const topRated = (topRatedData ?? { games: [], hasMore: false, nextCursor: null }) as PaginatedGames;
   const newReleases = (newReleasesData ?? { games: [], hasMore: false, nextCursor: null }) as PaginatedGames;
 
-const mapToGameCardGame = (game: {
-  _id?: string | { toString(): string };
-  convexId?: string | { toString(): string };
-  igdbId?: number;
-  title?: string | null;
-  cover?: string | null;
-  coverUrl?: string | null;
-  rating?: number | null;
-  aggregatedRating?: number | null;
-  releaseYear?: number | null;
-  status?: string | null;
-}): GameCardGame => {
+const resolveId = (value: DiscoverGame["_id"] | DiscoverGame["convexId"]): string | undefined => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  if (typeof value === "object" && "toString" in value) {
+    try {
+      return value.toString();
+    } catch (error) {
+      console.warn("[discover] Failed to stringify identifier", error);
+      return undefined;
+    }
+  }
+
+  return undefined;
+};
+
+const deriveGameKey = (game: DiscoverGame, prefix: string, index: number): string => {
+  return (
+    resolveId(game.convexId) ??
+    resolveId(game._id) ??
+    (typeof game.igdbId === "number" ? `igdb-${game.igdbId}` : `${prefix}-${index}`)
+  );
+};
+
+const resolveGameRouteParam = (game: DiscoverGame, index: number): string => {
+  return (
+    resolveId(game.convexId) ??
+    resolveId(game._id) ??
+    (typeof game.igdbId === "number" ? `igdb-${game.igdbId}` : `${index}`)
+  );
+};
+
+const mapToGameCardGame = (game: DiscoverGame): GameCardGame => {
   const validStatuses = ["backlog", "playing", "completed", "dropped", "onhold"] as const;
   const status = game.status && validStatuses.includes(game.status as typeof validStatuses[number])
     ? (game.status as typeof validStatuses[number])
     : undefined;
   
   // Use convexId if available, otherwise igdbId or _id
-  const gameId = game.convexId ? String(game.convexId) : game.igdbId ? String(game.igdbId) : String(game._id || "");
+  const gameId = resolveId(game.convexId) ?? resolveId(game._id) ?? (typeof game.igdbId === "number" ? `igdb-${game.igdbId}` : "");
   
   return {
     id: gameId,
@@ -111,7 +153,9 @@ const mapToGameCardGame = (game: {
     releaseYear: game.releaseYear ?? undefined,
     status,
   };
-};  return (
+};
+
+  return (
     <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] pb-20 md:pb-8">
 
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
@@ -173,12 +217,12 @@ const mapToGameCardGame = (game: {
                       </p>
                     </div>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-                      {gameResults.map((game) => (
+                      {gameResults.map((game, index) => (
                         <GameCard
-                          key={game.igdbId || game._id}
+                          key={deriveGameKey(game, "search", index)}
                           game={mapToGameCardGame(game)}
                           variant="compact"
-                          onClick={() => router.push(`/game/${game.convexId || game._id}`)}
+                          onClick={() => router.push(`/game/${resolveGameRouteParam(game, index)}`)}
                         />
                       ))}
                     </div>
@@ -316,17 +360,19 @@ const mapToGameCardGame = (game: {
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                   {trendingGamesData === undefined ? (
-                    // Loading skeletons
-                    Array(24).fill(0).map((_, i) => (
-                      <div key={i} className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse" />
+                    Array.from({ length: 24 }).map((_, i) => (
+                      <div
+                        key={`trending-skeleton-${i}`}
+                        className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse"
+                      />
                     ))
-                  ) : trendingGames.games?.length > 0 ? (
-                    trendingGames.games.map((game: any) => (
+                  ) : trendingGames.games.length > 0 ? (
+                    trendingGames.games.map((game: DiscoverGame, index) => (
                       <GameCard
-                        key={game._id}
+                        key={deriveGameKey(game, "trending", index)}
                         game={mapToGameCardGame(game)}
                         variant="compact"
-                        onClick={() => router.push(`/game/${game._id}`)}
+                        onClick={() => router.push(`/game/${resolveGameRouteParam(game, index)}`)}
                       />
                     ))
                   ) : (
@@ -353,17 +399,19 @@ const mapToGameCardGame = (game: {
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                   {topRatedData === undefined ? (
-                    // Loading skeletons
-                    Array(24).fill(0).map((_, i) => (
-                      <div key={i} className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse" />
+                    Array.from({ length: 24 }).map((_, i) => (
+                      <div
+                        key={`top-rated-skeleton-${i}`}
+                        className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse"
+                      />
                     ))
-                  ) : topRated.games?.length > 0 ? (
-                    topRated.games.map((game: any) => (
+                  ) : topRated.games.length > 0 ? (
+                    topRated.games.map((game: DiscoverGame, index) => (
                       <GameCard
-                        key={game._id}
+                        key={deriveGameKey(game, "top-rated", index)}
                         game={mapToGameCardGame(game)}
                         variant="compact"
-                        onClick={() => router.push(`/game/${game._id}`)}
+                        onClick={() => router.push(`/game/${resolveGameRouteParam(game, index)}`)}
                       />
                     ))
                   ) : (
@@ -395,17 +443,19 @@ const mapToGameCardGame = (game: {
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                   {newReleasesData === undefined ? (
-                    // Loading skeletons
-                    Array(24).fill(0).map((_, i) => (
-                      <div key={i} className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse" />
+                    Array.from({ length: 24 }).map((_, i) => (
+                      <div
+                        key={`new-releases-skeleton-${i}`}
+                        className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse"
+                      />
                     ))
-                  ) : newReleases.games?.length > 0 ? (
-                    newReleases.games.map((game: any) => (
+                  ) : newReleases.games.length > 0 ? (
+                    newReleases.games.map((game: DiscoverGame, index) => (
                       <GameCard
-                        key={game._id}
+                        key={deriveGameKey(game, "new-release", index)}
                         game={mapToGameCardGame(game)}
                         variant="compact"
-                        onClick={() => router.push(`/game/${game._id}`)}
+                        onClick={() => router.push(`/game/${resolveGameRouteParam(game, index)}`)}
                       />
                     ))
                   ) : (

@@ -21,6 +21,12 @@ interface SeedResult {
   timestamp: number;
 }
 
+interface BatchCategoryResult extends SeedResult {
+  category: SeedCategory;
+  message?: string;
+  title?: string;
+}
+
 interface BatchSeedResult {
   success: boolean;
   mode?: LaunchMode;
@@ -37,7 +43,7 @@ interface BatchSeedResult {
   message?: string;
   error?: string;
   timestamp?: number;
-  results?: any[];
+  results?: BatchCategoryResult[];
   dryRun?: boolean;
 }
 
@@ -276,9 +282,8 @@ export default function AdminPage() {
       setFranchiseResult(response);
 
       if (!response.success) {
-        // Check if error exists in the response structure
-        const errorMsg = 'error' in response ? (response as any).error : "Unknown error";
-        setFranchiseError(errorMsg);
+        const errorValue = (response as { error?: unknown }).error;
+        setFranchiseError(typeof errorValue === "string" ? errorValue : "Unknown error");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";

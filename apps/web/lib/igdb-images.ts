@@ -32,9 +32,6 @@ export function getIgdbImageUrl(url: string | null | undefined, size: IGDBImageS
 
   // Extract the image ID and extension
   // URL format: https://images.igdb.com/igdb/image/upload/t_XXXX/image_id.jpg
-  const parts = url.split('/');
-  const imageFile = parts[parts.length - 1]; // e.g., "co1234.jpg"
-  
   // Replace the size token (t_XXXX) with the new size
   const sizeToken = `t_${size}`;
   const newUrl = url.replace(/\/t_[^/]+\//, `/${sizeToken}/`);

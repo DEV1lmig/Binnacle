@@ -47,7 +47,7 @@ export default function SignOutPage() {
         <div className="flex flex-col gap-2 text-center">
           <h1 className="text-2xl font-semibold">Signing you out...</h1>
           <p className="text-sm text-stone-400">
-            You're being signed out of your Binnacle account.
+            You&apos;re being signed out of your Binnacle account.
           </p>
         </div>
 
