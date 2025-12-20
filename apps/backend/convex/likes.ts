@@ -5,6 +5,7 @@ import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc } from "./_generated/dataModel";
 import { canViewReviewsInternal } from "./privacy";
+import { getBlockedUserIdSets, isEitherBlockedInternal } from "./blocking";
 
 const defaultListLimit = 100;
 
@@ -28,6 +29,11 @@ export const toggle = mutation({
     const author = await ctx.db.get(review.userId);
     if (!author) {
       throw new ConvexError("Review author not found");
+    }
+
+    const blocked = await isEitherBlockedInternal(ctx, user._id, author._id);
+    if (blocked) {
+      throw new ConvexError("You can't like this review");
     }
 
     const allowed = await canViewReviewsInternal(ctx, user, author);
@@ -83,6 +89,13 @@ export const listForReview = query({
       return [];
     }
 
+    if (viewer) {
+      const blocked = await isEitherBlockedInternal(ctx, viewer._id, author._id);
+      if (blocked) {
+        return [];
+      }
+    }
+
     const allowed = await canViewReviewsInternal(ctx, viewer, author);
     if (!allowed) {
       return [];
@@ -90,10 +103,19 @@ export const listForReview = query({
 
     const limit = sanitizeLimit(args.limit);
 
-    return await ctx.db
+    const likes = await ctx.db
       .query("likes")
       .withIndex("by_review_id", (q) => q.eq("reviewId", args.reviewId))
       .take(limit);
+
+    if (!viewer) {
+      return likes;
+    }
+
+    const { blocked, blockedBy } = await getBlockedUserIdSets(ctx, viewer._id);
+    return likes.filter(
+      (like) => !blocked.has(like.userId) && !blockedBy.has(like.userId)
+    );
   },
 });
 

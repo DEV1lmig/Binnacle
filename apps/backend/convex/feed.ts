@@ -5,6 +5,7 @@ import { query, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { canViewActivityInternal, canViewReviewsInternal } from "./privacy";
+import { getBlockedUserIdSets } from "./blocking";
 
 const defaultFeedLimit = 30;
 const maxFollowingForFeed = 200;
@@ -56,10 +57,15 @@ export const timeline = query({
     const limit = sanitizeLimit(args.limit);
     const perUserLimit = Math.min(limit, perUserReviewLimit);
 
+    const { blocked, blockedBy } = await getBlockedUserIdSets(ctx, viewer._id);
+    const isBlockedUser = (userId: Id<"users">) => blocked.has(userId) || blockedBy.has(userId);
+
     const friendIds = await getFriendIdsForFeed(ctx, viewer._id, maxFriendsForFeed);
     const friendIdSet = new Set(friendIds);
 
-    const friendSources = await filterFeedSources(ctx, viewer, friendIds);
+    const visibleFriendIds = friendIds.filter((friendId) => !isBlockedUser(friendId));
+
+    const friendSources = await filterFeedSources(ctx, viewer, visibleFriendIds);
 
     const friendReviews = await collectReviewsForUsers(
       ctx,
@@ -77,7 +83,9 @@ export const timeline = query({
 
     for (const record of followingRecords) {
       if (!friendIdSet.has(record.followingId)) {
-        communitySources.add(record.followingId);
+        if (!isBlockedUser(record.followingId)) {
+          communitySources.add(record.followingId);
+        }
       }
     }
 

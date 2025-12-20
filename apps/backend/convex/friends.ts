@@ -5,6 +5,7 @@ import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { canSendFriendRequestInternal } from "./privacy";
+import { getBlockedUserIdSets, isEitherBlockedInternal } from "./blocking";
 
 const defaultListLimit = 50;
 
@@ -20,18 +21,23 @@ export const sendRequest = mutation({
   handler: async (ctx, args) => {
     const requester = await requireCurrentUser(ctx);
 
+    if (requester._id === args.recipientId) {
+      throw new ConvexError("You cannot send a friend request to yourself");
+    }
+
     const recipient = await ctx.db.get(args.recipientId);
     if (!recipient) {
       throw new ConvexError("User not found");
     }
 
+    const blocked = await isEitherBlockedInternal(ctx, requester._id, recipient._id);
+    if (blocked) {
+      throw new ConvexError("You can't send a friend request to this user");
+    }
+
     const allowed = await canSendFriendRequestInternal(ctx, requester, recipient);
     if (!allowed) {
       throw new ConvexError("This user is not accepting friend requests");
-    }
-
-    if (requester._id === args.recipientId) {
-      throw new ConvexError("You cannot send a friend request to yourself");
     }
 
     const pairKey = makePairKey(requester._id, args.recipientId);
@@ -163,6 +169,9 @@ export const listFriends = query({
     const viewer = await requireCurrentUser(ctx);
     const limit = sanitizeLimit(args.limit);
 
+    const { blocked, blockedBy } = await getBlockedUserIdSets(ctx, viewer._id);
+    const isBlockedUser = (userId: Id<"users">) => blocked.has(userId) || blockedBy.has(userId);
+
     const asUserA = await ctx.db
       .query("friendships")
       .withIndex("by_user_a_id", (q) => q.eq("userAId", viewer._id))
@@ -178,7 +187,12 @@ export const listFriends = query({
     const combined = [...asUserA, ...asUserB];
     combined.sort((a, b) => b.createdAt - a.createdAt);
 
-    const sliced = combined.slice(0, limit);
+    const sliced = combined
+      .filter((record) => {
+        const friendId = record.userAId === viewer._id ? record.userBId : record.userAId;
+        return !isBlockedUser(friendId);
+      })
+      .slice(0, limit);
     const friends: Array<Doc<"users"> | null> = await Promise.all(
       sliced.map((record) => {
         const friendId = record.userAId === viewer._id ? record.userBId : record.userAId;
@@ -208,14 +222,19 @@ export const listIncomingRequests = query({
     const viewer = await requireCurrentUser(ctx);
     const limit = sanitizeLimit(args.limit);
 
+    const { blocked, blockedBy } = await getBlockedUserIdSets(ctx, viewer._id);
+    const isBlockedUser = (userId: Id<"users">) => blocked.has(userId) || blockedBy.has(userId);
+
     const requests = await ctx.db
       .query("friendRequests")
       .withIndex("by_recipient_id", (q) => q.eq("recipientId", viewer._id))
       .order("desc")
       .take(limit);
 
+    const visibleRequests = requests.filter((request) => !isBlockedUser(request.requesterId));
+
     const enriched = await Promise.all(
-      requests.map(async (request) => {
+      visibleRequests.map(async (request) => {
         const requester = await ctx.db.get(request.requesterId);
         if (!requester) {
           return null;
@@ -249,14 +268,19 @@ export const listOutgoingRequests = query({
     const viewer = await requireCurrentUser(ctx);
     const limit = sanitizeLimit(args.limit);
 
+    const { blocked, blockedBy } = await getBlockedUserIdSets(ctx, viewer._id);
+    const isBlockedUser = (userId: Id<"users">) => blocked.has(userId) || blockedBy.has(userId);
+
     const requests = await ctx.db
       .query("friendRequests")
       .withIndex("by_requester_id", (q) => q.eq("requesterId", viewer._id))
       .order("desc")
       .take(limit);
 
+    const visibleRequests = requests.filter((request) => !isBlockedUser(request.recipientId));
+
     const enriched = await Promise.all(
-      requests.map(async (request) => {
+      visibleRequests.map(async (request) => {
         const recipient = await ctx.db.get(request.recipientId);
         if (!recipient) {
           return null;
@@ -291,6 +315,11 @@ export const relationship = query({
 
     if (viewer._id === args.targetUserId) {
       return { status: "self" as const };
+    }
+
+    const blocked = await isEitherBlockedInternal(ctx, viewer._id, args.targetUserId);
+    if (blocked) {
+      return { status: "none" as const };
     }
 
     const pairKey = makePairKey(viewer._id, args.targetUserId);

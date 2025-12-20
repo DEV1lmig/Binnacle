@@ -199,6 +199,18 @@ export default defineSchema({
     .index("by_user_a_id", ["userAId"])
     .index("by_user_b_id", ["userBId"]),
 
+  // == Blocked Users Table ==
+  // Tracks blocks between users to prevent unwanted interactions.
+  blockedUsers: defineTable({
+    blockerId: v.id("users"),
+    blockedId: v.id("users"),
+    reason: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_blocker", ["blockerId"])
+    .index("by_blocked", ["blockedId"])
+    .index("by_pair", ["blockerId", "blockedId"]),
+
   // == API Tokens Table ==
   // Stores cached access tokens for third-party providers like IGDB
   apiTokens: defineTable({

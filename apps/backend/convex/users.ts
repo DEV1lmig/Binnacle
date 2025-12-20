@@ -7,6 +7,7 @@ import {
   canViewReviewsInternal,
   normalizePrivacySettings,
 } from "./privacy";
+import { getBlockedUserIdSets, isEitherBlockedInternal } from "./blocking";
 
 /**
  * Upserts a user record based on incoming Clerk webhook payloads.
@@ -277,6 +278,12 @@ export const search = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const viewer = identity ? await findByClerkId(ctx, identity.subject) : null;
+    const blockedSets = viewer ? await getBlockedUserIdSets(ctx, viewer._id) : null;
+    const isBlockedUser = (userId: Id<"users">) =>
+      blockedSets ? blockedSets.blocked.has(userId) || blockedSets.blockedBy.has(userId) : false;
+
     const searchQuery = args.query.trim().toLowerCase();
     const limit = Math.min(args.limit ?? 20, 50);
 
@@ -287,7 +294,7 @@ export const search = query({
         .query("users")
         .order("desc")
         .take(limit);
-      return users;
+      return users.filter((user) => !isBlockedUser(user._id));
     }
 
     // For search queries, use search index if available or filter
@@ -301,8 +308,9 @@ export const search = query({
     const results = allUsers
       .filter(
         (user) =>
-          user.name.toLowerCase().includes(searchQuery) ||
-          user.username.toLowerCase().includes(searchQuery)
+          !isBlockedUser(user._id) &&
+          (user.name.toLowerCase().includes(searchQuery) ||
+            user.username.toLowerCase().includes(searchQuery))
       )
       .slice(0, limit);
 
@@ -333,6 +341,10 @@ export const discover = query({
     const viewer = identity ? await findByClerkId(ctx, identity.subject) : null;
     const limit = args.limit && args.limit > 0 ? Math.min(args.limit, 50) : 20;
 
+    const blockedSets = viewer ? await getBlockedUserIdSets(ctx, viewer._id) : null;
+    const isBlockedUser = (userId: Id<"users">) =>
+      blockedSets ? blockedSets.blocked.has(userId) || blockedSets.blockedBy.has(userId) : false;
+
     // Get all users
     const allUsers = await ctx.db
       .query("users")
@@ -340,7 +352,9 @@ export const discover = query({
       .take(100);
 
     // Filter out the viewer
-    const candidates = allUsers.filter((u) => !viewer || u._id !== viewer._id);
+    const candidates = allUsers
+      .filter((u) => !viewer || u._id !== viewer._id)
+      .filter((u) => !isBlockedUser(u._id));
 
     // Get viewer's following list
     const viewerFollowing = viewer
@@ -431,6 +445,13 @@ export const profileByUsername = query({
     const identity = await ctx.auth.getUserIdentity();
     const viewer = identity ? await findByClerkId(ctx, identity.subject) : null;
     const viewerIsSelf = viewer ? viewer._id === user._id : false;
+
+    if (viewer && !viewerIsSelf) {
+      const blocked = await isEitherBlockedInternal(ctx, viewer._id, user._id);
+      if (blocked) {
+        return null;
+      }
+    }
 
     const canViewProfile = await canViewProfileInternal(ctx, viewer, user);
     if (!canViewProfile) {
@@ -555,6 +576,13 @@ export const dashboard = query({
     }
 
     const viewerIsSelf = viewer ? viewer._id === targetUser._id : false;
+
+    if (viewer && !viewerIsSelf) {
+      const blocked = await isEitherBlockedInternal(ctx, viewer._id, targetUser._id);
+      if (blocked) {
+        return null;
+      }
+    }
 
     const canViewProfile = await canViewProfileInternal(ctx, viewer, targetUser);
     if (!canViewProfile) {

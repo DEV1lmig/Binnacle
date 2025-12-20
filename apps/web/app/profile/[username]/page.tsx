@@ -25,10 +25,31 @@ export default function UserProfilePage() {
 
   const followUser = useMutation(api.followers.follow);
   const unfollowUser = useMutation(api.followers.unfollow);
+  const sendFriendRequest = useMutation(api.friends.sendRequest);
+  const blockUser = useMutation(api.blocking.block);
+  const unblockUser = useMutation(api.blocking.unblock);
+
+  const friendRelationship = useQuery(
+    api.friends.relationship,
+    profileData ? { targetUserId: profileData.user._id } : "skip"
+  );
+
+  const viewerHasBlocked = useQuery(
+    api.blocking.isBlocked,
+    profileData && !profileData.viewerIsSelf ? { targetUserId: profileData.user._id } : "skip"
+  );
+  const viewerIsBlockedBy = useQuery(
+    api.blocking.isBlockedBy,
+    profileData && !profileData.viewerIsSelf ? { targetUserId: profileData.user._id } : "skip"
+  );
 
   const [isFollowing, setIsFollowing] = useState<boolean | null>(null);
   const [followerCount, setFollowerCount] = useState<number | null>(null);
   const [isUpdatingFollow, setIsUpdatingFollow] = useState(false);
+  const [isSendingFriendRequest, setIsSendingFriendRequest] = useState(false);
+  const [friendActionError, setFriendActionError] = useState<string | null>(null);
+  const [isUpdatingBlock, setIsUpdatingBlock] = useState(false);
+  const [blockActionError, setBlockActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profileData) {
@@ -78,6 +99,47 @@ export default function UserProfilePage() {
     }
   };
 
+  const handleSendFriendRequest = async () => {
+    if (!profileData || profileData.viewerIsSelf) {
+      return;
+    }
+
+    setFriendActionError(null);
+    setIsSendingFriendRequest(true);
+    try {
+      await sendFriendRequest({ recipientId: profileData.user._id });
+    } catch (error) {
+      setFriendActionError(error instanceof Error ? error.message : "Failed to send friend request");
+    } finally {
+      setIsSendingFriendRequest(false);
+    }
+  };
+
+  const handleBlockToggle = async () => {
+    if (!profileData || profileData.viewerIsSelf) {
+      return;
+    }
+
+    if (viewerHasBlocked === undefined) {
+      return;
+    }
+
+    setBlockActionError(null);
+    setIsUpdatingBlock(true);
+    try {
+      const targetUserId = profileData.user._id;
+      if (viewerHasBlocked) {
+        await unblockUser({ targetUserId });
+      } else {
+        await blockUser({ targetUserId });
+      }
+    } catch (error) {
+      setBlockActionError(error instanceof Error ? error.message : "Failed to update block status");
+    } finally {
+      setIsUpdatingBlock(false);
+    }
+  };
+
   if (!usernameParam) {
     return (
       <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
@@ -94,11 +156,21 @@ export default function UserProfilePage() {
     );
   }
 
-  if (!profileData) {
+  if (profileData === undefined) {
     return (
       <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
         <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-          <p className="text-[var(--bkl-color-text-secondary)]">User not found</p>
+          <p className="text-[var(--bkl-color-text-secondary)]">Loading profile…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (profileData === null) {
+    return (
+      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
+        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+          <p className="text-[var(--bkl-color-text-secondary)]">This profile is private.</p>
           <Button
             onClick={() => router.back()}
             className="mt-4 bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-primary)]/90"
@@ -162,13 +234,84 @@ export default function UserProfilePage() {
             </div>
 
             {!profileData.viewerIsSelf && (
-              <Button
-                className="bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-primary)]/90"
-                onClick={handleFollowToggle}
-                disabled={isUpdatingFollow}
-              >
-                {isFollowing ? "Following" : "Follow"}
-              </Button>
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-2">
+                  {viewerIsBlockedBy ? (
+                    <p className="text-sm text-[var(--bkl-color-text-secondary)]">You are blocked by this user.</p>
+                  ) : viewerHasBlocked ? (
+                    <Button
+                      variant="outline"
+                      className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
+                      onClick={handleBlockToggle}
+                      disabled={isUpdatingBlock || viewerHasBlocked === undefined}
+                    >
+                      Unblock
+                    </Button>
+                  ) : (
+                    <>
+                      {friendRelationship?.status === "none" ? (
+                        <Button
+                          variant="outline"
+                          className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
+                          onClick={handleSendFriendRequest}
+                          disabled={isSendingFriendRequest}
+                        >
+                          Add friend
+                        </Button>
+                      ) : friendRelationship?.status === "outgoing" ? (
+                        <Button
+                          variant="outline"
+                          className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
+                          disabled
+                        >
+                          Request sent
+                        </Button>
+                      ) : friendRelationship?.status === "incoming" ? (
+                        <Button
+                          variant="outline"
+                          className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
+                          disabled
+                        >
+                          Request received
+                        </Button>
+                      ) : friendRelationship?.status === "friends" ? (
+                        <Button
+                          variant="outline"
+                          className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
+                          disabled
+                        >
+                          Friends
+                        </Button>
+                      ) : null}
+
+                      <Button
+                        className="bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-primary)]/90"
+                        onClick={handleFollowToggle}
+                        disabled={isUpdatingFollow}
+                      >
+                        {isFollowing ? "Following" : "Follow"}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
+                        onClick={handleBlockToggle}
+                        disabled={isUpdatingBlock || viewerHasBlocked === undefined}
+                      >
+                        Block
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {friendActionError ? (
+                  <p className="text-xs text-[var(--bkl-color-feedback-error)]">{friendActionError}</p>
+                ) : null}
+
+                {blockActionError ? (
+                  <p className="text-xs text-[var(--bkl-color-feedback-error)]">{blockActionError}</p>
+                ) : null}
+              </div>
             )}
           </div>
         </div>

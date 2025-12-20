@@ -8,14 +8,11 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { getStandardCoverUrl } from "@/lib/igdb-images";
-import { Button } from "@/app/components/ui/button";
-import { Textarea } from "@/app/components/ui/textarea";
-import { Skeleton } from "@/app/components/ui/skeleton";
+import { CommentSection } from "@/app/components/CommentSection";
 import {
   Heart,
   MessageCircle,
   ArrowLeft,
-  Send,
   Share2,
   Twitter,
   Facebook,
@@ -40,28 +37,14 @@ export default function ReviewDetailPage() {
     reviewId ? { reviewId: reviewId as Id<"reviews"> } : "skip"
   );
   const currentUser = useQuery(api.users.current);
-  const comments = useQuery(
-    api.comments.listForReview,
-    reviewId ? { reviewId: reviewId as Id<"reviews"> } : "skip"
-  );
+  const comments = useQuery(api.comments.listForReview, {
+    reviewId: reviewId as Id<"reviews">,
+    limit: 50,
+  });
 
   // Mutations
   const toggleLike = useMutation(api.likes.toggle);
-  const createComment = useMutation(api.comments.create);
-
-  const [commentText, setCommentText] = useState("");
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-
-  if (!review) {
-    return (
-      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] pb-20 md:pb-8">
-        <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8">
-          <p className="text-[var(--bkl-color-text-secondary)]">Review not found</p>
-        </div>
-      </div>
-    );
-  }
 
   const handleLike = async () => {
     if (!review) return;
@@ -72,21 +55,6 @@ export default function ReviewDetailPage() {
     }
   };
 
-  const handleSubmitComment = async () => {
-    if (!commentText.trim() || !review) return;
-    setIsSubmittingComment(true);
-    try {
-      await createComment({
-        reviewId: review._id,
-        text: commentText,
-      });
-      setCommentText("");
-    } catch (error) {
-      console.error("Failed to create comment:", error);
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  };
 
   const handleShare = (platform: "twitter" | "facebook" | "link") => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -113,11 +81,21 @@ export default function ReviewDetailPage() {
     }
   };
 
-  if (!review) {
+  if (review === undefined) {
     return (
       <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] pb-20 md:pb-8">
         <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8">
           <p className="text-[var(--bkl-color-text-secondary)]">Loading review...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (review === null) {
+    return (
+      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] pb-20 md:pb-8">
+        <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8">
+          <p className="text-[var(--bkl-color-text-secondary)]">Review not found</p>
         </div>
       </div>
     );
@@ -288,99 +266,7 @@ export default function ReviewDetailPage() {
             Comments ({comments?.length || 0})
           </h2>
 
-          {/* Add Comment */}
-          {currentUser && (
-            <div className="mb-8">
-              <div className="flex gap-3 mb-4">
-                <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
-                  <AvatarFallback className="bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]">
-                    {currentUser.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <Textarea
-                    placeholder="Share your thoughts..."
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    className="w-full bg-[var(--bkl-color-bg-tertiary)] border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)] placeholder:text-[var(--bkl-color-text-disabled)] rounded-[var(--bkl-radius-md)] min-h-[100px] resize-none"
-                    style={{ fontSize: "var(--bkl-font-size-sm)" }}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleSubmitComment}
-                  disabled={!commentText.trim() || isSubmittingComment}
-                  className="bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-hover)] text-[var(--bkl-color-bg-primary)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Post Comment
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Comments List */}
-          <div className="space-y-6">
-            {!comments ? (
-              <>
-                {[...Array(2)].map((_, i) => (
-                  <Skeleton key={i} className="h-24 bg-[var(--bkl-color-bg-tertiary)]" />
-                ))}
-              </>
-            ) : comments.length === 0 ? (
-              <p
-                className="text-[var(--bkl-color-text-disabled)] text-center py-8"
-                style={{ fontSize: "var(--bkl-font-size-sm)" }}
-              >
-                No comments yet. Be the first to share your thoughts!
-              </p>
-            ) : (
-              comments.map((comment) => (
-                <div key={comment._id} className="pb-6 border-b border-[var(--bkl-color-border)] last:border-b-0 last:pb-0">
-                  <div className="flex gap-3">
-                    <Avatar className="h-10 w-10 flex-shrink-0">
-                      <AvatarImage src={comment.author.avatarUrl} alt={comment.author.name} />
-                      <AvatarFallback className="bg-gray-500 text-white">
-                        {comment.author.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p
-                          className="text-[var(--bkl-color-text-primary)]"
-                          style={{ fontSize: "var(--bkl-font-size-sm)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-                        >
-                          {comment.author.name}
-                        </p>
-                        <span className="text-[var(--bkl-color-text-disabled)]">•</span>
-                        <p
-                          className="text-[var(--bkl-color-text-disabled)]"
-                          style={{ fontSize: "var(--bkl-font-size-xs)" }}
-                        >
-                          {new Date(comment.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <p
-                        className="text-[var(--bkl-color-text-secondary)] mb-3"
-                        style={{ fontSize: "var(--bkl-font-size-sm)", lineHeight: "var(--bkl-leading-relaxed)" }}
-                      >
-                        {comment.text}
-                      </p>
-                      {comment.isAuthor && (
-                        <p
-                          className="text-[var(--bkl-color-text-disabled)] text-xs"
-                        >
-                          (Your comment)
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          <CommentSection reviewId={review._id} />
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { canViewReviewsInternal } from "./privacy";
+import { getBlockedUserIdSets, isEitherBlockedInternal } from "./blocking";
 
 const defaultListLimit = 50;
 
@@ -39,6 +40,11 @@ export const create = mutation({
     const author = await ctx.db.get(review.userId);
     if (!author) {
       throw new ConvexError("Review author not found");
+    }
+
+    const blocked = await isEitherBlockedInternal(ctx, user._id, author._id);
+    if (blocked) {
+      throw new ConvexError("You can't comment on this review");
     }
 
     const allowed = await canViewReviewsInternal(ctx, user, author);
@@ -154,6 +160,13 @@ export const listForReview = query({
       return [];
     }
 
+    if (viewer) {
+      const blocked = await isEitherBlockedInternal(ctx, viewer._id, author._id);
+      if (blocked) {
+        return [];
+      }
+    }
+
     const allowed = await canViewReviewsInternal(ctx, viewer, author);
     if (!allowed) {
       return [];
@@ -165,8 +178,16 @@ export const listForReview = query({
       .order("asc")
       .take(limit);
 
+    const blockedSets = viewer ? await getBlockedUserIdSets(ctx, viewer._id) : null;
+    const isBlockedUser = (userId: Id<"users">) =>
+      blockedSets ? blockedSets.blocked.has(userId) || blockedSets.blockedBy.has(userId) : false;
+
     const enriched = await Promise.all(
       comments.map(async (comment) => {
+        if (viewer && isBlockedUser(comment.userId)) {
+          return null;
+        }
+
         const author = await ctx.db.get(comment.userId);
         if (!author) {
           return null;
@@ -214,17 +235,32 @@ export const countForReview = query({
       return 0;
     }
 
+    if (viewer) {
+      const blocked = await isEitherBlockedInternal(ctx, viewer._id, author._id);
+      if (blocked) {
+        return 0;
+      }
+    }
+
     const allowed = await canViewReviewsInternal(ctx, viewer, author);
     if (!allowed) {
       return 0;
     }
+
+    const blockedSets = viewer ? await getBlockedUserIdSets(ctx, viewer._id) : null;
+    const isBlockedUser = (userId: Id<"users">) =>
+      blockedSets ? blockedSets.blocked.has(userId) || blockedSets.blockedBy.has(userId) : false;
 
     let count = 0;
     const iterator = ctx.db
       .query("comments")
       .withIndex("by_review_id", (q) => q.eq("reviewId", args.reviewId));
 
-    for await (const _ of iterator) {
+    for await (const comment of iterator) {
+      if (viewer && isBlockedUser(comment.userId)) {
+        continue;
+      }
+
       count += 1;
     }
 

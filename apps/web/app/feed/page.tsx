@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useCurrentUser } from "@/app/context/CurrentUserContext";
@@ -11,10 +12,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { TrendingUp, ArrowRight, Users } from "lucide-react";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { FeedPageSkeleton } from "@/app/components/PageSkeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
+
+type ActivityTab = "community" | "friends";
 
 export default function FeedPage() {
   const router = useRouter();
   const { currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const [activityTab, setActivityTab] = useState<ActivityTab>("community");
 
   // Fetch feed data from Convex - skip timeline query until user profile is synced
   // This prevents the "User profile not found" error during initial login when
@@ -26,6 +31,8 @@ export default function FeedPage() {
   const discoverPeople = useQuery(api.users.search, { query: "", limit: 50 });
 
   const communityEntries = (feedTimeline?.community ?? []) as FeedReviewEntry[];
+  const friendEntries = (feedTimeline?.friends ?? []) as FeedReviewEntry[];
+  const activityEntries = activityTab === "friends" ? friendEntries : communityEntries;
   const peopleToDisplay = (discoverPeople || []).filter((user) => !currentUser || user._id !== currentUser._id).slice(0, 5);
 
   // Get popular games from recent activity (top rated/most reviewed)
@@ -118,9 +125,16 @@ export default function FeedPage() {
                 >
                   Recent Activity
                 </h2>
+
+                <Tabs value={activityTab} onValueChange={(value) => setActivityTab(value as ActivityTab)}>
+                  <TabsList className="bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)]">
+                    <TabsTrigger value="friends">Friends</TabsTrigger>
+                    <TabsTrigger value="community">Community</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
               <div className="space-y-4">
-                <FeedReviewList entries={communityEntries} isLoading={isLoading} />
+                <FeedReviewList entries={activityEntries} isLoading={isLoading} />
               </div>
             </section>
 

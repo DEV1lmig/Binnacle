@@ -3,7 +3,8 @@
  */
 import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { Doc } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
+import { getBlockedUserIdSets, isEitherBlockedInternal } from "./blocking";
 
 const defaultListLimit = 50;
 
@@ -21,6 +22,11 @@ export const follow = mutation({
 
     if (user._id === args.targetUserId) {
       throw new ConvexError("You cannot follow yourself");
+    }
+
+    const blocked = await isEitherBlockedInternal(ctx, user._id, args.targetUserId);
+    if (blocked) {
+      throw new ConvexError("You can't follow this user");
     }
 
     const existing = await ctx.db
@@ -76,14 +82,37 @@ export const listFollowing = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const viewer = args.userId ? undefined : await requireCurrentUser(ctx);
-    const userId = args.userId ?? viewer!._id;
+    const identity = await ctx.auth.getUserIdentity();
+    const viewer = identity
+      ? await ctx.db
+          .query("users")
+          .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+          .unique()
+      : null;
+
+    const userId = args.userId ?? viewer?._id;
+    if (!userId) {
+      throw new ConvexError("Authentication required");
+    }
+
     const limit = sanitizeLimit(args.limit);
 
-    return await ctx.db
+    const blockedSets = viewer ? await getBlockedUserIdSets(ctx, viewer._id) : null;
+    const isBlockedUser = (otherUserId: Id<"users">) =>
+      blockedSets
+        ? blockedSets.blocked.has(otherUserId) || blockedSets.blockedBy.has(otherUserId)
+        : false;
+
+    const rows = await ctx.db
       .query("followers")
       .withIndex("by_follower_id", (q) => q.eq("followerId", userId))
       .take(limit);
+
+    if (!viewer) {
+      return rows;
+    }
+
+    return rows.filter((row) => !isBlockedUser(row.followingId));
   },
 });
 
@@ -96,14 +125,37 @@ export const listFollowers = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const viewer = args.userId ? undefined : await requireCurrentUser(ctx);
-    const userId = args.userId ?? viewer!._id;
+    const identity = await ctx.auth.getUserIdentity();
+    const viewer = identity
+      ? await ctx.db
+          .query("users")
+          .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+          .unique()
+      : null;
+
+    const userId = args.userId ?? viewer?._id;
+    if (!userId) {
+      throw new ConvexError("Authentication required");
+    }
+
     const limit = sanitizeLimit(args.limit);
 
-    return await ctx.db
+    const blockedSets = viewer ? await getBlockedUserIdSets(ctx, viewer._id) : null;
+    const isBlockedUser = (otherUserId: Id<"users">) =>
+      blockedSets
+        ? blockedSets.blocked.has(otherUserId) || blockedSets.blockedBy.has(otherUserId)
+        : false;
+
+    const rows = await ctx.db
       .query("followers")
       .withIndex("by_following_id", (q) => q.eq("followingId", userId))
       .take(limit);
+
+    if (!viewer) {
+      return rows;
+    }
+
+    return rows.filter((row) => !isBlockedUser(row.followerId));
   },
 });
 

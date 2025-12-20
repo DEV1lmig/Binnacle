@@ -10,6 +10,7 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { getStandardCoverUrl } from "@/lib/igdb-images";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { CommentSection } from "./CommentSection";
 
 type ReviewAuthor = {
   _id: Id<"users">;
@@ -52,12 +53,15 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
   const [liked, setLiked] = useState(review.viewerHasLiked ?? false);
   const [likeCount, setLikeCount] = useState(review.likeCount ?? 0);
+  const [commentCount, setCommentCount] = useState(review.commentCount ?? 0);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
 
   useEffect(() => {
     setLiked(review.viewerHasLiked ?? false);
     setLikeCount(review.likeCount ?? 0);
-  }, [review._id, review.viewerHasLiked, review.likeCount]);
+    setCommentCount(review.commentCount ?? 0);
+  }, [review._id, review.viewerHasLiked, review.likeCount, review.commentCount]);
 
   const normalizedRating = useMemo(() => {
     return Math.max(0, Math.min(10, review.rating));
@@ -99,6 +103,11 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
   const handleNavigate = () => {
     router.push(`/review/${review._id}`);
+  };
+
+  const handleToggleComments = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setCommentsOpen((open) => !open);
   };
 
   return (
@@ -188,10 +197,13 @@ export function ReviewCard({ review }: ReviewCardProps) {
           <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
           <span style={{ fontSize: "var(--bkl-font-size-sm)" }}>{likeCount}</span>
         </button>
-        <div className="flex items-center gap-2 text-[var(--bkl-color-text-secondary)]">
+        <button
+          onClick={handleToggleComments}
+          className="flex items-center gap-2 text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)] transition-colors"
+        >
           <MessageCircle className="w-4 h-4" />
-          <span style={{ fontSize: "var(--bkl-font-size-sm)" }}>{review.commentCount ?? 0}</span>
-        </div>
+          <span style={{ fontSize: "var(--bkl-font-size-sm)" }}>{commentCount}</span>
+        </button>
         {clerkUser && (
           <div className="ml-auto flex items-center gap-2">
             <Avatar className="h-6 w-6">
@@ -209,6 +221,18 @@ export function ReviewCard({ review }: ReviewCardProps) {
           </div>
         )}
       </footer>
+
+      {commentsOpen ? (
+        <div
+          className="mt-4 pt-4 border-t border-[var(--bkl-color-border)]"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <CommentSection
+            reviewId={review._id}
+            onCountDelta={(delta) => setCommentCount((count) => Math.max(0, count + delta))}
+          />
+        </div>
+      ) : null}
     </article>
   );
 }

@@ -10,6 +10,7 @@
 
 import type * as admin from "../admin.js";
 import type * as backlog from "../backlog.js";
+import type * as blocking from "../blocking.js";
 import type * as clerk from "../clerk.js";
 import type * as comments from "../comments.js";
 import type * as favorites from "../favorites.js";
@@ -53,6 +54,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   backlog: typeof backlog;
+  blocking: typeof blocking;
   clerk: typeof clerk;
   comments: typeof comments;
   favorites: typeof favorites;

@@ -66,7 +66,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
         <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 text-center">
-          <p className="text-[var(--bkl-color-text-secondary)]">We could not load your profile. Please try again later.</p>
+          <p className="text-[var(--bkl-color-text-secondary)]">Your profile is currently unavailable. Please try again later.</p>
         </div>
       </div>
     );

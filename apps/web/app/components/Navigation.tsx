@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, Clipboard, User as UserIcon, Settings, LogOut } from 'lucide-react';
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Home, Search, Clipboard, User as UserIcon, Settings, LogOut, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useAuth, useUser, useClerk } from '@clerk/nextjs';
 import { useCurrentUser } from '@/app/context/CurrentUserContext';
@@ -21,6 +23,13 @@ export function Navigation() {
   const { user: clerkUser } = useUser();
   const { currentUser: convexUser } = useCurrentUser();
   const { signOut } = useClerk();
+
+  // Avoid querying Convex until the user record is available (prevents "User profile not found" during initial sync).
+  const incomingRequests = useQuery(
+    api.friends.listIncomingRequests,
+    convexUser ? { limit: 99 } : "skip",
+  );
+  const pendingFriendRequests = incomingRequests?.length ?? 0;
 
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(path.endsWith('/') ? path : `${path}/`);
@@ -105,6 +114,27 @@ export function Navigation() {
                 Feed
               </Link>
               <Link
+                href="/friends"
+                className={`transition-colors ${
+                  isActive('/friends')
+                    ? 'text-[var(--bkl-color-accent-primary)]'
+                    : 'text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]'
+                }`}
+                style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
+              >
+                <span className="inline-flex items-center gap-2">
+                  Friends
+                  {pendingFriendRequests > 0 ? (
+                    <span
+                      className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]"
+                      style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+                    >
+                      {pendingFriendRequests >= 99 ? '99+' : pendingFriendRequests}
+                    </span>
+                  ) : null}
+                </span>
+              </Link>
+              <Link
                 href="/backlog"
                 className={`transition-colors ${
                   isActive('/backlog')
@@ -157,6 +187,25 @@ export function Navigation() {
                 >
                   <UserIcon className="w-4 h-4" />
                   <span>Profile</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/friends"
+                  className="flex items-center justify-between gap-2 cursor-pointer text-[var(--bkl-color-text-primary)] hover:text-[var(--bkl-color-accent-primary)]"
+                >
+                  <span className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span>Friends</span>
+                  </span>
+                  {pendingFriendRequests > 0 ? (
+                    <span
+                      className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]"
+                      style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+                    >
+                      {pendingFriendRequests >= 99 ? '99+' : pendingFriendRequests}
+                    </span>
+                  ) : null}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
