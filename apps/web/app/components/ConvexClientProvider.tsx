@@ -27,10 +27,10 @@ export default function ConvexClientProvider({
           socialButtonsPlacement: "bottom",
         },
       }}
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      afterSignInUrl="/app"
-      afterSignUpUrl="/complete-profile"
+  signInUrl="/sign-in"
+  signUpUrl="/sign-up"
+  signInFallbackRedirectUrl="/feed"
+      signUpFallbackRedirectUrl="/complete-profile"
     >
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <AuthBootstrap>{children}</AuthBootstrap>

@@ -4,6 +4,7 @@
 import { query, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import { canViewActivityInternal, canViewReviewsInternal } from "./privacy";
 
 const defaultFeedLimit = 30;
 const maxFollowingForFeed = 200;
@@ -58,9 +59,11 @@ export const timeline = query({
     const friendIds = await getFriendIdsForFeed(ctx, viewer._id, maxFriendsForFeed);
     const friendIdSet = new Set(friendIds);
 
+    const friendSources = await filterFeedSources(ctx, viewer, friendIds);
+
     const friendReviews = await collectReviewsForUsers(
       ctx,
-      friendIds,
+      friendSources,
       perUserLimit,
       limit
     );
@@ -80,7 +83,7 @@ export const timeline = query({
 
     const communityReviews = await collectReviewsForUsers(
       ctx,
-      communitySources,
+      await filterFeedSources(ctx, viewer, communitySources),
       perUserLimit,
       limit
     );
@@ -94,6 +97,37 @@ export const timeline = query({
     };
   },
 });
+
+async function filterFeedSources(
+  ctx: QueryCtx,
+  viewer: Doc<"users">,
+  userIds: Iterable<Id<"users">>
+) {
+  const filtered: Id<"users">[] = [];
+
+  for (const userId of userIds) {
+    if (userId === viewer._id) {
+      filtered.push(userId);
+      continue;
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      continue;
+    }
+
+    const [canViewActivity, canViewReviews] = await Promise.all([
+      canViewActivityInternal(ctx, viewer, user),
+      canViewReviewsInternal(ctx, viewer, user),
+    ]);
+
+    if (canViewActivity && canViewReviews) {
+      filtered.push(userId);
+    }
+  }
+
+  return filtered;
+}
 
 /**
  * Collects recent reviews for the provided set of user IDs.

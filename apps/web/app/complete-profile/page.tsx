@@ -35,7 +35,23 @@ export default function CompleteProfilePage() {
     setLastName(user.lastName ?? "");
   }, [isLoaded, router, user]);
 
-  /**
+  // Show loading state while Clerk is initializing
+  if (!isLoaded) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-stone-950 via-stone-950/95 to-stone-900 px-4 py-16 text-white">
+        <p className="text-sm text-stone-400">Loading your profile...</p>
+      </main>
+    );
+  }
+
+  // Show loading state while redirecting if no user
+  if (!user) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-stone-950 via-stone-950/95 to-stone-900 px-4 py-16 text-white">
+        <p className="text-sm text-stone-400">Redirecting...</p>
+      </main>
+    );
+  }  /**
    * Persists the player's preferred names in Clerk and syncs the Convex profile.
    */
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -59,7 +75,7 @@ export default function CompleteProfilePage() {
     try {
       await user.update({ firstName: trimmedFirst, lastName: trimmedLast });
       await syncCurrentUser({});
-      router.replace("/app");
+      router.replace("/feed");
     } catch (error) {
       console.error("Failed to update profile", error);
       setErrorMessage("We could not save your profile. Please try again.");
@@ -72,16 +88,8 @@ export default function CompleteProfilePage() {
    * Allows the player to exit the profile step without making additional changes.
    */
   const handleSkip = () => {
-    router.replace("/app");
+    router.replace("/feed");
   };
-
-  if (!isLoaded) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-stone-950 via-stone-950/95 to-stone-900 px-4 py-16 text-white">
-        <p className="text-sm text-stone-400">Loading your profile...</p>
-      </main>
-    );
-  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-stone-950 via-stone-950/95 to-stone-900 px-4 py-16 text-white">

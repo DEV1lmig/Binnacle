@@ -1,9 +1,16 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { internalMutation, mutation, query, QueryCtx, MutationCtx } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
+import { Id, Doc } from "./_generated/dataModel";
+import {
+  canViewBacklogInternal,
+  canViewProfileInternal,
+  canViewReviewsInternal,
+  normalizePrivacySettings,
+} from "./privacy";
 
 /**
  * Upserts a user record based on incoming Clerk webhook payloads.
+ * Updates Clerk-managed fields (username, name, avatarUrl, bio) from Clerk metadata.
  */
 export const store = internalMutation({
   args: {
@@ -12,30 +19,35 @@ export const store = internalMutation({
     username: v.string(),
     name: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
+    bio: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existingUser = await findByClerkId(ctx, args.clerkId);
 
-    const baseProfile = {
+    const clerkManagedFields = {
       username: args.username,
       name: args.name ?? args.username,
       avatarUrl: args.avatarUrl,
+      bio: args.bio,
     } as const;
 
     if (existingUser) {
-      await ctx.db.patch(existingUser._id, baseProfile);
+      // Update Clerk-managed fields from webhook
+      await ctx.db.patch(existingUser._id, clerkManagedFields);
       return existingUser._id;
     }
 
+    // Create new user with Clerk data
     return await ctx.db.insert("users", {
       clerkId: args.clerkId,
-      ...baseProfile,
+      ...clerkManagedFields,
     });
   },
 });
 
 /**
  * Ensures the currently authenticated Clerk user exists in Convex after direct sign-in/up.
+ * Only creates the user if they don't exist - does NOT overwrite existing user data.
  */
 export const syncCurrent = mutation({
   args: {},
@@ -47,21 +59,170 @@ export const syncCurrent = mutation({
 
     const existingUser = await findByClerkId(ctx, identity.subject);
 
+    // If user already exists, don't overwrite their data - just return their ID
+    if (existingUser) {
+      return existingUser._id;
+    }
+
+    // Only create new user with Clerk data if they don't exist yet
     const profile = {
       username: identity.nickname ?? identity.name ?? identity.email ?? "player",
       name: identity.name ?? identity.nickname ?? identity.email ?? "player",
       avatarUrl: identity.pictureUrl ?? undefined,
     } as const;
 
-    if (existingUser) {
-      await ctx.db.patch(existingUser._id, profile);
-      return existingUser._id;
-    }
-
     return await ctx.db.insert("users", {
       clerkId: identity.subject,
       ...profile,
     });
+  },
+});
+
+const MIN_USERNAME_LENGTH = 3;
+const MAX_USERNAME_LENGTH = 32;
+const MAX_NAME_LENGTH = 80;
+const MAX_BIO_LENGTH = 500;
+const MAX_TOP_GAME_NOTE_LENGTH = 140;
+const MAX_TOP_GAMES = 5;
+
+export const updateProfile = mutation({
+  args: {
+    name: v.optional(v.string()),
+    bio: v.optional(v.string()),
+  },
+  returns: v.object({
+    _id: v.id("users"),
+    name: v.string(),
+    username: v.string(),
+    bio: v.optional(v.string()),
+    avatarUrl: v.optional(v.string()),
+    topGames: v.optional(
+      v.array(
+        v.object({
+          gameId: v.id("games"),
+          rank: v.number(),
+          note: v.optional(v.string()),
+        })
+      )
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Authentication required");
+    }
+
+    const user = await findByClerkId(ctx, identity.subject);
+    if (!user) {
+      throw new ConvexError("User record not found");
+    }
+
+    const updates: Partial<Doc<"users">> = {};
+
+    if (args.name !== undefined) {
+      updates.name = sanitizeDisplayName(args.name);
+    }
+
+    if (args.bio !== undefined) {
+      updates.bio = sanitizeBio(args.bio);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return {
+        _id: user._id,
+        name: user.name,
+        username: user.username,
+        bio: user.bio ?? undefined,
+        avatarUrl: user.avatarUrl ?? undefined,
+        topGames: user.topGames ?? undefined,
+      } as const;
+    }
+
+    await ctx.db.patch(user._id, updates);
+
+    const updated = await ctx.db.get(user._id);
+    if (!updated) {
+      throw new ConvexError("Failed to load updated profile");
+    }
+
+    return {
+      _id: updated._id,
+      name: updated.name,
+      username: updated.username,
+      bio: updated.bio ?? undefined,
+      avatarUrl: updated.avatarUrl ?? undefined,
+      topGames: updated.topGames ?? undefined,
+    } as const;
+  },
+});
+
+export const setTopGames = mutation({
+  args: {
+    entries: v.array(
+      v.object({
+        gameId: v.id("games"),
+        note: v.optional(v.string()),
+      })
+    ),
+  },
+  returns: v.array(
+    v.object({
+      gameId: v.id("games"),
+      rank: v.number(),
+      note: v.optional(v.string()),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Authentication required");
+    }
+
+    const user = await findByClerkId(ctx, identity.subject);
+    if (!user) {
+      throw new ConvexError("User record not found");
+    }
+
+    if (args.entries.length > MAX_TOP_GAMES) {
+      throw new ConvexError(`You can only pin up to ${MAX_TOP_GAMES} games`);
+    }
+
+    const seen = new Set<Id<"games">>();
+    const normalized = args.entries.map((entry, index) => {
+      const gameId = entry.gameId;
+      if (seen.has(gameId)) {
+        throw new ConvexError("Duplicate games are not allowed");
+      }
+      seen.add(gameId);
+
+      return {
+        gameId: entry.gameId,
+        rank: index + 1,
+        note: sanitizeTopGameNote(entry.note),
+      } as const;
+    });
+
+    await Promise.all(
+      normalized.map(async (entry) => {
+        const game = await ctx.db.get(entry.gameId);
+        if (!game) {
+          throw new ConvexError("Pinned game not found in library");
+        }
+      })
+    );
+
+    // Ensure ranks are sequential regardless of incoming indices
+    const ranked = normalized.map((entry, index) => ({
+      gameId: entry.gameId,
+      rank: index + 1,
+      note: entry.note,
+    }));
+
+    await ctx.db.patch(user._id, {
+      topGames: ranked,
+    });
+
+    return ranked;
   },
 });
 
@@ -116,21 +277,22 @@ export const search = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const searchQuery = args.query.toLowerCase();
-    const limit = args.limit ?? 20;
+    const searchQuery = args.query.trim().toLowerCase();
+    const limit = Math.min(args.limit ?? 20, 50);
 
+    // OPTIMIZED: For empty query, just return users sorted by creation time
+    // No expensive stats computation - just basic user data for display
     if (!searchQuery) {
-      // Return discover results if no query
-      const allUsers = await ctx.db
+      const users = await ctx.db
         .query("users")
         .order("desc")
         .take(limit);
-      return allUsers;
+      return users;
     }
 
-    // OPTIMIZATION: Take a reasonable maximum instead of collecting all users
-    // Take 10x limit to account for filtering, max 500
-    const maxCandidates = Math.min(limit * 10, 500);
+    // For search queries, use search index if available or filter
+    // OPTIMIZATION: Limit candidates to prevent full table scan
+    const maxCandidates = Math.min(limit * 5, 200);
     const allUsers = await ctx.db
       .query("users")
       .order("desc")
@@ -185,7 +347,7 @@ export const discover = query({
       ? await ctx.db
           .query("followers")
           .withIndex("by_follower_id", (q) => q.eq("followerId", viewer._id))
-          .collect()
+          .take(1000) // Limit to prevent timeout (most users won't follow > 1000 people)
       : [];
 
     const followingIds = new Set(viewerFollowing.map((f) => f.followingId));
@@ -270,10 +432,25 @@ export const profileByUsername = query({
     const viewer = identity ? await findByClerkId(ctx, identity.subject) : null;
     const viewerIsSelf = viewer ? viewer._id === user._id : false;
 
+    const canViewProfile = await canViewProfileInternal(ctx, viewer, user);
+    if (!canViewProfile) {
+      return null;
+    }
+
+    const privacy = normalizePrivacySettings(user);
+    const canViewReviews = await canViewReviewsInternal(ctx, viewer, user);
+
     const [followerCount, followingCount, stats] = await Promise.all([
       countFollowers(ctx, user._id),
       countFollowing(ctx, user._id),
-      computeReviewStats(ctx, user._id),
+      privacy.showStats && canViewReviews
+        ? computeReviewStats(ctx, user._id)
+        : Promise.resolve({
+            reviewCount: 0,
+            averageRating: undefined,
+            totalPlaytimeHours: 0,
+            topPlatforms: [] as Array<{ name: string; count: number }>,
+          }),
     ]);
 
     const viewerFollows = !viewer || viewerIsSelf
@@ -297,6 +474,399 @@ export const profileByUsername = query({
     } as const;
   },
 });
+
+export const dashboard = query({
+  args: {
+    userId: v.optional(v.id("users")),
+    username: v.optional(v.string()),
+    recentLimit: v.optional(v.number()),
+  },
+  returns: v.union(
+    v.null(),
+    v.object({
+      user: v.object({
+        _id: v.id("users"),
+        _creationTime: v.number(),
+        name: v.string(),
+        username: v.string(),
+        bio: v.optional(v.string()),
+        avatarUrl: v.optional(v.string()),
+      }),
+      followerCount: v.number(),
+      followingCount: v.number(),
+      viewerFollows: v.boolean(),
+      viewerIsSelf: v.boolean(),
+      reviewStats: v.object({
+        reviewCount: v.number(),
+        averageRating: v.optional(v.number()),
+        totalPlaytimeHours: v.number(),
+        topPlatforms: v.array(
+          v.object({
+            name: v.string(),
+            count: v.number(),
+          })
+        ),
+      }),
+      backlogStats: v.object({
+        total: v.number(),
+        want_to_play: v.number(),
+        playing: v.number(),
+        completed: v.number(),
+        dropped: v.number(),
+        on_hold: v.number(),
+      }),
+      topGames: v.array(
+        v.object({
+          rank: v.number(),
+          note: v.optional(v.string()),
+          game: v.object({
+            _id: v.id("games"),
+            title: v.string(),
+            coverUrl: v.optional(v.string()),
+            releaseYear: v.optional(v.number()),
+            aggregatedRating: v.optional(v.number()),
+          }),
+        })
+      ),
+      recentReviews: v.array(
+        v.object({
+          _id: v.id("reviews"),
+          _creationTime: v.number(),
+          rating: v.number(),
+          text: v.optional(v.string()),
+          playtimeHours: v.optional(v.number()),
+          platform: v.optional(v.string()),
+          game: v.object({
+            _id: v.id("games"),
+            title: v.string(),
+            coverUrl: v.optional(v.string()),
+            releaseYear: v.optional(v.number()),
+          }),
+        })
+      ),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const viewer = identity ? await findByClerkId(ctx, identity.subject) : null;
+    const targetUser = await resolveTargetUser(ctx, identity?.subject ?? null, args.userId, args.username);
+    if (!targetUser) {
+      return null;
+    }
+
+    const viewerIsSelf = viewer ? viewer._id === targetUser._id : false;
+
+    const canViewProfile = await canViewProfileInternal(ctx, viewer, targetUser);
+    if (!canViewProfile) {
+      return null;
+    }
+
+    const privacy = normalizePrivacySettings(targetUser);
+    const canViewReviews = await canViewReviewsInternal(ctx, viewer, targetUser);
+    const canViewBacklog = await canViewBacklogInternal(ctx, viewer, targetUser);
+
+    const recentLimit = sanitizeRecentLimit(args.recentLimit);
+
+    const emptyReviewStats = {
+      reviewCount: 0,
+      averageRating: undefined,
+      totalPlaytimeHours: 0,
+      topPlatforms: [] as Array<{ name: string; count: number }>,
+    };
+
+    const emptyBacklogStats = {
+      total: 0,
+      want_to_play: 0,
+      playing: 0,
+      completed: 0,
+      dropped: 0,
+      on_hold: 0,
+    };
+
+    const [followerCount, followingCount, reviewStats, backlogStats, topGames, recentReviews] = await Promise.all([
+      countFollowers(ctx, targetUser._id),
+      countFollowing(ctx, targetUser._id),
+      privacy.showStats && canViewReviews ? computeReviewStats(ctx, targetUser._id) : Promise.resolve(emptyReviewStats),
+      privacy.showStats && canViewBacklog ? computeBacklogStats(ctx, targetUser._id) : Promise.resolve(emptyBacklogStats),
+      hydrateTopGames(ctx, targetUser.topGames ?? []),
+      canViewReviews ? fetchRecentReviews(ctx, targetUser._id, recentLimit) : Promise.resolve([]),
+    ]);
+
+    const viewerFollows = !viewer || viewerIsSelf
+      ? false
+      : await isFollowing(ctx, viewer._id, targetUser._id);
+
+    return {
+      user: {
+        _id: targetUser._id,
+        _creationTime: targetUser._creationTime,
+        name: targetUser.name,
+        username: targetUser.username,
+        bio: targetUser.bio ?? undefined,
+        avatarUrl: targetUser.avatarUrl ?? undefined,
+      },
+      followerCount,
+      followingCount,
+      viewerFollows,
+      viewerIsSelf,
+      reviewStats,
+      backlogStats,
+      topGames,
+      recentReviews,
+    } as const;
+  },
+});
+
+type DashboardBacklogStats = {
+  total: number;
+  want_to_play: number;
+  playing: number;
+  completed: number;
+  dropped: number;
+  on_hold: number;
+};
+
+type DashboardTopGameEntry = {
+  gameId: Id<"games">;
+  rank: number;
+  note?: string;
+};
+
+async function resolveTargetUser(
+  ctx: QueryCtx,
+  identitySubject: string | null,
+  userId?: Id<"users"> | null,
+  username?: string | null
+) {
+  if (userId) {
+    const user = await ctx.db.get(userId);
+    if (user) {
+      return user;
+    }
+  }
+
+  if (username) {
+    const trimmed = username.trim().toLowerCase();
+    if (trimmed.length > 0) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_username", (q) => q.eq("username", trimmed))
+        .unique();
+      if (user) {
+        return user;
+      }
+    }
+  }
+
+  if (identitySubject) {
+    return await findByClerkId(ctx, identitySubject);
+  }
+
+  return null;
+}
+
+function sanitizeRecentLimit(limit: number | undefined) {
+  if (!limit || !Number.isFinite(limit) || limit <= 0) {
+    return 5;
+  }
+  return Math.min(Math.floor(limit), 10);
+}
+
+async function computeBacklogStats(ctx: QueryCtx, userId: Id<"users">): Promise<DashboardBacklogStats> {
+  const stats: DashboardBacklogStats = {
+    total: 0,
+    want_to_play: 0,
+    playing: 0,
+    completed: 0,
+    dropped: 0,
+    on_hold: 0,
+  };
+
+  const iterator = ctx.db
+    .query("backlogItems")
+    .withIndex("by_user_id", (q) => q.eq("userId", userId));
+
+  for await (const item of iterator) {
+    stats.total += 1;
+    if (item.status in stats) {
+      const key = item.status as keyof DashboardBacklogStats;
+      stats[key] += 1;
+    }
+  }
+
+  return stats;
+}
+
+async function hydrateTopGames(
+  ctx: QueryCtx,
+  entries: ReadonlyArray<DashboardTopGameEntry>
+) {
+  if (entries.length === 0) {
+    return [] as Array<{
+      rank: number;
+      note?: string;
+      game: {
+        _id: Id<"games">;
+        title: string;
+        coverUrl?: string;
+        releaseYear?: number;
+        aggregatedRating?: number;
+      };
+    }>;
+  }
+
+  const sorted = [...entries]
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, MAX_TOP_GAMES);
+
+  const result: Array<{
+    rank: number;
+    note?: string;
+    game: {
+      _id: Id<"games">;
+      title: string;
+      coverUrl?: string;
+      releaseYear?: number;
+      aggregatedRating?: number;
+    };
+  }> = [];
+
+  for (const entry of sorted) {
+    const game = await ctx.db.get(entry.gameId);
+    if (!game) {
+      continue;
+    }
+
+    result.push({
+      rank: entry.rank,
+      note: entry.note ?? undefined,
+      game: {
+        _id: game._id,
+        title: game.title,
+        coverUrl: game.coverUrl ?? undefined,
+        releaseYear: game.releaseYear ?? undefined,
+        aggregatedRating: game.aggregatedRating ?? undefined,
+      },
+    });
+  }
+
+  return result;
+}
+
+async function fetchRecentReviews(ctx: QueryCtx, userId: Id<"users">, limit: number) {
+  const recent = await ctx.db
+    .query("reviews")
+    .withIndex("by_user_id", (q) => q.eq("userId", userId))
+    .order("desc")
+    .take(limit);
+
+  const result: Array<{
+    _id: Id<"reviews">;
+    _creationTime: number;
+    rating: number;
+    text?: string;
+    playtimeHours?: number;
+    platform?: string;
+    game: {
+      _id: Id<"games">;
+      title: string;
+      coverUrl?: string;
+      releaseYear?: number;
+    };
+  }> = [];
+
+  for (const review of recent) {
+    const game = await ctx.db.get(review.gameId);
+    if (!game) {
+      continue;
+    }
+
+    result.push({
+      _id: review._id,
+      _creationTime: review._creationTime,
+      rating: review.rating,
+      text: review.text ?? undefined,
+      playtimeHours: review.playtimeHours ?? undefined,
+      platform: review.platform ?? undefined,
+      game: {
+        _id: game._id,
+        title: game.title,
+        coverUrl: game.coverUrl ?? undefined,
+        releaseYear: game.releaseYear ?? undefined,
+      },
+    });
+  }
+
+  return result;
+}
+
+function sanitizeUsername(raw: string) {
+  const candidate = raw.trim().toLowerCase();
+
+  if (candidate.length < MIN_USERNAME_LENGTH) {
+    throw new ConvexError(`Username must be at least ${MIN_USERNAME_LENGTH} characters long`);
+  }
+
+  if (candidate.length > MAX_USERNAME_LENGTH) {
+    throw new ConvexError(`Username cannot exceed ${MAX_USERNAME_LENGTH} characters`);
+  }
+
+  if (!/^[a-z0-9_]+$/.test(candidate)) {
+    throw new ConvexError("Username may only include letters, numbers, or underscores");
+  }
+
+  return candidate;
+}
+
+function sanitizeDisplayName(raw: string) {
+  const candidate = raw.trim();
+
+  if (candidate.length === 0) {
+    throw new ConvexError("Name cannot be empty");
+  }
+
+  if (candidate.length > MAX_NAME_LENGTH) {
+    throw new ConvexError(`Name cannot exceed ${MAX_NAME_LENGTH} characters`);
+  }
+
+  return candidate;
+}
+
+function sanitizeBio(raw: string | undefined) {
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  const candidate = raw.trim();
+
+  if (candidate.length === 0) {
+    return undefined;
+  }
+
+  if (candidate.length > MAX_BIO_LENGTH) {
+    throw new ConvexError(`Bio cannot exceed ${MAX_BIO_LENGTH} characters`);
+  }
+
+  return candidate;
+}
+
+function sanitizeTopGameNote(raw: string | undefined) {
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  const candidate = raw.trim();
+
+  if (candidate.length === 0) {
+    return undefined;
+  }
+
+  if (candidate.length > MAX_TOP_GAME_NOTE_LENGTH) {
+    throw new ConvexError(`Notes cannot exceed ${MAX_TOP_GAME_NOTE_LENGTH} characters`);
+  }
+
+  return candidate;
+}
 
 /**
  * Finds a user document using a Clerk subject identifier.
@@ -397,7 +967,7 @@ async function computeReviewStats(ctx: QueryCtx, userId: Id<"users">) {
     averageRating,
     totalPlaytimeHours: playtimeSum,
     topPlatforms,
-  } as const;
+  };
 }
 
 /**

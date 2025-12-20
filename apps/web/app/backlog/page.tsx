@@ -25,13 +25,14 @@ import {
   List,
 } from "lucide-react";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import { BacklogPageSkeleton } from "@/app/components/PageSkeleton";
 
 type GameStatus = "all" | "want_to_play" | "playing" | "completed" | "on_hold" | "dropped";
 type ViewMode = "grid" | "list";
 
 export default function BacklogPage() {
   const router = useRouter();
-  const { currentUser } = useCurrentUser();
+  const { currentUser, isLoading: isUserLoading } = useCurrentUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<GameStatus>("all");
   const [sortBy, setSortBy] = useState("recent");
@@ -43,7 +44,7 @@ export default function BacklogPage() {
     currentUser ? { userId: currentUser._id } : "skip"
   );
 
-  // Filter and sort games
+  // Filter and sort games - MUST be before any conditional returns
   const filteredAndSortedGames = useMemo(() => {
     if (!backlogItems) return [];
 
@@ -78,7 +79,7 @@ export default function BacklogPage() {
     return items;
   }, [backlogItems, activeFilter, searchQuery, sortBy]);
 
-  // Calculate status counts
+  // Calculate status counts - MUST be before any conditional returns
   const statusCounts = useMemo(() => {
     if (!backlogItems) return { total: 0, want_to_play: 0, playing: 0, completed: 0, on_hold: 0, dropped: 0 };
     
@@ -91,6 +92,12 @@ export default function BacklogPage() {
       dropped: backlogItems.filter((i) => i.status === "dropped").length,
     };
   }, [backlogItems]);
+
+  // Show skeleton while user data or backlog is loading
+  // This MUST come after all hooks
+  if (isUserLoading || !currentUser || backlogItems === undefined) {
+    return <BacklogPageSkeleton />;
+  }
 
   const statusConfig = [
     {
@@ -136,8 +143,6 @@ export default function BacklogPage() {
       icon: XCircle,
     },
   ];
-
-  const isLoading = !currentUser || backlogItems === undefined;
 
   return (
     <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] pb-20 md:pb-8">
@@ -278,13 +283,7 @@ export default function BacklogPage() {
         </div>
 
         {/* Games Grid/List */}
-        {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
-            {[...Array(12)].map((_, i) => (
-              <Skeleton key={i} className="h-40 bg-[var(--bkl-color-bg-secondary)]" />
-            ))}
-          </div>
-        ) : filteredAndSortedGames.length > 0 ? (
+        {filteredAndSortedGames.length > 0 ? (
           viewMode === "grid" ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
               {filteredAndSortedGames.map((item) => (

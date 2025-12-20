@@ -57,9 +57,9 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
           </div>
         </div>
         
-        <div className="p-3">
+        <div className="p-3 min-h-[72px] flex flex-col justify-between">
           <h3 
-            className="text-[var(--bkl-color-text-primary)] line-clamp-2 mb-1"
+            className="text-[var(--bkl-color-text-primary)] line-clamp-2"
             style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
           >
             {game.title}
@@ -68,7 +68,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
             className="text-[var(--bkl-color-text-disabled)]"
             style={{ fontSize: 'var(--bkl-font-size-xs)' }}
           >
-            {game.releaseDate_human ? new Date(game.releaseDate_human).getFullYear() : 'N/A'}
+            {game.releaseYear ?? 'N/A'}
           </p>
         </div>
       </button>
@@ -113,7 +113,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
                 className="text-[var(--bkl-color-text-secondary)] mt-1"
                 style={{ fontSize: 'var(--bkl-font-size-xs)' }}
               >
-                {game.releaseDate_human ? new Date(game.releaseDate_human).getFullYear() : 'N/A'} • {game.developer}
+                {game.releaseYear ?? 'N/A'}{game.developer ? ` • ${game.developer}` : ''}
               </p>
             </div>
             {game.status && <StatusBadge status={game.status} />}

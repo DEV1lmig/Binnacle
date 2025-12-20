@@ -4,6 +4,7 @@
 import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import { canSendFriendRequestInternal } from "./privacy";
 
 const defaultListLimit = 50;
 
@@ -18,6 +19,16 @@ export const sendRequest = mutation({
   },
   handler: async (ctx, args) => {
     const requester = await requireCurrentUser(ctx);
+
+    const recipient = await ctx.db.get(args.recipientId);
+    if (!recipient) {
+      throw new ConvexError("User not found");
+    }
+
+    const allowed = await canSendFriendRequestInternal(ctx, requester, recipient);
+    if (!allowed) {
+      throw new ConvexError("This user is not accepting friend requests");
+    }
 
     if (requester._id === args.recipientId) {
       throw new ConvexError("You cannot send a friend request to yourself");

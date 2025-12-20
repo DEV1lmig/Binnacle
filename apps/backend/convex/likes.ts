@@ -4,6 +4,7 @@
 import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc } from "./_generated/dataModel";
+import { canViewReviewsInternal } from "./privacy";
 
 const defaultListLimit = 100;
 
@@ -18,6 +19,21 @@ export const toggle = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx);
+
+    const review = await ctx.db.get(args.reviewId);
+    if (!review) {
+      throw new ConvexError("Review not found");
+    }
+
+    const author = await ctx.db.get(review.userId);
+    if (!author) {
+      throw new ConvexError("Review author not found");
+    }
+
+    const allowed = await canViewReviewsInternal(ctx, user, author);
+    if (!allowed) {
+      throw new ConvexError("You can't like this review");
+    }
 
     const existing = await ctx.db
       .query("likes")
@@ -49,6 +65,29 @@ export const listForReview = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const viewer = identity
+      ? await ctx.db
+          .query("users")
+          .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+          .unique()
+      : null;
+
+    const review = await ctx.db.get(args.reviewId);
+    if (!review) {
+      return [];
+    }
+
+    const author = await ctx.db.get(review.userId);
+    if (!author) {
+      return [];
+    }
+
+    const allowed = await canViewReviewsInternal(ctx, viewer, author);
+    if (!allowed) {
+      return [];
+    }
+
     const limit = sanitizeLimit(args.limit);
 
     return await ctx.db

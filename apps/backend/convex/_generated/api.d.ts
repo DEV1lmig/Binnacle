@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
 import type * as backlog from "../backlog.js";
 import type * as clerk from "../clerk.js";
 import type * as comments from "../comments.js";
@@ -18,15 +19,19 @@ import type * as franchiseMetadata from "../franchiseMetadata.js";
 import type * as franchiseRanking from "../franchiseRanking.js";
 import type * as friends from "../friends.js";
 import type * as games from "../games.js";
+import type * as http from "../http.js";
 import type * as igdb from "../igdb.js";
 import type * as igdbTokens from "../igdbTokens.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as lib_bandwidthMonitor from "../lib/bandwidthMonitor.js";
 import type * as likes from "../likes.js";
 import type * as migrations from "../migrations.js";
 import type * as monitoring from "../monitoring.js";
+import type * as privacy from "../privacy.js";
 import type * as reviews from "../reviews.js";
 import type * as seedBatch from "../seedBatch.js";
 import type * as seedFranchises from "../seedFranchises.js";
+import type * as settings from "../settings.js";
 import type * as users from "../users.js";
 import type * as utils_pagination from "../utils/pagination.js";
 import type * as utils_queryCache from "../utils/queryCache.js";
@@ -46,6 +51,7 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
   backlog: typeof backlog;
   clerk: typeof clerk;
   comments: typeof comments;
@@ -56,15 +62,19 @@ declare const fullApi: ApiFromModules<{
   franchiseRanking: typeof franchiseRanking;
   friends: typeof friends;
   games: typeof games;
+  http: typeof http;
   igdb: typeof igdb;
   igdbTokens: typeof igdbTokens;
+  "lib/auth": typeof lib_auth;
   "lib/bandwidthMonitor": typeof lib_bandwidthMonitor;
   likes: typeof likes;
   migrations: typeof migrations;
   monitoring: typeof monitoring;
+  privacy: typeof privacy;
   reviews: typeof reviews;
   seedBatch: typeof seedBatch;
   seedFranchises: typeof seedFranchises;
+  settings: typeof settings;
   users: typeof users;
   "utils/pagination": typeof utils_pagination;
   "utils/queryCache": typeof utils_queryCache;

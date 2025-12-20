@@ -4,6 +4,7 @@
 import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import { canViewReviewsInternal } from "./privacy";
 
 const defaultListLimit = 50;
 
@@ -33,6 +34,16 @@ export const create = mutation({
     const review = await ctx.db.get(args.reviewId);
     if (!review) {
       throw new ConvexError("Review not found");
+    }
+
+    const author = await ctx.db.get(review.userId);
+    if (!author) {
+      throw new ConvexError("Review author not found");
+    }
+
+    const allowed = await canViewReviewsInternal(ctx, user, author);
+    if (!allowed) {
+      throw new ConvexError("You can't comment on this review");
     }
 
     return await ctx.db.insert("comments", {
@@ -133,6 +144,21 @@ export const listForReview = query({
     const viewer = identity ? await findByClerkId(ctx, identity.subject) : null;
     const limit = sanitizeLimit(args.limit);
 
+    const review = await ctx.db.get(args.reviewId);
+    if (!review) {
+      return [];
+    }
+
+    const author = await ctx.db.get(review.userId);
+    if (!author) {
+      return [];
+    }
+
+    const allowed = await canViewReviewsInternal(ctx, viewer, author);
+    if (!allowed) {
+      return [];
+    }
+
     const comments = await ctx.db
       .query("comments")
       .withIndex("by_review_id", (q) => q.eq("reviewId", args.reviewId))
@@ -175,6 +201,24 @@ export const countForReview = query({
   },
   returns: v.number(),
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const viewer = identity ? await findByClerkId(ctx, identity.subject) : null;
+
+    const review = await ctx.db.get(args.reviewId);
+    if (!review) {
+      return 0;
+    }
+
+    const author = await ctx.db.get(review.userId);
+    if (!author) {
+      return 0;
+    }
+
+    const allowed = await canViewReviewsInternal(ctx, viewer, author);
+    if (!allowed) {
+      return 0;
+    }
+
     let count = 0;
     const iterator = ctx.db
       .query("comments")

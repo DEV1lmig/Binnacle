@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type SeedCategory = "trending" | "newReleases" | "topRated";
 type LaunchMode = "minimal" | "standard" | "comprehensive" | "custom";
@@ -386,10 +387,35 @@ export default function AdminPage() {
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Admin Panel</h1>
-          <p className="text-muted-foreground mt-2">Manage cache and system tasks</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Admin Panel</h1>
+            <p className="text-muted-foreground mt-2">Manage cache and system tasks</p>
+          </div>
         </div>
+
+        {/* Admin Navigation */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Admin Navigation</CardTitle>
+            <CardDescription>Quick access to admin sections</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/admin/users">
+                <Button variant="outline" className="gap-2">
+                  👥 User Management
+                </Button>
+              </Link>
+              <Button variant="outline" className="gap-2" disabled>
+                🛡️ Moderation (Coming Soon)
+              </Button>
+              <Button variant="outline" className="gap-2" disabled>
+                ⚙️ Settings (Coming Soon)
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Quick Launch Seeding - Batch Mode */}
         <Card className="border-2 border-primary">

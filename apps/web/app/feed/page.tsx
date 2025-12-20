@@ -10,32 +10,33 @@ import { FeedReviewList, type FeedReviewEntry } from "./components/FeedReviewLis
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { TrendingUp, ArrowRight, Users } from "lucide-react";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import { FeedPageSkeleton } from "@/app/components/PageSkeleton";
 
 export default function FeedPage() {
   const router = useRouter();
-  const { currentUser } = useCurrentUser();
+  const { currentUser, isLoading: isUserLoading } = useCurrentUser();
 
-  // Fetch feed data from Convex
-  const feedTimeline = useQuery(api.feed.timeline, { limit: 30 });
+  // Fetch feed data from Convex - skip timeline query until user profile is synced
+  // This prevents the "User profile not found" error during initial login when
+  // Clerk auth completes but Convex user record hasn't synced yet
+  const feedTimeline = useQuery(
+    api.feed.timeline,
+    currentUser ? { limit: 30 } : "skip"
+  );
   const discoverPeople = useQuery(api.users.search, { query: "", limit: 50 });
-  
+
   const communityEntries = (feedTimeline?.community ?? []) as FeedReviewEntry[];
   const peopleToDisplay = (discoverPeople || []).filter((user) => !currentUser || user._id !== currentUser._id).slice(0, 5);
-  
+
   // Get popular games from recent activity (top rated/most reviewed)
   const popularGames = communityEntries
     .slice(0, 5)
     .map((entry) => entry.game)
     .filter((game, index, self) => self.findIndex((g) => g._id === game._id) === index);
 
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 text-center">
-          <p className="text-[var(--bkl-color-text-secondary)]">Please log in to view your feed.</p>
-        </div>
-      </div>
-    );
+  // Show skeleton while user data is loading
+  if (isUserLoading || !currentUser) {
+    return <FeedPageSkeleton />;
   }
 
   const isLoading = feedTimeline === undefined;
@@ -45,13 +46,13 @@ export default function FeedPage() {
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         {/* Welcome Header */}
         <div className="mb-8">
-          <h1 
+          <h1
             className="text-[var(--bkl-color-text-primary)] mb-2"
             style={{ fontSize: "var(--bkl-font-size-4xl)", fontWeight: "var(--bkl-font-weight-bold)" }}
           >
             Welcome back, {currentUser.name}
           </h1>
-          <p 
+          <p
             className="text-[var(--bkl-color-text-secondary)]"
             style={{ fontSize: "var(--bkl-font-size-base)" }}
           >
@@ -67,14 +68,14 @@ export default function FeedPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-[var(--bkl-color-accent-primary)]" />
-                  <h2 
+                  <h2
                     className="text-[var(--bkl-color-text-primary)]"
                     style={{ fontSize: "var(--bkl-font-size-2xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
                   >
                     Popular on Binnacle
                   </h2>
                 </div>
-                <button 
+                <button
                   onClick={() => router.push("/discover")}
                   className="text-[var(--bkl-color-accent-primary)] hover:text-[var(--bkl-color-accent-hover)]"
                   style={{ fontSize: "var(--bkl-font-size-sm)" }}
@@ -111,7 +112,7 @@ export default function FeedPage() {
             {/* Recent Activity */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 
+                <h2
                   className="text-[var(--bkl-color-text-primary)]"
                   style={{ fontSize: "var(--bkl-font-size-2xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
                 >
@@ -126,13 +127,13 @@ export default function FeedPage() {
             {/* Based on Your History */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 
+                <h2
                   className="text-[var(--bkl-color-text-primary)]"
                   style={{ fontSize: "var(--bkl-font-size-2xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
                 >
                   Based on Your History
                 </h2>
-                <button 
+                <button
                   onClick={() => router.push("/backlog")}
                   className="text-[var(--bkl-color-accent-primary)] hover:text-[var(--bkl-color-accent-hover)]"
                   style={{ fontSize: "var(--bkl-font-size-sm)" }}
@@ -177,13 +178,13 @@ export default function FeedPage() {
             <AdSpace variant="sidebar" />
 
             {/* Discover People */}
-            <div 
+            <div
               className="bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-lg)] p-6 shadow-[var(--bkl-shadow-md)]"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-[var(--bkl-color-accent-primary)]" />
-                  <h2 
+                  <h2
                     className="text-[var(--bkl-color-text-primary)]"
                     style={{ fontSize: "var(--bkl-font-size-xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
                   >
@@ -197,7 +198,7 @@ export default function FeedPage() {
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
-              
+
               <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--bkl-color-border)] scrollbar-track-transparent pr-2">
                 <div className="space-y-3">
                   {isLoading || discoverPeople === undefined ? (
@@ -224,13 +225,13 @@ export default function FeedPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p 
+                          <p
                             className="text-[var(--bkl-color-text-primary)] truncate"
                             style={{ fontSize: "var(--bkl-font-size-base)", fontWeight: "var(--bkl-font-weight-semibold)" }}
                           >
                             {user.name}
                           </p>
-                          <p 
+                          <p
                             className="text-[var(--bkl-color-text-disabled)] truncate"
                             style={{ fontSize: "var(--bkl-font-size-sm)" }}
                           >
@@ -240,13 +241,13 @@ export default function FeedPage() {
                       </div>
                       <div className="flex gap-4">
                         <div className="flex items-center gap-1">
-                          <span 
+                          <span
                             className="text-[var(--bkl-color-accent-primary)]"
                             style={{ fontSize: "var(--bkl-font-size-sm)", fontWeight: "var(--bkl-font-weight-semibold)" }}
                           >
                             0
                           </span>
-                          <span 
+                          <span
                             className="text-[var(--bkl-color-text-disabled)]"
                             style={{ fontSize: "var(--bkl-font-size-sm)" }}
                           >
@@ -261,10 +262,10 @@ export default function FeedPage() {
             </div>
 
             {/* Your Stats */}
-            <div 
+            <div
               className="bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-lg)] p-6 shadow-[var(--bkl-shadow-md)]"
             >
-              <h2 
+              <h2
                 className="text-[var(--bkl-color-text-primary)] mb-4"
                 style={{ fontSize: "var(--bkl-font-size-xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
               >
@@ -272,13 +273,13 @@ export default function FeedPage() {
               </h2>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span 
+                  <span
                     className="text-[var(--bkl-color-text-secondary)]"
                     style={{ fontSize: "var(--bkl-font-size-sm)" }}
                   >
                     Total Reviews
                   </span>
-                  <span 
+                  <span
                     className="text-[var(--bkl-color-text-primary)]"
                     style={{ fontSize: "var(--bkl-font-size-xl)", fontWeight: "var(--bkl-font-weight-bold)" }}
                   >
@@ -286,13 +287,13 @@ export default function FeedPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span 
+                  <span
                     className="text-[var(--bkl-color-text-secondary)]"
                     style={{ fontSize: "var(--bkl-font-size-sm)" }}
                   >
                     Average Rating
                   </span>
-                  <span 
+                  <span
                     className="text-[var(--bkl-color-text-primary)]"
                     style={{ fontSize: "var(--bkl-font-size-xl)", fontWeight: "var(--bkl-font-weight-bold)" }}
                   >
@@ -302,13 +303,13 @@ export default function FeedPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span 
+                  <span
                     className="text-[var(--bkl-color-text-secondary)]"
                     style={{ fontSize: "var(--bkl-font-size-sm)" }}
                   >
                     Hours Played
                   </span>
-                  <span 
+                  <span
                     className="text-[var(--bkl-color-text-primary)]"
                     style={{ fontSize: "var(--bkl-font-size-xl)", fontWeight: "var(--bkl-font-weight-bold)" }}
                   >

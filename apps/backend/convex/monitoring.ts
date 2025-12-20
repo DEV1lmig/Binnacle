@@ -1,54 +1,48 @@
-import { query, internalQuery } from "./_generated/server";
+import { internalQuery } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdmin } from "./lib/auth";
 
 /**
  * Get approximate database bandwidth usage statistics.
  * This measures the size of data read from queries.
  */
-export const getBandwidthStats = query({
-  args: {},
-  handler: async (ctx) => {
+export const getBandwidthStats = internalQuery({
+  args: {
+    sampleSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const startTime = Date.now();
-    
-    // Get all tables and count documents/estimate size
+
+    const sampleSize = Math.min(Math.max(1, args.sampleSize ?? 100), 1000);
+
     const stats = {
       tables: [] as Array<{
         name: string;
-        documentCount: number;
-        estimatedSizeKB: number;
+        sampledDocuments: number;
+        sampledSizeKB: number;
       }>,
-      totalDocuments: 0,
-      totalEstimatedSizeKB: 0,
+      sampleSize,
       queryTime: 0,
     };
 
-    // Sample each table to estimate bandwidth
-    const tableNames = ['games', 'users', 'reviews', 'backlogItems', 'followers', 'likes'];
-    
+    const tableNames = ["games", "users", "reviews", "backlogItems", "followers", "likes"] as const;
+
     for (const tableName of tableNames) {
       try {
-        const documents = await ctx.db.query(tableName as any).collect();
-        const documentCount = documents.length;
-        
-        // Estimate size by converting to JSON and measuring
+        const documents = await ctx.db.query(tableName).take(sampleSize);
         const jsonSize = JSON.stringify(documents).length;
-        const estimatedSizeKB = Math.round(jsonSize / 1024);
-        
         stats.tables.push({
           name: tableName,
-          documentCount,
-          estimatedSizeKB,
+          sampledDocuments: documents.length,
+          sampledSizeKB: Math.round(jsonSize / 1024),
         });
-        
-        stats.totalDocuments += documentCount;
-        stats.totalEstimatedSizeKB += estimatedSizeKB;
-      } catch (error) {
-        console.log(`Table ${tableName} might not exist or is empty`);
+      } catch {
+        // Ignore missing tables (or unexpected issues) in this diagnostic endpoint.
       }
     }
-    
+
     stats.queryTime = Date.now() - startTime;
-    
     return stats;
   },
 });
@@ -62,13 +56,11 @@ export const measureQueryBandwidth = internalQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const startTime = Date.now();
-    
-    const query = args.limit 
-      ? ctx.db.query(args.tableName as any).take(args.limit)
-      : ctx.db.query(args.tableName as any).collect();
-    
-    const results = await query;
+
+    const limit = Math.min(Math.max(1, args.limit ?? 100), 5000);
+    const results = await ctx.db.query(args.tableName as any).take(limit);
     const jsonSize = JSON.stringify(results).length;
     
     return {
@@ -86,33 +78,37 @@ export const measureQueryBandwidth = internalQuery({
 /**
  * Get current database size and document counts.
  */
-export const getDatabaseSize = query({
-  args: {},
-  handler: async (ctx) => {
-    const tables = {
-      games: await ctx.db.query("games").collect(),
-      users: await ctx.db.query("users").collect(),
-      reviews: await ctx.db.query("reviews").collect(),
-      backlogItems: await ctx.db.query("backlogItems").collect(),
-      followers: await ctx.db.query("followers").collect(),
-      likes: await ctx.db.query("likes").collect(),
-    };
+export const getDatabaseSize = internalQuery({
+  args: {
+    sampleSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
 
-    const tableSizes = Object.entries(tables).map(([name, docs]) => ({
-      table: name,
-      count: docs.length,
-      sizeKB: Math.round(JSON.stringify(docs).length / 1024),
-    }));
+    const sampleSize = Math.min(Math.max(1, args.sampleSize ?? 200), 2000);
+    const tableNames = ["games", "users", "reviews", "backlogItems", "followers", "likes"] as const;
 
-    const totalSize = tableSizes.reduce((sum, t) => sum + t.sizeKB, 0);
-    const totalDocs = tableSizes.reduce((sum, t) => sum + t.count, 0);
+    const tableSizes = await Promise.all(
+      tableNames.map(async (table) => {
+        const docs = await ctx.db.query(table).take(sampleSize);
+        return {
+          table,
+          sampledCount: docs.length,
+          sampledSizeKB: Math.round(JSON.stringify(docs).length / 1024),
+        };
+      })
+    );
+
+    const totalSampledSizeKB = tableSizes.reduce((sum, t) => sum + t.sampledSizeKB, 0);
+    const totalSampledDocs = tableSizes.reduce((sum, t) => sum + t.sampledCount, 0);
 
     return {
+      sampleSize,
       tables: tableSizes,
       totals: {
-        documents: totalDocs,
-        sizeKB: totalSize,
-        sizeMB: (totalSize / 1024).toFixed(2),
+        sampledDocuments: totalSampledDocs,
+        sampledSizeKB: totalSampledSizeKB,
+        sampledSizeMB: (totalSampledSizeKB / 1024).toFixed(2),
       },
     };
   },

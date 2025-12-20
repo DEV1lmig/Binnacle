@@ -2,6 +2,8 @@ import { v } from "convex/values";
 import { mutation, query, QueryCtx } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import { getCurrentUser } from "./lib/auth";
+import { canViewBacklogInternal } from "./privacy";
 
 // Valid backlog status values
 export const BACKLOG_STATUSES = [
@@ -243,10 +245,25 @@ export const listForUser = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const viewer = await getCurrentUser(ctx);
+
     let targetUserId: Id<"users"> | null = null;
+    let targetUser: any = null;
 
     if (args.userId) {
       targetUserId = args.userId;
+      targetUser = await ctx.db.get(args.userId);
+      if (!targetUser) {
+        return [];
+      }
+
+      const isSelf = viewer ? viewer._id === targetUserId : false;
+      if (!isSelf) {
+        const allowed = await canViewBacklogInternal(ctx, viewer, targetUser);
+        if (!allowed) {
+          return [];
+        }
+      }
     } else {
       // Get current user
       const identity = await ctx.auth.getUserIdentity();
@@ -264,6 +281,7 @@ export const listForUser = query({
       }
 
       targetUserId = user._id;
+      targetUser = user;
     }
 
     const limit = args.limit && args.limit > 0 ? Math.min(args.limit, 100) : 50;
@@ -326,10 +344,15 @@ export const listGameIdsForCurrentUser = query({
       return [];
     }
 
+    // IMPORTANT: Keep this query bounded to avoid unbounded bandwidth as users grow their backlog.
+    // This endpoint is used for UI membership toggles; if a user has an extremely large backlog,
+    // callers should switch to a per-game membership check instead of fetching all IDs.
+    const MAX_GAME_IDS = 1000;
+
     const items = await ctx.db
       .query("backlogItems")
       .withIndex("by_user_id", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(MAX_GAME_IDS);
 
     return items.map((item) => item.gameId);
   },

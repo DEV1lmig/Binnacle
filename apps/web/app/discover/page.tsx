@@ -69,21 +69,26 @@ export default function DiscoverPage() {
   // Fetch curated data from Convex (skip when searching)
   const isActivelySearching = searchQuery.trim().length > 0;
   
+  // OPTIMIZED: Reduced user limit for faster initial load
   const discoverPeople = useQuery(
     api.users.search, 
-    isActivelySearching ? "skip" : { query: "", limit: 15 }
+    isActivelySearching ? "skip" : { query: "", limit: 8 }
   );
+  
+  // OPTIMIZED: Reduced initial limits for faster page load
+  // Users can scroll/paginate for more results
   const trendingGamesData = useQuery(
     api.games.getTrendingGames, 
-    isActivelySearching ? "skip" : { limit: 24 }
+    isActivelySearching ? "skip" : { limit: 12 }
   );
+  
   const topRatedData = useQuery(
     api.games.getTopRatedGames, 
-    isActivelySearching ? "skip" : { limit: 24 }
+    isActivelySearching ? "skip" : { limit: 12 }
   );
   const newReleasesData = useQuery(
     api.games.getNewReleases, 
-    isActivelySearching ? "skip" : { limit: 24 }
+    isActivelySearching ? "skip" : { limit: 12 }
   );
   
   const mockUsers = (discoverPeople || []).filter((user) => !currentUser || user._id !== currentUser._id);
@@ -360,10 +365,10 @@ const mapToGameCardGame = (game: DiscoverGame): GameCardGame => {
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                   {trendingGamesData === undefined ? (
-                    Array.from({ length: 24 }).map((_, i) => (
+                    Array.from({ length: 12 }).map((_, i) => (
                       <div
                         key={`trending-skeleton-${i}`}
-                        className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse"
+                        className="aspect-[2/3] bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse"
                       />
                     ))
                   ) : trendingGames.games.length > 0 ? (
@@ -399,10 +404,10 @@ const mapToGameCardGame = (game: DiscoverGame): GameCardGame => {
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                   {topRatedData === undefined ? (
-                    Array.from({ length: 24 }).map((_, i) => (
+                    Array.from({ length: 12 }).map((_, i) => (
                       <div
                         key={`top-rated-skeleton-${i}`}
-                        className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse"
+                        className="aspect-[2/3] bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse"
                       />
                     ))
                   ) : topRated.games.length > 0 ? (
@@ -443,10 +448,10 @@ const mapToGameCardGame = (game: DiscoverGame): GameCardGame => {
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                   {newReleasesData === undefined ? (
-                    Array.from({ length: 24 }).map((_, i) => (
+                    Array.from({ length: 12 }).map((_, i) => (
                       <div
                         key={`new-releases-skeleton-${i}`}
-                        className="aspect-video bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse"
+                        className="aspect-[2/3] bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] animate-pulse"
                       />
                     ))
                   ) : newReleases.games.length > 0 ? (

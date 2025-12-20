@@ -339,23 +339,28 @@ export const searchOptimizedWithFallback = action({
         let franchiseName: string | null = null;
         
         for (const result of cachedResults.results) {
-          // Check franchises field directly from search results (no DB query!)
+          // Prefer the small `franchise` string (no JSON parse, minimal payload).
+          if (typeof result.franchise === "string" && result.franchise.trim().length > 0) {
+            franchiseName = result.franchise.trim();
+            console.log(`[searchOptimizedWithFallback] Found franchise from search results: "${franchiseName}"`);
+            break;
+          }
+
+          // Backward-compatible: older cached shapes may include `franchises` as a JSON string.
           if (result.franchises) {
             try {
               const franchisesArray = JSON.parse(result.franchises);
               if (Array.isArray(franchisesArray) && franchisesArray.length > 0) {
-                // Get the first franchise from the array
                 const firstFranchise = franchisesArray[0];
-                franchiseName = typeof firstFranchise === 'string' 
-                  ? firstFranchise 
-                  : firstFranchise?.name;
-                
-                if (franchiseName) {
+                franchiseName = typeof firstFranchise === "string" ? firstFranchise : firstFranchise?.name;
+
+                if (typeof franchiseName === "string" && franchiseName.trim().length > 0) {
+                  franchiseName = franchiseName.trim();
                   console.log(`[searchOptimizedWithFallback] Found franchise from search results: "${franchiseName}"`);
-                  break; // Found franchise, stop searching
+                  break;
                 }
               }
-            } catch (e) {
+            } catch {
               console.warn(`[searchOptimizedWithFallback] Failed to parse franchises field`);
             }
           }
@@ -364,88 +369,38 @@ export const searchOptimizedWithFallback = action({
         if (franchiseName) {
           console.log(`[searchOptimizedWithFallback] Analyzing franchise: "${franchiseName}"`);
           
-          // Count how many games we have for this franchise in our database
-          const franchiseGamesInDb = await ctx.runQuery(api.games.countGamesByFranchise, {
-            franchiseName,
-          });
-          
-          console.log(`[searchOptimizedWithFallback] Franchise "${franchiseName}": ${franchiseGamesInDb} games in DB, ${cachedResults.results.length} in search results`);
-          
-          // Check if we have metadata cached for this franchise
+          // OPTIMIZATION: Skip expensive franchise counting if we have very few cached results
+          // Just fetch from IGDB directly to avoid timeouts on large databases
+          if (cachedResults.results.length < 3) {
+            console.log(`[searchOptimizedWithFallback] Too few cached results (${cachedResults.results.length}), skipping franchise analysis - fetching from IGDB`);
+            shouldFetchFromIgdb = true;
+          } else {
+            // Check if we have metadata cached for this franchise (fast lookup)
             const franchiseMetadata = await ctx.runQuery(internal.franchiseMetadata.getFranchiseMetadata, {
               franchiseName,
             });
 
             // Use cached metadata only if it's valid (not stale AND has valid data)
             if (franchiseMetadata && !franchiseMetadata.isStale && franchiseMetadata.totalGamesOnIgdb > 0) {
-              // We have recent metadata - use it to make decision
-              const cachePercentage = (franchiseGamesInDb / franchiseMetadata.totalGamesOnIgdb) * 100;
+              // We have recent metadata - use estimated count from metadata
+              const estimatedCachedCount = cachedResults.results.length; // Use search results as proxy
+              const cachePercentage = (estimatedCachedCount / franchiseMetadata.totalGamesOnIgdb) * 100;
               
-              console.log(`[searchOptimizedWithFallback] Franchise metadata (cached): ${franchiseGamesInDb} cached / ${franchiseMetadata.totalGamesOnIgdb} total (${cachePercentage.toFixed(1)}%)`);
+              console.log(`[searchOptimizedWithFallback] Franchise metadata (cached): ~${estimatedCachedCount} in results / ${franchiseMetadata.totalGamesOnIgdb} total (${cachePercentage.toFixed(1)}%)`);
               
-              // Fetch from IGDB if:
-              // - We have less than 80% of the franchise cached
-              // - OR if the franchise has more than 5 games and we have less than 5 cached
-              if (
-                cachePercentage < 80 || 
-                (franchiseMetadata.totalGamesOnIgdb > 5 && franchiseGamesInDb < 5)
-              ) {
+              // Fetch from IGDB if we have very few results compared to total franchise size
+              if (estimatedCachedCount < Math.min(10, franchiseMetadata.totalGamesOnIgdb * 0.5)) {
                 shouldFetchFromIgdb = true;
                 console.log(`[searchOptimizedWithFallback] Franchise incomplete - will fetch from IGDB`);
               } else {
-                console.log(`[searchOptimizedWithFallback] Franchise mostly cached (${cachePercentage.toFixed(1)}%) - using cache only`);
+                console.log(`[searchOptimizedWithFallback] Franchise results sufficient - using cache only`);
               }
             } else {
-              // No metadata, stale, or invalid (totalGamesOnIgdb = 0) - fetch count from IGDB
-              console.log(`[searchOptimizedWithFallback] Metadata ${!franchiseMetadata ? 'missing' : franchiseMetadata.isStale ? 'stale' : 'invalid (0 games)'} - querying IGDB...`);
-              const { accessToken } = await getValidIgdbToken(ctx);
-              const sanitizedFranchise = franchiseName.replace(/"/g, "\\\"");
-              
-              // Query IGDB for total games in this franchise
-              // Since franchises is an array field, we need to use the search approach
-              // Search for games and filter by franchise name
-              const countResponse = await fetch("https://api.igdb.com/v4/games/count", {
-                method: "POST",
-                headers: {
-                  "Client-ID": getClientId(),
-                  Authorization: `Bearer ${accessToken}`,
-                  "Content-Type": "text/plain",
-                },
-                // Use search with franchise filter instead of direct where clause
-                body: `search "${sanitizedFranchise}"; where category = 0;`,
-              });
-              
-              if (countResponse.ok) {
-                const totalCount = await countResponse.json();
-                
-                // If search returned 0, it means the franchise name might not match or there's an issue
-                // In this case, just fetch from IGDB to be safe
-                if (totalCount.count === 0) {
-                  console.log(`[searchOptimizedWithFallback] IGDB count returned 0 - will fetch from IGDB to find more games`);
-                  shouldFetchFromIgdb = true;
-                } else {
-                  const cachePercentage = (franchiseGamesInDb / (totalCount.count || 1)) * 100;
-                  
-                  console.log(`[searchOptimizedWithFallback] Franchise analysis (IGDB): ${franchiseGamesInDb} cached / ${totalCount.count} total (${cachePercentage.toFixed(1)}%)`);
-                  
-                  // Store metadata for next time
-                  await ctx.runMutation(internal.franchiseMetadata.updateFranchiseMetadata, {
-                    franchiseName,
-                    totalGamesOnIgdb: totalCount.count || 0,
-                    cachedGamesCount: franchiseGamesInDb,
-                  });
-                  
-                  // Fetch from IGDB if we have less than 80% of the franchise cached
-                  // OR if the franchise has more than 5 games and we have less than 5 cached
-                  if (cachePercentage < 80 || (totalCount.count > 5 && franchiseGamesInDb < 5)) {
-                    shouldFetchFromIgdb = true;
-                    console.log(`[searchOptimizedWithFallback] Franchise incomplete - will fetch from IGDB`);
-                  } else {
-                    console.log(`[searchOptimizedWithFallback] Franchise mostly cached (${cachePercentage.toFixed(1)}%) - using cache only`);
-                  }
-                }
-              }
+              // No valid metadata - just use simple threshold to avoid timeout
+              console.log(`[searchOptimizedWithFallback] No valid franchise metadata, using simple threshold`);
+              shouldFetchFromIgdb = cachedResults.results.length < minCachedResults;
             }
+          }
         } else {
           // No franchise data - fall back to simple threshold
           console.log(`[searchOptimizedWithFallback] No franchise data found, using simple threshold`);
@@ -1595,9 +1550,11 @@ async function fetchGamesWithPagination(options: {
 }
 
 /**
- * Seed trending games using weighted PopScore popularity primitives.
- * Weights: Steam 24hr Peak (0.4) + Playing (0.35) + Want to Play (0.2) + Steam Total Reviews (0.05)
- * Focus: Real-time active players (Steam 24hr) and currently playing (IGDB) are weighted highest
+ * Seed trending games using PopScore (Steam metrics) + hype + recency.
+ * Matches the getTrendingGames query formula for consistency.
+ * 
+ * PopScore formula: 0.4*WantToPlay + 0.3*Playing + 0.2*Steam24hrPeak + 0.1*SteamTotalReviews
+ * Trending score: (PopScore + hype*5) * recencyMultiplier
  */
 export const seedTrendingGames = action({
   args: {
@@ -1616,11 +1573,16 @@ export const seedTrendingGames = action({
     const now = Math.floor(Date.now() / 1000);
 
     try {
-      // Calculate 2025 timestamp window
-      const year2025Start = Math.floor(new Date("2025-01-01").getTime() / 1000);
-      const year2025End = now; // Until now
+      // Calculate timestamp window for past 18 months (matches getTrendingGames)
+      const lookbackMonths = 18;
+      const cutoffDate = new Date();
+      cutoffDate.setMonth(cutoffDate.getMonth() - lookbackMonths);
+      const cutoffTimestamp = Math.floor(cutoffDate.getTime() / 1000);
       
-      // Fetch 2025 games sorted by engagement (most popular first)
+      console.log(`[seedTrendingGames] Date range: ${new Date(cutoffTimestamp * 1000).toISOString()} to ${new Date(now * 1000).toISOString()}`);
+      
+      // Fetch recent games with high hype or rating engagement
+      // Simplified filter: recent releases with any engagement indicator
       const buildTrendingQuery = (batchSize: number, offset: number) => `fields id,name,first_release_date,cover.image_id,category,game_type,version_parent,parent_game,
   summary,storyline,genres.name,platforms.name,themes.name,
   player_perspectives.name,game_modes.name,artworks.url,screenshots.url,
@@ -1631,8 +1593,8 @@ export const seedTrendingGames = action({
   age_ratings.rating,age_ratings.organization.*,
   game_status.*,language_supports.language.name,
   multiplayer_modes.*,similar_games.name;
-where first_release_date >= ${year2025Start} & first_release_date <= ${year2025End} & (aggregated_rating_count >= 10 | rating_count >= 10);
-sort aggregated_rating_count desc;
+where first_release_date >= ${cutoffTimestamp} & first_release_date <= ${now} & (hypes >= 3 | aggregated_rating_count >= 5 | rating_count >= 5);
+sort hypes desc;
 offset ${offset};
 limit ${batchSize};`;
 
@@ -1657,10 +1619,8 @@ limit ${batchSize};`;
         console.log(`[seedTrendingGames] Fetching PopScores for ${gameIds.length} games`);
         const popScores = await fetchPopularityPrimitives(gameIds, accessToken, clientId);
         
-        let gamesCached = 0;
-
-        for (const game of normalized) {
-          // Calculate PopScore for this game
+        // Calculate trending score for each game using the same formula as getTrendingGames
+        const gamesWithScores = normalized.map(game => {
           const igdbGameId = games.find(g => g.id === game.igdbId)?.id ?? 0;
           const prims = popScores[igdbGameId] || {
             wantToPlay: 0,
@@ -1669,6 +1629,34 @@ limit ${batchSize};`;
             steamTotal: 0,
           };
           const popularityScore = calculatePopScore(prims);
+          
+          // Calculate trending score: (PopScore + hype*5) * recencyMultiplier
+          const releaseTimestamp = game.firstReleaseDate ?? 0;
+          const ageInMonths = (now - releaseTimestamp) / (30 * 24 * 60 * 60);
+          const recencyMultiplier = Math.max(0.1, 1 - (ageInMonths * 0.1));
+          const hype = game.hypes ?? 0;
+          const engagementScore = popularityScore + (hype * 5);
+          const trendingScore = engagementScore * recencyMultiplier;
+          
+          return { ...game, popularityScore, trendingScore };
+        });
+        
+        // Sort by trending score and take top N
+        const topTrending = gamesWithScores
+          .filter(g => g.trendingScore > 0)
+          .sort((a, b) => b.trendingScore - a.trendingScore)
+          .slice(0, limit);
+        
+        console.log(`[seedTrendingGames] Top 5 trending scores:`, topTrending.slice(0, 5).map(g => ({ 
+          title: g.title, 
+          pop: g.popularityScore.toFixed(1),
+          hype: g.hypes ?? 0,
+          score: g.trendingScore.toFixed(1) 
+        })));
+        
+        let gamesCached = 0;
+
+        for (const game of topTrending) {
 
           await ctx.runMutation(internal.games.upsertFromIgdb, {
             igdbId: game.igdbId,
@@ -1706,12 +1694,12 @@ limit ${batchSize};`;
             hypes: game.hypes,
             franchise: game.franchise,
             franchises: game.franchises,
-            popularity_score: popularityScore,
+            popularity_score: game.popularityScore,
           });
           gamesCached++;
         }
 
-        const result = { success: true, gamesCached, gamesProcessed: normalized.length, timestamp: Date.now() };
+        const result = { success: true, gamesCached, gamesProcessed: topTrending.length, timestamp: Date.now() };
         return measureQuerySize(result, "seedTrendingGames");
       }
 

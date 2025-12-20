@@ -47,7 +47,7 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
       className={className} 
       width={imgWidth} 
       height={imgHeight}
-      quality={quality ?? 95}
+      quality={quality ?? 75}
       unoptimized={unoptimized}
       onError={handleError} 
     />

@@ -23,17 +23,31 @@ const handleClerkWebhook = httpAction(async (ctx, request) => {
     case "user.created":
     case "user.updated": {
       const user = event.data;
+      
+      // Extract metadata
+      const publicMetadata = user.public_metadata || {};
+      const displayName = publicMetadata.displayName;
+      const bio = publicMetadata.bio;
+      
+      console.log('📥 Clerk webhook received:', { 
+        type: event.type, 
+        userId: user.id, 
+        displayName, 
+        bio 
+      });
+      
       // Call the internal mutation exported from `users.ts`.
-      // Use a temporary `any` cast because `apps/backend/convex/_generated` may
-      // be out-of-date in this workspace. Regenerate with `npx convex dev`
-      // and then remove the cast to get typed function references.
       await ctx.runMutation(internal.users.store, {
         clerkId: user.id,
         email: user.email_addresses?.[0]?.email_address ?? "",
         username: user.username!,
-        name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.full_name ?? undefined,
+        // Use displayName from metadata if available, otherwise fall back to Clerk name
+        name: displayName || (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.full_name ?? undefined),
         avatarUrl: user.image_url,
+        bio: bio,
       });
+      
+      console.log('✅ Convex user synced from webhook');
       break;
     }
     case "user.deleted": {

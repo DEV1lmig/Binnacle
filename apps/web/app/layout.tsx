@@ -4,6 +4,7 @@ import "./globals.css";
 import ConvexClientProvider from "@/app/components/ConvexClientProvider"; // Adjust path if needed
 import { CurrentUserProvider } from "@/app/context/CurrentUserContext";
 import { ConditionalNavigation } from "@/app/components/ConditionalNavigation";
+import { AuthGuard } from "@/app/components/AuthGuard";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,8 +23,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <ConvexClientProvider>
           <CurrentUserProvider>
-            <ConditionalNavigation />
-            {children}
+            <AuthGuard>
+              <ConditionalNavigation />
+              {children}
+            </AuthGuard>
           </CurrentUserProvider>
         </ConvexClientProvider>
       </body>

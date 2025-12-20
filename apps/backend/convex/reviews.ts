@@ -5,6 +5,7 @@ import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError, Infer } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import { canViewReviewsInternal } from "./privacy";
 
 const minRating = 1;
 const maxRating = 10;
@@ -184,6 +185,17 @@ export const get = query({
     }
 
     const viewer = await maybeGetViewer(ctx);
+
+    const author = await ctx.db.get(review.userId);
+    if (!author) {
+      return null;
+    }
+
+    const allowed = await canViewReviewsInternal(ctx, viewer, author);
+    if (!allowed) {
+      return null;
+    }
+
     return await hydrateReview(ctx, review, viewer?._id ?? null);
   },
 });
@@ -204,15 +216,25 @@ export const listForGame = query({
       .order("desc")
       .take(limit);
 
-  const responses: DetailedReview[] = [];
+    const responses: DetailedReview[] = [];
     for (const review of reviews) {
+      const author = await ctx.db.get(review.userId);
+      if (!author) {
+        continue;
+      }
+
+      const allowed = await canViewReviewsInternal(ctx, viewer, author);
+      if (!allowed) {
+        continue;
+      }
+
       const enriched = await hydrateReview(ctx, review, viewer?._id ?? null);
       if (enriched) {
         responses.push(enriched);
       }
     }
 
-  return responses;
+    return responses;
   },
 });
 
@@ -229,13 +251,23 @@ export const listForUser = query({
     const viewer = await maybeGetViewer(ctx);
     const limit = sanitizeLimit(args.limit);
 
+    const author = await ctx.db.get(args.userId);
+    if (!author) {
+      return [];
+    }
+
+    const allowed = await canViewReviewsInternal(ctx, viewer, author);
+    if (!allowed) {
+      return [];
+    }
+
     const reviews = await ctx.db
       .query("reviews")
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(limit);
 
-  const responses: DetailedReview[] = [];
+    const responses: DetailedReview[] = [];
     for (const review of reviews) {
       const enriched = await hydrateReview(ctx, review, viewer?._id ?? null);
       if (enriched) {
@@ -243,7 +275,7 @@ export const listForUser = query({
       }
     }
 
-  return responses;
+    return responses;
   },
 });
 

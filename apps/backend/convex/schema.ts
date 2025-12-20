@@ -12,9 +12,48 @@ export default defineSchema({
     bio: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     clerkId: v.string(), // Links to the Clerk user ID
+    // Role-based access control
+    role: v.optional(v.string()), // "user" | "moderator" | "admin" (default: "user")
+    topGames: v.optional(
+      v.array(
+        v.object({
+          gameId: v.id("games"),
+          rank: v.number(),
+          note: v.optional(v.string()),
+        })
+      )
+    ),
+    // User Preferences for Settings Page
+    preferences: v.optional(
+      v.object({
+        theme: v.optional(v.string()), // "dark" | "light" | "system"
+        cardView: v.optional(v.string()), // "compact" | "comfortable"
+        profileVisibility: v.optional(v.string()), // "public" | "friends" | "private"
+        showActivityOnFeed: v.optional(v.boolean()),
+        showPlayingStatus: v.optional(v.boolean()),
+        defaultPlatforms: v.optional(v.array(v.string())),
+        preferredGenres: v.optional(v.array(v.string())),
+        timezone: v.optional(v.string()),
+      })
+    ),
+
+    // Privacy settings (Phase 2)
+    // These are kept separate from general preferences and are used to enforce access controls.
+    privacySettings: v.optional(
+      v.object({
+        profileVisibility: v.optional(v.string()), // "public" | "friends" | "private"
+        backlogVisibility: v.optional(v.string()), // "public" | "friends" | "private"
+        reviewsVisibility: v.optional(v.string()), // "public" | "friends" | "private"
+        activityVisibility: v.optional(v.string()), // "public" | "friends" | "private"
+        showStats: v.optional(v.boolean()),
+        allowFriendRequests: v.optional(v.string()), // "everyone" | "friends_of_friends" | "nobody"
+        showOnlineStatus: v.optional(v.boolean()),
+      })
+    ),
   })
     .index("by_clerk_id", ["clerkId"]) // Index for fast lookups
-    .index("by_username", ["username"]),
+    .index("by_username", ["username"])
+    .index("by_role", ["role"]), // Index for querying users by role
 
   // == Games Table ==
   // Caches basic and enriched game data fetched from an external API like IGDB
@@ -61,7 +100,7 @@ export default defineSchema({
     hypes: v.optional(v.number()), // Pre-release hype count (from IGDB)
     firstReleaseDate: v.optional(v.number()), // Unix timestamp of first release
     parentGame: v.optional(v.number()), // IGDB ID of parent game (for DLC/expansions)
-    
+
     // PopScore popularity (weighted combination of primitives)
     popularity_score: v.optional(v.number()), // Weighted PopScore: 0.4*WantToPlay + 0.3*Playing + 0.2*Steam24hrPeak + 0.1*SteamTotalReviews
 
@@ -82,7 +121,14 @@ export default defineSchema({
     .index("by_release_year", ["releaseYear"])
     .index("by_popularity", ["popularity_score"])
     .index("by_game_type", ["gameType"])
-    .index("by_franchise", ["franchise"]),
+    .index("by_franchise", ["franchise"])
+    // Performance indexes for discover page queries (8000+ games)
+    .index("by_last_updated", ["lastUpdated"]) // For getTrendingGames
+    .index("by_release_date", ["firstReleaseDate"]) // For getNewReleases
+    .searchIndex("search_title", { // For searchOptimized text search
+      searchField: "title",
+      filterFields: ["gameType"],
+    }),
 
   // == Reviews Table (The core of the app) ==
   // A user's log entry for a specific game
