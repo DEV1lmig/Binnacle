@@ -24,7 +24,6 @@ import {
   LayoutGrid,
   List,
 } from "lucide-react";
-import { Skeleton } from "@/app/components/ui/skeleton";
 import { BacklogPageSkeleton } from "@/app/components/PageSkeleton";
 
 type GameStatus = "all" | "want_to_play" | "playing" | "completed" | "on_hold" | "dropped";

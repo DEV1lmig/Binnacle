@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Home, Search, Clipboard, User as UserIcon, Settings, LogOut, Users, Bell } from 'lucide-react';
+import { type LucideIcon, Home, Search, Clipboard, User as UserIcon, Settings, LogOut, Users, Bell } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useAuth, useUser, useClerk } from '@clerk/nextjs';
 import { useCurrentUser } from '@/app/context/CurrentUserContext';
@@ -40,7 +40,14 @@ export function Navigation() {
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(path.endsWith('/') ? path : `${path}/`);
 
-  const mobileNavItems = [
+  type MobileNavItem = {
+    path: string;
+    icon: LucideIcon;
+    label: string;
+    badge?: number;
+  };
+
+  const mobileNavItems: MobileNavItem[] = [
     { path: '/feed', icon: Home, label: 'Home' },
     { path: '/discover', icon: Search, label: 'Discover' },
     { path: '/backlog', icon: Clipboard, label: 'Backlog' },
@@ -264,8 +271,7 @@ export function Navigation() {
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
-            // @ts-ignore - badge property exists in our local definition
-            const badge = item.badge;
+            const badge = item.badge ?? 0;
 
             return (
               <Link

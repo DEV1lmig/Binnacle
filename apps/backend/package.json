@@ -10,6 +10,7 @@
     "codegen": "convex codegen"
   },
   "dependencies": {
+    "@binnacle/shared-types": "workspace:*",
     "@clerk/clerk-react": "^5.25.0",
     "@clerk/nextjs": "^6.12.6",
     "clerk": "^0.8.3",

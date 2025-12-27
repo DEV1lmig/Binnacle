@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import type { ModerationContentType, ReportListItem, ReportStatus } from "@binnacle/shared-types";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
@@ -27,67 +28,6 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 
-type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed";
-
-type ReportRow = {
-  _id: Id<"reports">;
-  _creationTime: number;
-  targetType: string;
-  targetId: string;
-  reason: string;
-  description?: string;
-  status: string;
-  createdAt: number;
-  resolvedAt?: number;
-  moderatorNote?: string;
-  reporter: null | {
-    _id: Id<"users">;
-    name: string;
-    username: string;
-    avatarUrl?: string;
-  };
-  moderator: null | {
-    _id: Id<"users">;
-    name: string;
-    username: string;
-    avatarUrl?: string;
-  };
-  target: null | (
-    | {
-        type: "user";
-        userId: Id<"users">;
-      }
-    | {
-        type: "review";
-        reviewId: Id<"reviews">;
-        gameId: Id<"games">;
-        userId: Id<"users">;
-        textPreview?: string;
-      }
-    | {
-        type: "comment";
-        commentId: Id<"comments">;
-        reviewId: Id<"reviews">;
-        userId: Id<"users">;
-        textPreview?: string;
-      }
-  );
-  targetUser: null | {
-    _id: Id<"users">;
-    name: string;
-    username: string;
-    avatarUrl?: string;
-    moderationStatus?: {
-      warnings: number;
-      isMuted: boolean;
-      mutedUntil?: number;
-      isBanned: boolean;
-      bannedAt?: number;
-      banReason?: string;
-    };
-  };
-};
-
 export default function ModerationDashboardPage() {
   const router = useRouter();
 
@@ -103,7 +43,7 @@ export default function ModerationDashboardPage() {
   const unbanUser = useMutation(api.moderation.unbanUser);
   const deleteContent = useMutation(api.moderation.deleteContent);
 
-  const [activeReport, setActiveReport] = useState<ReportRow | null>(null);
+  const [activeReport, setActiveReport] = useState<ReportListItem | null>(null);
   const [note, setNote] = useState("");
   const [mutePreset, setMutePreset] = useState<"3600000" | "86400000" | "604800000">("86400000");
   const [customMuteMs, setCustomMuteMs] = useState<string>("");
@@ -231,13 +171,15 @@ export default function ModerationDashboardPage() {
     if (!activeReport) return;
     if (activeReport.targetType !== "review" && activeReport.targetType !== "comment") return;
 
+    const contentType: ModerationContentType = activeReport.targetType;
+
     const label = activeReport.targetType === "review" ? "review" : "comment";
     if (!window.confirm(`Delete this ${label}?`)) return;
 
     setIsUpdating(true);
     try {
       await deleteContent({
-        contentType: activeReport.targetType as any,
+        contentType,
         contentId: activeReport.targetId,
         reason: noteForAction(note),
       });
@@ -345,7 +287,7 @@ export default function ModerationDashboardPage() {
                         variant="outline"
                         className="h-8"
                         onClick={() => {
-                          setActiveReport(r as unknown as ReportRow);
+                          setActiveReport(r as unknown as ReportListItem);
                           setNote(r.moderatorNote ?? "");
                         }}
                       >
@@ -535,7 +477,14 @@ export default function ModerationDashboardPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div>
                           <p className="text-[var(--bkl-color-text-secondary)] text-xs mb-1">Mute preset</p>
-                          <Select value={mutePreset} onValueChange={(v) => setMutePreset(v as any)}>
+                          <Select
+                            value={mutePreset}
+                            onValueChange={(v) => {
+                              if (v === "3600000" || v === "86400000" || v === "604800000") {
+                                setMutePreset(v);
+                              }
+                            }}
+                          >
                             <SelectTrigger className="bg-[var(--bkl-color-bg-tertiary)] border-[var(--bkl-color-border)]">
                               <SelectValue />
                             </SelectTrigger>

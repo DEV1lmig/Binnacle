@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { useEffect, ReactNode } from "react";
+import { ReactNode } from "react";
 import { Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 
