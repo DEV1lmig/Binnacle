@@ -87,7 +87,7 @@ export function ReportDialog({ open, onOpenChange, targetType, targetId }: Repor
         <DialogHeader>
           <DialogTitle className="text-[var(--bkl-color-text-primary)]">Report</DialogTitle>
           <DialogDescription className="text-[var(--bkl-color-text-secondary)]">
-                  Tell us what's going on so a moderator can review it.
+              Tell us what&apos;s going on so a moderator can review it.
           </DialogDescription>
         </DialogHeader>
 

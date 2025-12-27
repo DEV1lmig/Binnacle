@@ -6,6 +6,7 @@ import { Check, Database, Loader2, Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { useCurrentUser } from "@/app/context/CurrentUserContext";
 import { FeedPageSkeleton } from "@/app/components/PageSkeleton";
 import { Button } from "@/app/components/ui/button";
@@ -83,8 +84,8 @@ function AccountSettings({
   currentUser,
   onUpdateUsername,
 }: {
-  currentUser: any;
-  onUpdateUsername: any;
+  currentUser: Doc<"users">;
+  onUpdateUsername: (args: { username: string }) => Promise<{ success: true; username: string }>;
 }) {
   const [username, setUsername] = useState(currentUser.username);
   const [saving, setSaving] = useState(false);
@@ -107,8 +108,9 @@ function AccountSettings({
       await onUpdateUsername({ username });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
-    } catch (err: any) {
-      setError(err.message || "Failed to update username");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update username";
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -206,7 +208,19 @@ function AppearanceSettings({
 }: {
   theme: string | undefined;
   setTheme: (theme: string) => void;
-  preferences: any;
+  preferences:
+    | null
+    | {
+        theme?: string;
+        cardView?: string;
+        profileVisibility?: string;
+        showActivityOnFeed?: boolean;
+        showPlayingStatus?: boolean;
+        defaultPlatforms?: string[];
+        preferredGenres?: string[];
+        timezone?: string;
+      }
+    | undefined;
   onSave: (key: string, value: string | boolean | string[]) => void;
   saving: boolean;
 }) {

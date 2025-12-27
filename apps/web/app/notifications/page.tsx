@@ -83,7 +83,7 @@ export default function NotificationsPage() {
                 No notifications yet
               </h3>
               <p className="text-[var(--bkl-color-text-secondary)] max-w-xs">
-                When you get likes, comments, or new followers, they'll show up here.
+                When you get likes, comments, or new followers, they&apos;ll show up here.
               </p>
             </div>
           ) : (

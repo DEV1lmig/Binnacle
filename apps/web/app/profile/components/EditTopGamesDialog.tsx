@@ -85,14 +85,29 @@ export function EditTopGamesDialog({
           includeDLC: false,
         });
         
-        const normalizedResults = Array.isArray(result?.results)
-          ? result.results.map((r: any) => ({
-              convexId: r.convexId as Id<'games'>,
-              title: r.title as string,
-              coverUrl: r.coverUrl as string | undefined,
-              releaseYear: r.releaseYear as number | undefined,
-              aggregatedRating: r.aggregatedRating as number | undefined,
-            }))
+        const normalizedResults = Array.isArray((result as { results?: unknown } | null | undefined)?.results)
+          ? ((result as { results: unknown[] }).results
+              .map((raw): SearchResult | null => {
+                if (!raw || typeof raw !== 'object') return null;
+                const r = raw as Record<string, unknown>;
+
+                const convexId = r.convexId;
+                const title = r.title;
+                if (typeof convexId !== 'string' || typeof title !== 'string') return null;
+
+                const coverUrl = typeof r.coverUrl === 'string' ? r.coverUrl : undefined;
+                const releaseYear = typeof r.releaseYear === 'number' ? r.releaseYear : undefined;
+                const aggregatedRating = typeof r.aggregatedRating === 'number' ? r.aggregatedRating : undefined;
+
+                return {
+                  convexId: convexId as Id<'games'>,
+                  title,
+                  coverUrl,
+                  releaseYear,
+                  aggregatedRating,
+                };
+              })
+              .filter((x): x is SearchResult => x !== null))
           : [];
         
         setSearchResults(normalizedResults);

@@ -36,7 +36,6 @@ export default function ReviewDetailPage() {
     api.reviews.get,
     reviewId ? { reviewId: reviewId as Id<"reviews"> } : "skip"
   );
-  const currentUser = useQuery(api.users.current);
   const comments = useQuery(api.comments.listForReview, {
     reviewId: reviewId as Id<"reviews">,
     limit: 50,

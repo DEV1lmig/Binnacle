@@ -2,6 +2,10 @@
 
 import { auth, clerkClient } from '@clerk/nextjs/server';
 
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+type JsonObject = { [key: string]: JsonValue };
+
 export interface UpdateProfileData {
   displayName?: string;
   bio?: string;
@@ -23,10 +27,10 @@ export async function updateClerkProfile(data: UpdateProfileData) {
     
     // Get current metadata
     const user = await client.users.getUser(userId);
-    const currentMetadata = user.publicMetadata as Record<string, any>;
+    const currentMetadata = (user.publicMetadata ?? {}) as JsonObject;
 
     // Prepare updates
-    const updates: Record<string, any> = { ...currentMetadata };
+    const updates: JsonObject = { ...currentMetadata };
     
     if (data.displayName !== undefined) {
       const trimmed = data.displayName.trim();
