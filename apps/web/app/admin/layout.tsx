@@ -8,7 +8,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AdminGuard requireAdmin={true}>
+    <AdminGuard requireAdmin={false} requireModerator={true}>
       {children}
     </AdminGuard>
   );

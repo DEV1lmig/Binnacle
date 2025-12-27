@@ -17,6 +17,7 @@ import {
 } from "@/app/components/ui/select";
 import { Shield, ShieldCheck, User, ArrowLeft, Loader2 } from "lucide-react";
 import { Id } from "@/convex/_generated/dataModel";
+import { AdminGuard } from "../components/AdminGuard";
 
 type Role = "user" | "moderator" | "admin";
 
@@ -63,8 +64,9 @@ export default function UsersAdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <AdminGuard requireAdmin={true}>
+      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -244,7 +246,8 @@ export default function UsersAdminPage() {
         >
           Back to Admin Panel
         </Button>
+        </div>
       </div>
-    </div>
+    </AdminGuard>
   );
 }

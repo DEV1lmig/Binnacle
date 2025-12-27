@@ -28,9 +28,10 @@ export type FeedReviewEntry = {
 interface FeedReviewListProps {
   entries: FeedReviewEntry[];
   isLoading: boolean;
+  emptyMessage?: string;
 }
 
-export function FeedReviewList({ entries, isLoading }: FeedReviewListProps) {
+export function FeedReviewList({ entries, isLoading, emptyMessage }: FeedReviewListProps) {
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -43,9 +44,11 @@ export function FeedReviewList({ entries, isLoading }: FeedReviewListProps) {
 
   if (!entries.length) {
     return (
-      <p className="text-center py-8 text-[var(--bkl-color-text-secondary)]">
-        No activity yet. Follow users to see their reviews!
-      </p>
+      <div className="text-center py-12 bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] border border-[var(--bkl-color-border)]">
+        <p className="text-[var(--bkl-color-text-secondary)]" style={{ fontSize: "var(--bkl-font-size-base)" }}>
+          {emptyMessage || "No activity yet. Follow users to see their reviews!"}
+        </p>
+      </div>
     );
   }
 

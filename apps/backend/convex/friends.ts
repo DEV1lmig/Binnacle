@@ -4,6 +4,7 @@
 import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { canSendFriendRequestInternal } from "./privacy";
 import { getBlockedUserIdSets, isEitherBlockedInternal } from "./blocking";
 
@@ -63,15 +64,30 @@ export const sendRequest = mutation({
 
       await createFriendship(ctx, existingRequest.requesterId, existingRequest.recipientId);
       await ctx.db.delete(existingRequest._id);
+
+      // Accepting an incoming request by sending a request back.
+      await ctx.runMutation(internal.notifications.create, {
+        userId: existingRequest.requesterId,
+        type: "friend_accepted",
+        actorId: requester._id,
+      });
       return null;
     }
 
-    return await ctx.db.insert("friendRequests", {
+    const requestId = await ctx.db.insert("friendRequests", {
       requesterId: requester._id,
       recipientId: args.recipientId,
       pairKey,
       createdAt: Date.now(),
     });
+
+    await ctx.runMutation(internal.notifications.create, {
+      userId: args.recipientId,
+      type: "friend_request",
+      actorId: requester._id,
+    });
+
+    return requestId;
   },
 });
 
@@ -123,6 +139,12 @@ export const respondToRequest = mutation({
 
     if (args.action === "accept") {
       await createFriendship(ctx, request.requesterId, request.recipientId);
+
+      await ctx.runMutation(internal.notifications.create, {
+        userId: request.requesterId,
+        type: "friend_accepted",
+        actorId: recipient._id,
+      });
     }
 
     return args.action;

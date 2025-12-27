@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Home, Search, Clipboard, User as UserIcon, Settings, LogOut, Users } from 'lucide-react';
+import { Home, Search, Clipboard, User as UserIcon, Settings, LogOut, Users, Bell } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useAuth, useUser, useClerk } from '@clerk/nextjs';
 import { useCurrentUser } from '@/app/context/CurrentUserContext';
@@ -31,6 +31,12 @@ export function Navigation() {
   );
   const pendingFriendRequests = incomingRequests?.length ?? 0;
 
+  const unreadNotifications = useQuery(
+    api.notifications.getUnreadCount,
+    convexUser ? {} : "skip"
+  );
+  const unreadCount = unreadNotifications?.count ?? 0;
+
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(path.endsWith('/') ? path : `${path}/`);
 
@@ -38,6 +44,7 @@ export function Navigation() {
     { path: '/feed', icon: Home, label: 'Home' },
     { path: '/discover', icon: Search, label: 'Discover' },
     { path: '/backlog', icon: Clipboard, label: 'Backlog' },
+    { path: '/notifications', icon: Bell, label: 'Notifications', badge: unreadCount },
     { path: '/profile', icon: UserIcon, label: 'Profile' },
   ];
 
@@ -156,6 +163,27 @@ export function Navigation() {
               >
                 Discover
               </Link>
+              <Link
+                href="/notifications"
+                className={`transition-colors ${
+                  isActive('/notifications')
+                    ? 'text-[var(--bkl-color-accent-primary)]'
+                    : 'text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]'
+                }`}
+                style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
+              >
+                <span className="inline-flex items-center gap-2">
+                  Notifications
+                  {unreadCount > 0 ? (
+                    <span
+                      className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]"
+                      style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+                    >
+                      {unreadCount >= 99 ? '99+' : unreadCount}
+                    </span>
+                  ) : null}
+                </span>
+              </Link>
             </div>
           </div>
 
@@ -236,18 +264,27 @@ export function Navigation() {
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
+            // @ts-ignore - badge property exists in our local definition
+            const badge = item.badge;
 
             return (
               <Link
                 key={item.path}
                 href={item.path}
-                className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors ${
+                className={`relative flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors ${
                   active
                     ? 'text-[var(--bkl-color-accent-primary)]'
                     : 'text-[var(--bkl-color-text-secondary)]'
                 }`}
               >
-                <Icon className="w-6 h-6" strokeWidth={active ? 2.5 : 2} />
+                <div className="relative">
+                  <Icon className="w-6 h-6" strokeWidth={active ? 2.5 : 2} />
+                  {badge > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)] rounded-full flex items-center justify-center text-[10px] font-bold">
+                      {badge > 9 ? '9+' : badge}
+                    </span>
+                  )}
+                </div>
                 <span style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-medium)' }}>
                   {item.label}
                 </span>

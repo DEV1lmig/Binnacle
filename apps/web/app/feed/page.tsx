@@ -128,13 +128,21 @@ export default function FeedPage() {
 
                 <Tabs value={activityTab} onValueChange={(value) => setActivityTab(value as ActivityTab)}>
                   <TabsList className="bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)]">
-                    <TabsTrigger value="friends">Friends</TabsTrigger>
+                    <TabsTrigger value="friends">For You</TabsTrigger>
                     <TabsTrigger value="community">Community</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
               <div className="space-y-4">
-                <FeedReviewList entries={activityEntries} isLoading={isLoading} />
+                <FeedReviewList 
+                  entries={activityEntries} 
+                  isLoading={isLoading} 
+                  emptyMessage={
+                    activityTab === "friends" 
+                      ? "No updates from friends yet. Follow people to see their activity here!" 
+                      : "No community activity yet. Be the first to review a game!"
+                  }
+                />
               </div>
             </section>
 

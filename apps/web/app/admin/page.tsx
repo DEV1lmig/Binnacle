@@ -7,6 +7,7 @@ import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AdminGuard } from "./components/AdminGuard";
 
 type SeedCategory = "trending" | "newReleases" | "topRated";
 type LaunchMode = "minimal" | "standard" | "comprehensive" | "custom";
@@ -384,8 +385,9 @@ export default function AdminPage() {
   const isAnyCategorySeeding = Object.values(loading).some(Boolean);
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <AdminGuard requireAdmin={true}>
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -1256,7 +1258,8 @@ export default function AdminPage() {
         >
           Back
         </Button>
+        </div>
       </div>
-    </div>
+    </AdminGuard>
   );
 }

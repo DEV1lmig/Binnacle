@@ -999,6 +999,27 @@ async function computeReviewStats(ctx: QueryCtx, userId: Id<"users">) {
 }
 
 /**
+ * Gets a user's public profile by ID.
+ * Used for notifications and other lists where we only have the ID.
+ */
+export const getPublicProfile = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) return null;
+
+    return {
+      _id: user._id,
+      name: user.name,
+      username: user.username,
+      avatarUrl: user.avatarUrl,
+    };
+  },
+});
+
+/**
  * Determines whether one user currently follows another user.
  */
 async function isFollowing(

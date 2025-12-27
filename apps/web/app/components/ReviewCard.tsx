@@ -4,13 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
-import { Heart, MessageCircle } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { getStandardCoverUrl } from "@/lib/igdb-images";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { CommentSection } from "./CommentSection";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/app/components/ui/dropdown-menu";
+import { Button } from "@/app/components/ui/button";
+import { ReportDialog } from "@/app/components/ReportDialog";
 
 type ReviewAuthor = {
   _id: Id<"users">;
@@ -56,6 +64,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
   const [commentCount, setCommentCount] = useState(review.commentCount ?? 0);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     setLiked(review.viewerHasLiked ?? false);
@@ -147,6 +156,30 @@ export function ReviewCard({ review }: ReviewCardProps) {
           </span>
           <span className="text-[var(--bkl-color-text-disabled)]">/10</span>
         </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(event) => event.stopPropagation()}
+              className="text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]"
+              aria-label="More actions"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                setReportOpen(true);
+              }}
+            >
+              Report
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
 
       <div className="flex gap-3 mb-4">
@@ -188,14 +221,24 @@ export function ReviewCard({ review }: ReviewCardProps) {
         <button
           onClick={handleLike}
           disabled={isBusy}
-          className={`flex items-center gap-2 transition-colors ${
+          className={`flex items-center gap-2 transition-colors group ${
             liked
               ? "text-[var(--bkl-color-feedback-error)]"
               : "text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]"
           }`}
+          title={liked ? "Unlike this review" : "Like this review"}
         >
-          <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
-          <span style={{ fontSize: "var(--bkl-font-size-sm)" }}>{likeCount}</span>
+          <div className={`transition-transform duration-200 ${liked ? "scale-110" : "group-hover:scale-110"} ${isBusy ? "opacity-50" : ""}`}>
+            <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
+          </div>
+          <span style={{ fontSize: "var(--bkl-font-size-sm)" }} className="flex items-center gap-1">
+            {likeCount}
+            {liked && (
+              <span className="text-[10px] font-medium opacity-80 hidden sm:inline-block">
+                (You)
+              </span>
+            )}
+          </span>
         </button>
         <button
           onClick={handleToggleComments}
@@ -233,6 +276,13 @@ export function ReviewCard({ review }: ReviewCardProps) {
           />
         </div>
       ) : null}
+
+      <ReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetType="review"
+        targetId={review._id}
+      />
     </article>
   );
 }

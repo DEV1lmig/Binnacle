@@ -5,6 +5,7 @@ import ConvexClientProvider from "@/app/components/ConvexClientProvider"; // Adj
 import { CurrentUserProvider } from "@/app/context/CurrentUserContext";
 import { ConditionalNavigation } from "@/app/components/ConditionalNavigation";
 import { AuthGuard } from "@/app/components/AuthGuard";
+import { Toaster } from "@/app/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +27,7 @@ export default function RootLayout({
             <AuthGuard>
               <ConditionalNavigation />
               {children}
+              <Toaster />
             </AuthGuard>
           </CurrentUserProvider>
         </ConvexClientProvider>

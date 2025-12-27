@@ -8,6 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/ca
 import { Badge } from "@/app/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/app/components/ui/avatar";
 import { Button } from "@/app/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/app/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
+import { ReportDialog } from "@/app/components/ReportDialog";
 
 export default function UserProfilePage() {
   const router = useRouter();
@@ -50,6 +58,7 @@ export default function UserProfilePage() {
   const [friendActionError, setFriendActionError] = useState<string | null>(null);
   const [isUpdatingBlock, setIsUpdatingBlock] = useState(false);
   const [blockActionError, setBlockActionError] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!profileData) {
@@ -237,7 +246,26 @@ export default function UserProfilePage() {
               <div className="flex flex-col items-end gap-2">
                 <div className="flex items-center gap-2">
                   {viewerIsBlockedBy ? (
-                    <p className="text-sm text-[var(--bkl-color-text-secondary)]">You are blocked by this user.</p>
+                    <>
+                      <p className="text-sm text-[var(--bkl-color-text-secondary)]">You are blocked by this user.</p>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-9 w-9">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onSelect={(event) => {
+                              event.preventDefault();
+                              setReportOpen(true);
+                            }}
+                          >
+                            Report
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
                   ) : viewerHasBlocked ? (
                     <Button
                       variant="outline"
@@ -300,6 +328,24 @@ export default function UserProfilePage() {
                       >
                         Block
                       </Button>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-9 w-9">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onSelect={(event) => {
+                              event.preventDefault();
+                              setReportOpen(true);
+                            }}
+                          >
+                            Report
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </>
                   )}
                 </div>
@@ -396,6 +442,13 @@ export default function UserProfilePage() {
           </div>
         </section>
       </div>
+
+      <ReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetType="user"
+        targetId={user._id}
+      />
     </div>
   );
 }

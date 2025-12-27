@@ -4,6 +4,7 @@
 import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { canViewReviewsInternal } from "./privacy";
 import { getBlockedUserIdSets, isEitherBlockedInternal } from "./blocking";
 
@@ -57,6 +58,16 @@ export const toggle = mutation({
       userId: user._id,
       reviewId: args.reviewId,
     });
+
+    if (author._id !== user._id) {
+      await ctx.runMutation(internal.notifications.create, {
+        userId: author._id,
+        type: "like",
+        actorId: user._id,
+        targetType: "review",
+        targetId: review._id,
+      });
+    }
 
     return { liked: true, likeId };
   },

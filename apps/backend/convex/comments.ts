@@ -4,6 +4,7 @@
 import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { canViewReviewsInternal } from "./privacy";
 import { getBlockedUserIdSets, isEitherBlockedInternal } from "./blocking";
 
@@ -19,6 +20,15 @@ export const create = mutation({
     reviewId: v.id("reviews"),
     text: v.string(),
   },
+  returns: v.object({
+    commentId: v.id("comments"),
+    warning: v.optional(
+      v.object({
+        code: v.literal("mentions_truncated"),
+        message: v.string(),
+      })
+    ),
+  }),
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx);
 
@@ -52,12 +62,72 @@ export const create = mutation({
       throw new ConvexError("You can't comment on this review");
     }
 
-    return await ctx.db.insert("comments", {
+    const commentId = await ctx.db.insert("comments", {
       userId: user._id,
       reviewId: args.reviewId,
       text: trimmedText,
       createdAt: Date.now(),
     });
+
+    if (author._id !== user._id) {
+      await ctx.runMutation(internal.notifications.create, {
+        userId: author._id,
+        type: "comment",
+        actorId: user._id,
+        targetType: "review",
+        targetId: review._id,
+      });
+    }
+
+    const { usernames: mentionedUsernames, truncated: mentionsTruncated } =
+      extractMentionUsernamesWithMeta(trimmedText);
+    if (mentionedUsernames.length > 0) {
+      for (const username of mentionedUsernames) {
+        const mentioned = await ctx.db
+          .query("users")
+          .withIndex("by_username", (q) => q.eq("username", username))
+          .unique();
+
+        if (!mentioned) continue;
+        if (mentioned._id === user._id) continue;
+        // Avoid duplicating the existing comment notification when the review author is mentioned.
+        if (mentioned._id === author._id) continue;
+
+        const blockedWithActor = await isEitherBlockedInternal(
+          ctx,
+          user._id,
+          mentioned._id
+        );
+        if (blockedWithActor) continue;
+
+        const blockedWithAuthor = await isEitherBlockedInternal(
+          ctx,
+          mentioned._id,
+          author._id
+        );
+        if (blockedWithAuthor) continue;
+
+        const canView = await canViewReviewsInternal(ctx, mentioned, author);
+        if (!canView) continue;
+
+        await ctx.runMutation(internal.notifications.create, {
+          userId: mentioned._id,
+          type: "mention",
+          actorId: user._id,
+          targetType: "review",
+          targetId: review._id,
+        });
+      }
+    }
+
+    const warning = mentionsTruncated
+      ? ({
+          code: "mentions_truncated" as const,
+          message: `Only the first ${maxMentionUsernames} unique mentions will notify. Extra mentions were ignored.`,
+        } as const)
+      : undefined;
+
+    return warning ? { commentId, warning } : { commentId };
   },
 });
 
@@ -312,4 +382,29 @@ function sanitizeLimit(rawLimit: number | undefined) {
   }
 
   return Math.min(rawLimit, 200);
+}
+
+const maxMentionUsernames = 10;
+
+function extractMentionUsernamesWithMeta(text: string) {
+  if (!text.includes("@")) return { usernames: [], truncated: false };
+
+  const results = new Set<string>();
+  let truncated = false;
+  const regex = /(?:^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{3,32})/g;
+
+  for (const match of text.matchAll(regex)) {
+    const username = match[1]?.toLowerCase();
+    if (!username) continue;
+    if (!/^[a-z0-9_]+$/.test(username)) continue;
+
+    if (!results.has(username) && results.size >= maxMentionUsernames) {
+      truncated = true;
+      break;
+    }
+
+    results.add(username);
+  }
+
+  return { usernames: Array.from(results), truncated };
 }

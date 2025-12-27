@@ -6,8 +6,17 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Button } from "@/app/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/app/components/ui/dropdown-menu";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { Textarea } from "@/app/components/ui/textarea";
+import { MoreHorizontal } from "lucide-react";
+import { ReportDialog } from "@/app/components/ReportDialog";
+import { toast } from "sonner";
 
 type CommentSectionProps = {
   reviewId: Id<"reviews">;
@@ -31,6 +40,8 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
   const [editText, setEditText] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<Id<"comments"> | null>(null);
+  const [reportTargetId, setReportTargetId] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const count = comments?.length ?? 0;
 
@@ -46,9 +57,13 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
 
     setIsSubmitting(true);
     try {
-      await createComment({ reviewId, text });
+      const result = await createComment({ reviewId, text });
       setDraft("");
       onCountDelta?.(1);
+
+      if (result?.warning?.code === "mentions_truncated") {
+        toast(result.warning.message);
+      }
     } catch (error) {
       console.error("[CommentSection] Failed to create comment", error);
     } finally {
@@ -174,14 +189,37 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
                       >
                         {new Date(comment.createdAt).toLocaleDateString()}
                       </p>
-                      {comment.isAuthor ? (
-                        <span
-                          className="ml-auto text-[var(--bkl-color-text-disabled)]"
-                          style={{ fontSize: "var(--bkl-font-size-xs)" }}
-                        >
-                          You
-                        </span>
-                      ) : null}
+                      <div className="ml-auto flex items-center gap-2">
+                        {comment.isAuthor ? (
+                          <span
+                            className="text-[var(--bkl-color-text-disabled)]"
+                            style={{ fontSize: "var(--bkl-font-size-xs)" }}
+                          >
+                            You
+                          </span>
+                        ) : null}
+
+                        {currentUser && !comment.isAuthor ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onSelect={(event) => {
+                                  event.preventDefault();
+                                  setReportTargetId(comment._id);
+                                  setReportOpen(true);
+                                }}
+                              >
+                                Report
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : null}
+                      </div>
                     </div>
 
                     {isEditing ? (
@@ -249,6 +287,20 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
           ) : null}
         </div>
       )}
+
+      {reportTargetId ? (
+        <ReportDialog
+          open={reportOpen}
+          onOpenChange={(nextOpen) => {
+            setReportOpen(nextOpen);
+            if (!nextOpen) {
+              setReportTargetId(null);
+            }
+          }}
+          targetType="comment"
+          targetId={reportTargetId}
+        />
+      ) : null}
     </div>
   );
 }

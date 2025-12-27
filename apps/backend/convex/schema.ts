@@ -14,6 +14,18 @@ export default defineSchema({
     clerkId: v.string(), // Links to the Clerk user ID
     // Role-based access control
     role: v.optional(v.string()), // "user" | "moderator" | "admin" (default: "user")
+
+    // Moderation status (Phase 7)
+    moderationStatus: v.optional(
+      v.object({
+        warnings: v.number(),
+        isMuted: v.boolean(),
+        mutedUntil: v.optional(v.number()),
+        isBanned: v.boolean(),
+        bannedAt: v.optional(v.number()),
+        banReason: v.optional(v.string()),
+      })
+    ),
     topGames: v.optional(
       v.array(
         v.object({
@@ -48,6 +60,24 @@ export default defineSchema({
         showStats: v.optional(v.boolean()),
         allowFriendRequests: v.optional(v.string()), // "everyone" | "friends_of_friends" | "nobody"
         showOnlineStatus: v.optional(v.boolean()),
+      })
+    ),
+
+    // Notifications (Phase 6)
+    notificationPreferences: v.optional(
+      v.object({
+        email: v.object({
+          newFollower: v.boolean(),
+          friendRequest: v.boolean(),
+          likes: v.boolean(),
+          comments: v.boolean(),
+        }),
+        push: v.object({
+          newFollower: v.boolean(),
+          friendRequest: v.boolean(),
+          likes: v.boolean(),
+          comments: v.boolean(),
+        }),
       })
     ),
   })
@@ -210,6 +240,54 @@ export default defineSchema({
     .index("by_blocker", ["blockerId"])
     .index("by_blocked", ["blockedId"])
     .index("by_pair", ["blockerId", "blockedId"]),
+
+  // == Notifications Table ==
+  // Stores user notifications (likes, comments, follows, etc.)
+  notifications: defineTable({
+    userId: v.id("users"),
+    type: v.string(),
+    actorId: v.id("users"),
+    targetType: v.optional(v.string()),
+    targetId: v.optional(v.string()),
+    message: v.optional(v.string()),
+    read: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_read", ["userId", "read"])
+    .index("by_user_and_type", ["userId", "type"]),
+
+  // == Reports Table ==
+  // Stores user-submitted content reports for moderation.
+  reports: defineTable({
+    reporterId: v.id("users"),
+    targetType: v.string(),
+    targetId: v.string(),
+    reason: v.string(),
+    description: v.optional(v.string()),
+    status: v.string(),
+    moderatorId: v.optional(v.id("users")),
+    moderatorNote: v.optional(v.string()),
+    createdAt: v.number(),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_target", ["targetType", "targetId"])
+    .index("by_reporter", ["reporterId"]),
+
+  // == Moderation Logs Table ==
+  // Tracks moderation actions for audit/history.
+  moderationLogs: defineTable({
+    moderatorId: v.id("users"),
+    action: v.string(),
+    targetType: v.optional(v.string()),
+    targetId: v.optional(v.string()),
+    targetUserId: v.optional(v.id("users")),
+    reason: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_moderator", ["moderatorId"])
+    .index("by_target_user", ["targetUserId"]),
 
   // == API Tokens Table ==
   // Stores cached access tokens for third-party providers like IGDB

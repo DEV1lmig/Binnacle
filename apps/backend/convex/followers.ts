@@ -4,6 +4,7 @@
 import { mutation, query, MutationCtx, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { getBlockedUserIdSets, isEitherBlockedInternal } from "./blocking";
 
 const defaultListLimit = 50;
@@ -40,10 +41,18 @@ export const follow = mutation({
       return existing._id;
     }
 
-    return await ctx.db.insert("followers", {
+    const followId = await ctx.db.insert("followers", {
       followerId: user._id,
       followingId: args.targetUserId,
     });
+
+    await ctx.runMutation(internal.notifications.create, {
+      userId: args.targetUserId,
+      type: "follow",
+      actorId: user._id,
+    });
+
+    return followId;
   },
 });
 
