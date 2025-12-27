@@ -1,4 +1,6 @@
-import type { Id } from "@binnacle/convex-generated/dataModel";
+export type Id<TableName extends string> = string & {
+  readonly __tableName?: TableName;
+};
 
 export type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed";
 export type ReportTargetType = "user" | "review" | "comment";

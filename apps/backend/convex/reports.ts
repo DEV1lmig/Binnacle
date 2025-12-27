@@ -9,7 +9,6 @@ import { mutation, query } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { requireCurrentUser, requireModerator } from "./lib/auth";
-import type { ReportListItem } from "@binnacle/shared-types";
 
 const defaultListLimit = 50;
 
@@ -120,7 +119,7 @@ export const list = query({
     status: v.optional(reportStatusValidator),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<ReportListItem[]> => {
+  handler: async (ctx, args) => {
     await requireModerator(ctx);
     const limit = sanitizeLimit(args.limit);
 
