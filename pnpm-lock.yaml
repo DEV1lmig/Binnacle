@@ -120,6 +120,9 @@ importers:
       '@binnacle/convex-generated':
         specifier: workspace:*
         version: link:../../packages/convex-generated
+      '@binnacle/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@clerk/elements':
         specifier: ^0.23.73
         version: 0.23.73(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(next@15.5.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
