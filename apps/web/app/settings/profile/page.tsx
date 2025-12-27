@@ -85,7 +85,7 @@ function AccountSettings({
   onUpdateUsername,
 }: {
   currentUser: Doc<"users">;
-  onUpdateUsername: (args: { username: string }) => Promise<{ success: true; username: string }>;
+  onUpdateUsername: (args: { username: string }) => Promise<{ success: boolean; username: string }>;
 }) {
   const [username, setUsername] = useState(currentUser.username);
   const [saving, setSaving] = useState(false);

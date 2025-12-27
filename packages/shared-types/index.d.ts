@@ -1,5 +1,5 @@
 export type Id<TableName extends string> = string & {
-  readonly __tableName?: TableName;
+  readonly __tableName: TableName;
 };
 
 export type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed";

@@ -48,7 +48,11 @@ export async function updateClerkProfile(data: UpdateProfileData) {
       if (trimmed.length > 500) {
         return { success: false, error: 'Bio cannot exceed 500 characters' };
       }
-      updates.bio = trimmed.length > 0 ? trimmed : undefined;
+      if (trimmed.length > 0) {
+        updates.bio = trimmed;
+      } else {
+        delete updates.bio;
+      }
     }
 
     // Update Clerk user metadata

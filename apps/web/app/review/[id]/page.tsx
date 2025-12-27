@@ -57,7 +57,7 @@ export default function ReviewDetailPage() {
 
   const handleShare = (platform: "twitter" | "facebook" | "link") => {
     const url = typeof window !== "undefined" ? window.location.href : "";
-    const text = `Check out this review of ${review.game?.title || "this game"}`;
+    const text = `Check out this review of ${review?.game?.title || "this game"}`;
 
     switch (platform) {
       case "twitter":
