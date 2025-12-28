@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 
@@ -26,6 +26,12 @@ export function AdminGuard({
   const roleInfo = useQuery(api.admin.getCurrentUserRole);
   const needsSetup = useQuery(api.admin.needsAdminSetup);
   const bootstrapAdmin = useMutation(api.admin.bootstrapAdmin);
+
+  useEffect(() => {
+    if (roleInfo && !roleInfo.isAuthenticated) {
+      router.replace("/admin/sign-in");
+    }
+  }, [roleInfo, router]);
 
   // Loading state
   if (roleInfo === undefined || needsSetup === undefined) {
@@ -52,7 +58,7 @@ export function AdminGuard({
             Please sign in to access the admin panel.
           </p>
           <Button
-            onClick={() => router.push("/sign-in")}
+            onClick={() => router.push("/admin/sign-in")}
             className="bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-primary)]/90"
           >
             Sign In
