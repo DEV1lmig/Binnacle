@@ -13,9 +13,9 @@
   "dependencies": {
     "@binnacle/convex-generated": "workspace:*",
     "@binnacle/shared-types": "workspace:*",
-    "@clerk/elements": "^0.23.73",
-    "@clerk/nextjs": "^6.33.6",
-    "@clerk/shared": "^3.28.2",
+    "@clerk/elements": "^0.24.2",
+    "@clerk/nextjs": "^6.36.5",
+    "@clerk/shared": "^3.41.1",
     "class-variance-authority": "^0.7.1",
     "clerk": "^0.8.3",
     "clsx": "^2.1.1",
