@@ -17,6 +17,7 @@ import { Textarea } from "@/app/components/ui/textarea";
 import { MoreHorizontal } from "lucide-react";
 import { ReportDialog } from "@/app/components/ReportDialog";
 import { toast } from "sonner";
+import { C, FONT_BODY, FONT_MONO } from "@/app/lib/design-system";
 
 type CommentSectionProps = {
   reviewId: Id<"reviews">;
@@ -111,6 +112,15 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
     }
   };
 
+  const textareaStyle = {
+    backgroundColor: C.bgAlt,
+    borderColor: C.border,
+    color: C.text,
+    borderRadius: 2,
+    fontSize: 14,
+    fontFamily: FONT_BODY,
+  } as const;
+
   return (
     <div className={className}>
       {currentUser ? (
@@ -118,7 +128,9 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
           <div className="flex gap-3 mb-3">
             <Avatar className="h-8 w-8 flex-shrink-0">
               <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
-              <AvatarFallback className="bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]">
+              <AvatarFallback
+                style={{ backgroundColor: C.bgAlt, color: C.text }}
+              >
                 {currentUser.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -127,16 +139,28 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
                 placeholder="Add a comment..."
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                className="w-full bg-[var(--bkl-color-bg-tertiary)] border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)] placeholder:text-[var(--bkl-color-text-disabled)] rounded-[var(--bkl-radius-md)] min-h-[84px] resize-none"
-                style={{ fontSize: "var(--bkl-font-size-sm)" }}
+                className="w-full min-h-[84px] resize-none"
+                style={{
+                  ...textareaStyle,
+                  // @ts-expect-error CSS custom property for placeholder
+                  "--tw-placeholder-opacity": 1,
+                }}
               />
+              <style>{`
+                .comment-textarea::placeholder { color: ${C.textDim}; }
+              `}</style>
             </div>
           </div>
           <div className="flex justify-end">
             <Button
               onClick={handleCreate}
               disabled={!draft.trim() || isSubmitting}
-              className="bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-hover)] text-[var(--bkl-color-bg-primary)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: C.gold,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = C.goldDim; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = C.gold; }}
             >
               Post
             </Button>
@@ -147,13 +171,21 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
       {!comments ? (
         <div className="space-y-4">
           {[...Array(2)].map((_, i) => (
-            <Skeleton key={i} className="h-20 bg-[var(--bkl-color-bg-tertiary)]" />
+            <Skeleton
+              key={i}
+              className="h-20"
+              style={{ backgroundColor: C.bgAlt }}
+            />
           ))}
         </div>
       ) : count === 0 ? (
         <p
-          className="text-[var(--bkl-color-text-disabled)] text-center py-6"
-          style={{ fontSize: "var(--bkl-font-size-sm)" }}
+          className="text-center py-6"
+          style={{
+            color: C.textDim,
+            fontFamily: FONT_BODY,
+            fontSize: 14,
+          }}
         >
           No comments yet.
         </p>
@@ -165,35 +197,48 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
             return (
               <div
                 key={comment._id}
-                className="pb-4 border-b border-[var(--bkl-color-border)] last:border-b-0 last:pb-0"
+                className="pb-4 last:border-b-0 last:pb-0"
+                style={{ borderBottom: `1px solid ${C.border}` }}
               >
                 <div className="flex gap-3">
                   <Avatar className="h-8 w-8 flex-shrink-0">
                     <AvatarImage src={comment.author.avatarUrl} alt={comment.author.name} />
-                    <AvatarFallback className="bg-[var(--bkl-color-bg-tertiary)] text-[var(--bkl-color-text-primary)]">
+                    <AvatarFallback
+                      style={{ backgroundColor: C.bgAlt, color: C.text }}
+                    >
                       {comment.author.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <p
-                        className="text-[var(--bkl-color-text-primary)]"
-                        style={{ fontSize: "var(--bkl-font-size-sm)", fontWeight: "var(--bkl-font-weight-semibold)" }}
+                        style={{
+                          color: C.text,
+                          fontFamily: FONT_BODY,
+                          fontSize: 14,
+                          fontWeight: 500,
+                        }}
                       >
                         {comment.author.name}
                       </p>
-                      <span className="text-[var(--bkl-color-text-disabled)]">•</span>
+                      <span style={{ color: C.textDim }}>&#8226;</span>
                       <p
-                        className="text-[var(--bkl-color-text-disabled)]"
-                        style={{ fontSize: "var(--bkl-font-size-xs)" }}
+                        style={{
+                          color: C.textDim,
+                          fontFamily: FONT_MONO,
+                          fontSize: 11,
+                        }}
                       >
                         {new Date(comment.createdAt).toLocaleDateString()}
                       </p>
                       <div className="ml-auto flex items-center gap-2">
                         {comment.isAuthor ? (
                           <span
-                            className="text-[var(--bkl-color-text-disabled)]"
-                            style={{ fontSize: "var(--bkl-font-size-xs)" }}
+                            style={{
+                              color: C.textDim,
+                              fontFamily: FONT_MONO,
+                              fontSize: 11,
+                            }}
                           >
                             You
                           </span>
@@ -227,8 +272,8 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
                         <Textarea
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
-                          className="w-full bg-[var(--bkl-color-bg-tertiary)] border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)] placeholder:text-[var(--bkl-color-text-disabled)] rounded-[var(--bkl-radius-md)] min-h-[84px] resize-none"
-                          style={{ fontSize: "var(--bkl-font-size-sm)" }}
+                          className="w-full min-h-[84px] resize-none"
+                          style={textareaStyle}
                         />
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" onClick={cancelEdit}>
@@ -237,7 +282,10 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
                           <Button
                             onClick={saveEdit}
                             disabled={!editText.trim() || isSavingEdit}
-                            className="bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-hover)] text-[var(--bkl-color-bg-primary)] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: C.gold }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = C.goldDim; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = C.gold; }}
                           >
                             Save
                           </Button>
@@ -246,8 +294,13 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
                     ) : (
                       <>
                         <p
-                          className="text-[var(--bkl-color-text-secondary)]"
-                          style={{ fontSize: "var(--bkl-font-size-sm)", lineHeight: "var(--bkl-leading-relaxed)" }}
+                          style={{
+                            color: C.textMuted,
+                            fontFamily: FONT_BODY,
+                            fontSize: 14,
+                            fontWeight: 300,
+                            lineHeight: 1.6,
+                          }}
                         >
                           {comment.text}
                         </p>

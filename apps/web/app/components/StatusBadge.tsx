@@ -1,44 +1,34 @@
+import { STATUS_COLORS } from "@/app/lib/design-system";
+import { FONT_MONO } from "@/app/lib/design-system";
+
 interface StatusBadgeProps {
   status: 'playing' | 'completed' | 'backlog' | 'onhold' | 'dropped';
   label?: string;
 }
 
 export function StatusBadge({ status, label }: StatusBadgeProps) {
-  const statusConfig = {
-    playing: {
-      bg: 'var(--bkl-color-status-playing)',
-      label: label || 'Playing',
-    },
-    completed: {
-      bg: 'var(--bkl-color-status-completed)',
-      label: label || 'Completed',
-    },
-    backlog: {
-      bg: 'var(--bkl-color-status-backlog)',
-      label: label || 'Want to Play',
-    },
-    onhold: {
-      bg: 'var(--bkl-color-status-onhold)',
-      label: label || 'On Hold',
-    },
-    dropped: {
-      bg: 'var(--bkl-color-status-dropped)',
-      label: label || 'Dropped',
-    },
+  const statusLabels: Record<StatusBadgeProps['status'], string> = {
+    playing: 'Playing',
+    completed: 'Completed',
+    backlog: 'Want to Play',
+    onhold: 'On Hold',
+    dropped: 'Dropped',
   };
-
-  const config = statusConfig[status];
 
   return (
     <span
-      className="inline-flex items-center px-[var(--bkl-space-3)] py-[var(--bkl-space-1)] rounded-[var(--bkl-radius-full)] text-[var(--bkl-color-white)]"
+      className="inline-flex items-center px-2.5 py-0.5 text-white"
       style={{
-        backgroundColor: config.bg,
-        fontSize: 'var(--bkl-font-size-xs)',
-        fontWeight: 'var(--bkl-font-weight-medium)',
+        backgroundColor: STATUS_COLORS[status],
+        borderRadius: 2,
+        fontFamily: FONT_MONO,
+        fontSize: 10,
+        fontWeight: 500,
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
       }}
     >
-      {config.label}
+      {label || statusLabels[status]}
     </span>
   );
 }

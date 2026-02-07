@@ -2,25 +2,23 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Settings, Sparkles } from "lucide-react";
+import { Settings, Sparkles, Loader2, Shield } from "lucide-react";
+import Link from "next/link";
 
 import { api } from "@/convex/_generated/api";
 import { useCurrentUser } from "@/app/context/CurrentUserContext";
-import { Button } from "@/app/components/ui/button";
-import { ProfileDashboardContent } from "./components/ProfileDashboardContent";
+import { ProfileDashboardContent, ProfilePageSkeleton } from "./components/ProfileDashboardContent";
 import { EditProfileDialog, type ProfileFormValues } from "./components/EditProfileDialog";
 import { EditTopGamesDialog, type TopGameFormEntry } from "./components/EditTopGamesDialog";
 import { updateClerkProfile } from "./actions";
+import { C, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
+import { CornerMarkers } from "@/app/lib/design-primitives";
 
 const RECENT_ACTIVITY_LIMIT = 5;
 
 function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === "string") {
-    return error;
-  }
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
   return "Something went wrong. Please try again.";
 }
 
@@ -31,6 +29,9 @@ export default function ProfilePage() {
     api.users.dashboard,
     currentUser ? { userId: currentUser._id, recentLimit: RECENT_ACTIVITY_LIMIT } : "skip",
   );
+
+  const roleInfo = useQuery(api.admin.getCurrentUserRole);
+  const isAdmin = roleInfo?.isAdmin === true;
 
   const updateProfile = useMutation(api.users.updateProfile);
   const setTopGames = useMutation(api.users.setTopGames);
@@ -44,29 +45,35 @@ export default function ProfilePage() {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 text-center">
-          <p className="text-[var(--bkl-color-text-secondary)]">Please log in to view your profile.</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: C.bg }}>
+        <div
+          className="relative text-center px-8 py-10"
+          style={{ border: `1px solid ${C.border}`, borderRadius: 2, background: C.surface }}
+        >
+          <CornerMarkers />
+          <p style={{ fontFamily: FONT_BODY, fontSize: 14, color: C.textMuted }}>
+            Please log in to view your profile.
+          </p>
         </div>
       </div>
     );
   }
 
   if (dashboard === undefined) {
-    return (
-      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 text-center">
-          <p className="text-[var(--bkl-color-text-secondary)]">Loading your profile…</p>
-        </div>
-      </div>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   if (dashboard === null) {
     return (
-      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 text-center">
-          <p className="text-[var(--bkl-color-text-secondary)]">Your profile is currently unavailable. Please try again later.</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: C.bg }}>
+        <div
+          className="relative text-center px-8 py-10"
+          style={{ border: `1px solid ${C.border}`, borderRadius: 2, background: C.surface }}
+        >
+          <CornerMarkers />
+          <p style={{ fontFamily: FONT_BODY, fontSize: 14, color: C.textMuted }}>
+            Your profile is currently unavailable. Please try again later.
+          </p>
         </div>
       </div>
     );
@@ -90,7 +97,6 @@ export default function ProfilePage() {
     const nextName = values.name.trim();
     const nextBio = values.bio?.trim() ?? "";
 
-    // Check if anything changed
     if (nextName === dashboard.user.name && nextBio === (dashboard.user.bio ?? "")) {
       setProfileError(null);
       setIsEditProfileOpen(false);
@@ -101,7 +107,6 @@ export default function ProfilePage() {
       setProfileSubmitting(true);
       setProfileError(null);
 
-      // Update via Clerk's metadata (source of truth)
       const clerkResult = await updateClerkProfile({
         displayName: nextName,
         bio: nextBio,
@@ -112,14 +117,12 @@ export default function ProfilePage() {
         return;
       }
 
-      // Also update Convex directly for immediate UI feedback
-      // (Webhook will eventually sync, but this provides instant updates)
       const convexPayload: { name?: string; bio?: string } = {};
-      
+
       if (nextName !== dashboard.user.name) {
         convexPayload.name = nextName;
       }
-      
+
       if (nextBio !== (dashboard.user.bio ?? "")) {
         convexPayload.bio = nextBio || undefined;
       }
@@ -152,22 +155,99 @@ export default function ProfilePage() {
   };
 
   const headerAction = (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
+    <div className="flex items-center gap-2 flex-wrap">
+      {isAdmin && (
+        <Link
+          href="/admin"
+          className="flex items-center gap-2 px-4 py-2"
+          style={{
+            border: `1px solid ${C.accent}33`,
+            borderRadius: 2,
+            background: `${C.accent}11`,
+            color: C.accent,
+            fontFamily: FONT_MONO,
+            fontSize: 11,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase" as const,
+            textDecoration: "none",
+            cursor: "pointer",
+            transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = C.accent;
+            e.currentTarget.style.background = `${C.accent}22`;
+            e.currentTarget.style.boxShadow = `0 0 16px ${C.accent}22`;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = `${C.accent}33`;
+            e.currentTarget.style.background = `${C.accent}11`;
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
+          <Shield style={{ width: 14, height: 14 }} />
+          Admin Panel
+        </Link>
+      )}
+      <button
+        type="button"
         onClick={() => setIsEditProfileOpen(true)}
+        className="flex items-center gap-2 px-4 py-2"
+        style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 2,
+          background: "transparent",
+          color: C.textMuted,
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          cursor: "pointer",
+          transition: "border-color 0.2s, color 0.2s, box-shadow 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = C.gold;
+          e.currentTarget.style.color = C.text;
+          e.currentTarget.style.boxShadow = `0 0 12px ${C.bloom}`;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.color = C.textMuted;
+          e.currentTarget.style.boxShadow = "none";
+        }}
       >
-        <Settings className="w-4 h-4" />
-        Edit profile
-      </Button>
-      <Button
-        className="bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-primary)]/90 text-[var(--bkl-color-bg-primary)]"
+        <Settings style={{ width: 14, height: 14 }} />
+        Edit Profile
+      </button>
+      <button
+        type="button"
         onClick={() => setIsTopGamesOpen(true)}
+        className="flex items-center gap-2 px-4 py-2"
+        style={{
+          border: "none",
+          borderRadius: 2,
+          background: C.gold,
+          color: C.bg,
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          cursor: "pointer",
+          fontWeight: 500,
+          boxShadow: `0 0 16px ${C.bloom}`,
+          transition: "opacity 0.2s, box-shadow 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = "0.9";
+          e.currentTarget.style.boxShadow = `0 0 24px ${C.bloom}`;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = "1";
+          e.currentTarget.style.boxShadow = `0 0 16px ${C.bloom}`;
+        }}
       >
-        <Sparkles className="w-4 h-4" />
-        Manage top games
-      </Button>
+        <Sparkles style={{ width: 14, height: 14 }} />
+        Manage Top Games
+      </button>
     </div>
   );
 

@@ -1,6 +1,7 @@
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { StatusBadge } from './StatusBadge';
 import { Star, Clock } from 'lucide-react';
+import { C, FONT_BODY, FONT_MONO } from '@/app/lib/design-system';
 import type { Game } from '@/app/lib/mockData';
 
 interface GameCardProps {
@@ -22,15 +23,29 @@ interface GameCardProps {
 export type GameCardGame = GameCardProps["game"];
 
 export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) {
-  // Handle both mock data and backend data
   const coverImage = game.cover || game.coverUrl || '';
   const rating = game.rating || game.aggregatedRating || 0;
-  
+
   if (variant === 'compact') {
     return (
       <button
         onClick={onClick}
-        className="group relative overflow-hidden rounded-[var(--bkl-radius-md)] border border-[var(--bkl-color-border)] hover:border-[var(--bkl-color-accent-primary)] transition-all hover:shadow-[var(--bkl-shadow-glow)] bg-[var(--bkl-color-bg-secondary)]"
+        className="group relative overflow-hidden transition-all"
+        style={{
+          borderRadius: 2,
+          border: `1px solid ${C.border}`,
+          background: C.surface,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = C.gold;
+          e.currentTarget.style.boxShadow = `0 0 20px ${C.bloom}`;
+          e.currentTarget.style.transform = 'translateY(-1px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.transform = 'translateY(0)';
+        }}
       >
         <div className="aspect-[2/3] relative">
           <ImageWithFallback
@@ -38,35 +53,62 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
             alt={game.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--bkl-color-bg-primary)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{
+              background: `linear-gradient(to top, ${C.bg}, transparent)`,
+            }}
+          />
+
           {game.status && (
             <div className="absolute top-2 right-2">
               <StatusBadge status={game.status} label="" />
             </div>
           )}
 
-          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-[var(--bkl-color-bg-primary)]/80 backdrop-blur-sm px-2 py-1 rounded-[var(--bkl-radius-sm)]">
-            <Star className="w-3 h-3 fill-[var(--bkl-color-accent-secondary)] text-[var(--bkl-color-accent-secondary)]" />
-            <span 
-              className="text-[var(--bkl-color-text-primary)]"
-              style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+          <div
+            className="absolute bottom-2 left-2 flex items-center gap-1 backdrop-blur-sm px-2 py-1"
+            style={{
+              background: `${C.bg}d9`,
+              borderRadius: 2,
+            }}
+          >
+            <Star
+              className="w-3 h-3"
+              style={{ fill: C.amber, color: C.amber }}
+            />
+            <span
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 12,
+                fontWeight: 600,
+                color: C.text,
+              }}
             >
               {rating ? (rating / 10).toFixed(1) : '0.0'}
             </span>
           </div>
         </div>
-        
+
         <div className="p-3 min-h-[72px] flex flex-col justify-between">
-          <h3 
-            className="text-[var(--bkl-color-text-primary)] line-clamp-2"
-            style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+          <h3
+            className="line-clamp-2"
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 14,
+              fontWeight: 500,
+              color: C.text,
+            }}
           >
             {game.title}
           </h3>
-          <p 
-            className="text-[var(--bkl-color-text-disabled)]"
-            style={{ fontSize: 'var(--bkl-font-size-xs)' }}
+          <p
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 11,
+              color: C.textDim,
+              textTransform: 'uppercase',
+            }}
           >
             {game.releaseYear ?? 'N/A'}
           </p>
@@ -78,21 +120,52 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
   return (
     <button
       onClick={onClick}
-      className="group w-full text-left bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-lg)] overflow-hidden hover:border-[var(--bkl-color-accent-primary)] transition-all hover:shadow-[var(--bkl-shadow-glow)]"
+      className="group w-full text-left overflow-hidden transition-all"
+      style={{
+        borderRadius: 2,
+        border: `1px solid ${C.border}`,
+        background: C.surface,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = C.gold;
+        e.currentTarget.style.boxShadow = `0 0 20px ${C.bloom}`;
+        e.currentTarget.style.transform = 'translateY(-1px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = C.border;
+        e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.transform = 'translateY(0)';
+      }}
     >
       <div className="flex gap-4 p-4">
-        <div className="relative w-24 h-36 flex-shrink-0 rounded-[var(--bkl-radius-md)] overflow-hidden">
+        <div
+          className="relative w-24 h-36 flex-shrink-0 overflow-hidden"
+          style={{ borderRadius: 2 }}
+        >
           <ImageWithFallback
             src={game.cover}
             alt={game.title}
             className="w-full h-full object-cover"
           />
           {game.userRating && (
-            <div className="absolute top-2 right-2 flex items-center gap-1 bg-[var(--bkl-color-bg-primary)]/90 backdrop-blur-sm px-2 py-1 rounded-[var(--bkl-radius-sm)]">
-              <Star className="w-3 h-3 fill-[var(--bkl-color-accent-secondary)] text-[var(--bkl-color-accent-secondary)]" />
-              <span 
-                className="text-[var(--bkl-color-text-primary)]"
-                style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+            <div
+              className="absolute top-2 right-2 flex items-center gap-1 backdrop-blur-sm px-2 py-1"
+              style={{
+                background: `${C.bg}d9`,
+                borderRadius: 2,
+              }}
+            >
+              <Star
+                className="w-3 h-3"
+                style={{ fill: C.amber, color: C.amber }}
+              />
+              <span
+                style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: C.text,
+                }}
               >
                 {game.userRating}
               </span>
@@ -103,17 +176,27 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex-1 min-w-0">
-              <h3 
-                className="text-[var(--bkl-color-text-primary)] line-clamp-2"
-                style={{ fontSize: 'var(--bkl-font-size-lg)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+              <h3
+                className="line-clamp-2"
+                style={{
+                  fontFamily: FONT_BODY,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: C.text,
+                }}
               >
                 {game.title}
               </h3>
-              <p 
-                className="text-[var(--bkl-color-text-secondary)] mt-1"
-                style={{ fontSize: 'var(--bkl-font-size-xs)' }}
+              <p
+                className="mt-1"
+                style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: 11,
+                  color: C.textDim,
+                  textTransform: 'uppercase',
+                }}
               >
-                {game.releaseYear ?? 'N/A'}{game.developer ? ` • ${game.developer}` : ''}
+                {game.releaseYear ?? 'N/A'}{game.developer ? ` / ${game.developer}` : ''}
               </p>
             </div>
             {game.status && <StatusBadge status={game.status} />}
@@ -124,8 +207,14 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
               {game.genre.slice(0, 3).map((genre) => (
                 <span
                   key={genre}
-                  className="px-2 py-1 bg-[var(--bkl-color-bg-tertiary)] text-[var(--bkl-color-text-secondary)] rounded-[var(--bkl-radius-sm)]"
-                  style={{ fontSize: 'var(--bkl-font-size-xs)' }}
+                  className="px-2 py-1"
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 11,
+                    color: C.textMuted,
+                    background: C.bgAlt,
+                    borderRadius: 2,
+                  }}
                 >
                   {genre}
                 </span>
@@ -136,25 +225,40 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
           <div className="flex items-center gap-4 mt-3">
             {game.rating && (
               <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 fill-[var(--bkl-color-accent-secondary)] text-[var(--bkl-color-accent-secondary)]" />
-                <span 
-                  className="text-[var(--bkl-color-text-primary)]"
-                  style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+                <Star
+                  className="w-4 h-4"
+                  style={{ fill: C.amber, color: C.amber }}
+                />
+                <span
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: C.text,
+                  }}
                 >
                   {game.rating.toFixed(1)}
                 </span>
-                <span 
-                  className="text-[var(--bkl-color-text-disabled)]"
-                  style={{ fontSize: 'var(--bkl-font-size-xs)' }}
+                <span
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 11,
+                    color: C.textDim,
+                  }}
                 >
                   / 5.0
                 </span>
               </div>
             )}
             {game.playTime && (
-              <div className="flex items-center gap-1 text-[var(--bkl-color-text-secondary)]">
+              <div className="flex items-center gap-1" style={{ color: C.textMuted }}>
                 <Clock className="w-4 h-4" />
-                <span style={{ fontSize: 'var(--bkl-font-size-sm)' }}>
+                <span
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 13,
+                  }}
+                >
                   {game.playTime}h played
                 </span>
               </div>

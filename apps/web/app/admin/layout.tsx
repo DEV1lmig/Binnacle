@@ -15,7 +15,7 @@ export default function AdminLayout({
   }
 
   return (
-    <AdminGuard requireAdmin={false} requireModerator={true}>
+    <AdminGuard requireAdmin={true}>
       {children}
     </AdminGuard>
   );

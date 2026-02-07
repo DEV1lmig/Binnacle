@@ -4,31 +4,52 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
-import { Badge } from "@/app/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/app/components/ui/avatar";
-import { Button } from "@/app/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import {
+  MoreHorizontal,
+  UserPlus,
+  UserCheck,
+  UserX,
+  Shield,
+  ShieldOff,
+  Clock,
+  Inbox,
+  Flag,
+  Loader2,
+} from "lucide-react";
 import { ReportDialog } from "@/app/components/ReportDialog";
+import {
+  ProfileDashboardContent,
+  ProfilePageSkeleton,
+  type ProfileDashboardData,
+} from "../components/ProfileDashboardContent";
+import {
+  C,
+  FONT_HEADING,
+  FONT_MONO,
+  FONT_BODY,
+  FONT_IMPORT_URL,
+} from "@/app/lib/design-system";
+import { CornerMarkers, GrainOverlay } from "@/app/lib/design-primitives";
 
 export default function UserProfilePage() {
   const router = useRouter();
   const params = useParams();
-  const usernameParam = typeof params.username === "string"
-    ? params.username
-    : Array.isArray(params.username)
-      ? params.username[0]
-      : undefined;
+  const usernameParam =
+    typeof params.username === "string"
+      ? params.username
+      : Array.isArray(params.username)
+        ? params.username[0]
+        : undefined;
 
   const profileData = useQuery(
     api.users.dashboard,
-    usernameParam ? { username: usernameParam } : "skip"
+    usernameParam ? { username: usernameParam } : "skip",
   );
 
   const followUser = useMutation(api.followers.follow);
@@ -39,16 +60,20 @@ export default function UserProfilePage() {
 
   const friendRelationship = useQuery(
     api.friends.relationship,
-    profileData ? { targetUserId: profileData.user._id } : "skip"
+    profileData ? { targetUserId: profileData.user._id } : "skip",
   );
 
   const viewerHasBlocked = useQuery(
     api.blocking.isBlocked,
-    profileData && !profileData.viewerIsSelf ? { targetUserId: profileData.user._id } : "skip"
+    profileData && !profileData.viewerIsSelf
+      ? { targetUserId: profileData.user._id }
+      : "skip",
   );
   const viewerIsBlockedBy = useQuery(
     api.blocking.isBlockedBy,
-    profileData && !profileData.viewerIsSelf ? { targetUserId: profileData.user._id } : "skip"
+    profileData && !profileData.viewerIsSelf
+      ? { targetUserId: profileData.user._id }
+      : "skip",
   );
 
   const [isFollowing, setIsFollowing] = useState<boolean | null>(null);
@@ -61,31 +86,23 @@ export default function UserProfilePage() {
   const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
-    if (!profileData) {
-      return;
-    }
+    if (!profileData) return;
 
     setIsFollowing((prev) => {
       const next = profileData.viewerFollows;
-      if (isUpdatingFollow && prev !== null) {
-        return prev;
-      }
+      if (isUpdatingFollow && prev !== null) return prev;
       return prev === next ? prev : next;
     });
 
     setFollowerCount((prev) => {
       const next = profileData.followerCount;
-      if (isUpdatingFollow && prev !== null) {
-        return prev;
-      }
+      if (isUpdatingFollow && prev !== null) return prev;
       return prev === next ? prev : next;
     });
   }, [isUpdatingFollow, profileData]);
 
   const handleFollowToggle = async () => {
-    if (!profileData || profileData.viewerIsSelf) {
-      return;
-    }
+    if (!profileData || profileData.viewerIsSelf) return;
 
     const targetUserId = profileData.user._id;
     const nextFollowerCount = followerCount ?? profileData.followerCount;
@@ -109,29 +126,24 @@ export default function UserProfilePage() {
   };
 
   const handleSendFriendRequest = async () => {
-    if (!profileData || profileData.viewerIsSelf) {
-      return;
-    }
+    if (!profileData || profileData.viewerIsSelf) return;
 
     setFriendActionError(null);
     setIsSendingFriendRequest(true);
     try {
       await sendFriendRequest({ recipientId: profileData.user._id });
     } catch (error) {
-      setFriendActionError(error instanceof Error ? error.message : "Failed to send friend request");
+      setFriendActionError(
+        error instanceof Error ? error.message : "Failed to send friend request",
+      );
     } finally {
       setIsSendingFriendRequest(false);
     }
   };
 
   const handleBlockToggle = async () => {
-    if (!profileData || profileData.viewerIsSelf) {
-      return;
-    }
-
-    if (viewerHasBlocked === undefined) {
-      return;
-    }
+    if (!profileData || profileData.viewerIsSelf) return;
+    if (viewerHasBlocked === undefined) return;
 
     setBlockActionError(null);
     setIsUpdatingBlock(true);
@@ -143,312 +155,530 @@ export default function UserProfilePage() {
         await blockUser({ targetUserId });
       }
     } catch (error) {
-      setBlockActionError(error instanceof Error ? error.message : "Failed to update block status");
+      setBlockActionError(
+        error instanceof Error ? error.message : "Failed to update block status",
+      );
     } finally {
       setIsUpdatingBlock(false);
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // Edge-case screens
+  // ---------------------------------------------------------------------------
+
   if (!usernameParam) {
     return (
-      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-          <p className="text-[var(--bkl-color-text-secondary)]">Missing username.</p>
-          <Button
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: C.bg }}
+      >
+        <div
+          className="relative text-center px-8 py-10"
+          style={{
+            border: `1px solid ${C.border}`,
+            borderRadius: 2,
+            background: C.surface,
+          }}
+        >
+          <CornerMarkers />
+          <p style={{ fontFamily: FONT_BODY, fontSize: 14, color: C.textMuted }}>
+            Missing username.
+          </p>
+          <button
+            type="button"
             onClick={() => router.back()}
-            className="mt-4 bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-primary)]/90"
+            className="mt-4"
+            style={{
+              padding: "8px 20px",
+              border: `1px solid ${C.border}`,
+              borderRadius: 2,
+              background: "transparent",
+              color: C.textMuted,
+              fontFamily: FONT_MONO,
+              fontSize: 11,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
           >
             Go Back
-          </Button>
+          </button>
         </div>
       </div>
     );
   }
 
   if (profileData === undefined) {
-    return (
-      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-          <p className="text-[var(--bkl-color-text-secondary)]">Loading profile…</p>
-        </div>
-      </div>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   if (profileData === null) {
     return (
-      <div className="min-h-screen bg-[var(--bkl-color-bg-primary)]">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-          <p className="text-[var(--bkl-color-text-secondary)]">This profile is private.</p>
-          <Button
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: C.bg }}
+      >
+        <div
+          className="relative text-center px-8 py-10"
+          style={{
+            border: `1px solid ${C.border}`,
+            borderRadius: 2,
+            background: C.surface,
+          }}
+        >
+          <CornerMarkers />
+          <p style={{ fontFamily: FONT_BODY, fontSize: 14, color: C.textMuted }}>
+            This profile is private.
+          </p>
+          <button
+            type="button"
             onClick={() => router.back()}
-            className="mt-4 bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-primary)]/90"
+            className="mt-4"
+            style={{
+              padding: "8px 20px",
+              border: `1px solid ${C.border}`,
+              borderRadius: 2,
+              background: "transparent",
+              color: C.textMuted,
+              fontFamily: FONT_MONO,
+              fontSize: 11,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
           >
             Go Back
-          </Button>
+          </button>
         </div>
       </div>
     );
   }
 
-  const user = profileData.user;
+  // ---------------------------------------------------------------------------
+  // Blocked state
+  // ---------------------------------------------------------------------------
+
+  if (viewerIsBlockedBy) {
+    const blockedDashboard: ProfileDashboardData = {
+      ...profileData,
+      followerCount: followerCount ?? profileData.followerCount,
+    };
+
+    const blockedBanner = (
+      <div
+        className="mt-3 px-4 py-3 relative"
+        style={{
+          border: `1px solid ${C.red}33`,
+          borderRadius: 2,
+          background: `${C.red}08`,
+        }}
+      >
+        <CornerMarkers size={5} color={`${C.red}44`} />
+        <p
+          style={{
+            fontFamily: FONT_MONO,
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: C.red,
+          }}
+        >
+          You are blocked by this user.
+        </p>
+      </div>
+    );
+
+    const blockedActions = (
+      <div className="flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center justify-center"
+              style={{
+                width: 36,
+                height: 36,
+                border: `1px solid ${C.border}`,
+                borderRadius: 2,
+                background: "transparent",
+                color: C.textDim,
+                cursor: "pointer",
+              }}
+            >
+              <MoreHorizontal style={{ width: 16, height: 16 }} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            style={{
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 2,
+            }}
+          >
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                setReportOpen(true);
+              }}
+              className="flex items-center gap-2 cursor-pointer"
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 11,
+                letterSpacing: "0.06em",
+                color: C.textMuted,
+              }}
+            >
+              <Flag style={{ width: 12, height: 12 }} />
+              Report
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+
+    return (
+      <>
+        <ProfileDashboardContent
+          data={blockedDashboard}
+          socialActions={blockedActions}
+          errorBanner={blockedBanner}
+        />
+        <ReportDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          targetType="user"
+          targetId={profileData.user._id}
+        />
+      </>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Viewer has blocked this user
+  // ---------------------------------------------------------------------------
+
+  if (viewerHasBlocked) {
+    const blockedByViewerDashboard: ProfileDashboardData = {
+      ...profileData,
+      followerCount: followerCount ?? profileData.followerCount,
+    };
+
+    const unblockActions = (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleBlockToggle}
+          disabled={isUpdatingBlock}
+          className="flex items-center gap-2 px-4 py-2"
+          style={{
+            border: `1px solid ${C.border}`,
+            borderRadius: 2,
+            background: "transparent",
+            color: C.textMuted,
+            fontFamily: FONT_MONO,
+            fontSize: 11,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            cursor: isUpdatingBlock ? "not-allowed" : "pointer",
+            opacity: isUpdatingBlock ? 0.5 : 1,
+          }}
+        >
+          {isUpdatingBlock ? (
+            <Loader2
+              className="animate-spin"
+              style={{ width: 14, height: 14 }}
+            />
+          ) : (
+            <ShieldOff style={{ width: 14, height: 14 }} />
+          )}
+          Unblock
+        </button>
+      </div>
+    );
+
+    return (
+      <ProfileDashboardContent
+        data={blockedByViewerDashboard}
+        socialActions={unblockActions}
+      />
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Normal public profile view (not self, not blocked)
+  // ---------------------------------------------------------------------------
+
+  const dashboardWithOptimisticCounts: ProfileDashboardData = {
+    ...profileData,
+    followerCount: followerCount ?? profileData.followerCount,
+    viewerFollows: isFollowing ?? profileData.viewerFollows,
+  };
+
+  // Build social actions row
+  const socialActions = !profileData.viewerIsSelf ? (
+    <div className="flex flex-wrap items-center gap-2">
+      {/* Follow / Following button */}
+      <button
+        type="button"
+        onClick={handleFollowToggle}
+        disabled={isUpdatingFollow}
+        className="flex items-center gap-2 px-4 py-2"
+        style={{
+          border: "none",
+          borderRadius: 2,
+          background: (isFollowing ?? profileData.viewerFollows) ? C.surface : C.gold,
+          color: (isFollowing ?? profileData.viewerFollows) ? C.textMuted : C.bg,
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          cursor: isUpdatingFollow ? "not-allowed" : "pointer",
+          fontWeight: 500,
+          boxShadow: (isFollowing ?? profileData.viewerFollows) ? "none" : `0 0 16px ${C.bloom}`,
+          ...(isFollowing ?? profileData.viewerFollows
+            ? { border: `1px solid ${C.border}` }
+            : {}),
+          opacity: isUpdatingFollow ? 0.6 : 1,
+          transition: "opacity 0.2s, box-shadow 0.2s",
+        }}
+      >
+        {isUpdatingFollow ? (
+          <Loader2
+            className="animate-spin"
+            style={{ width: 14, height: 14 }}
+          />
+        ) : (isFollowing ?? profileData.viewerFollows) ? (
+          <UserCheck style={{ width: 14, height: 14 }} />
+        ) : (
+          <UserPlus style={{ width: 14, height: 14 }} />
+        )}
+        {(isFollowing ?? profileData.viewerFollows) ? "Following" : "Follow"}
+      </button>
+
+      {/* Friend relationship button */}
+      {friendRelationship?.status === "none" ? (
+        <button
+          type="button"
+          onClick={handleSendFriendRequest}
+          disabled={isSendingFriendRequest}
+          className="flex items-center gap-2 px-4 py-2"
+          style={{
+            border: `1px solid ${C.border}`,
+            borderRadius: 2,
+            background: "transparent",
+            color: C.textMuted,
+            fontFamily: FONT_MONO,
+            fontSize: 11,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            cursor: isSendingFriendRequest ? "not-allowed" : "pointer",
+            opacity: isSendingFriendRequest ? 0.5 : 1,
+            transition: "border-color 0.2s, color 0.2s",
+          }}
+        >
+          {isSendingFriendRequest ? (
+            <Loader2
+              className="animate-spin"
+              style={{ width: 14, height: 14 }}
+            />
+          ) : (
+            <UserPlus style={{ width: 14, height: 14 }} />
+          )}
+          Add Friend
+        </button>
+      ) : friendRelationship?.status === "outgoing" ? (
+        <span
+          className="flex items-center gap-2 px-4 py-2"
+          style={{
+            border: `1px solid ${C.border}`,
+            borderRadius: 2,
+            fontFamily: FONT_MONO,
+            fontSize: 11,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: C.textDim,
+          }}
+        >
+          <Clock style={{ width: 14, height: 14 }} />
+          Request Sent
+        </span>
+      ) : friendRelationship?.status === "incoming" ? (
+        <span
+          className="flex items-center gap-2 px-4 py-2"
+          style={{
+            border: `1px solid ${C.cyan}33`,
+            borderRadius: 2,
+            fontFamily: FONT_MONO,
+            fontSize: 11,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: C.cyan,
+          }}
+        >
+          <Inbox style={{ width: 14, height: 14 }} />
+          Request Received
+        </span>
+      ) : friendRelationship?.status === "friends" ? (
+        <span
+          className="flex items-center gap-2 px-4 py-2"
+          style={{
+            border: `1px solid ${C.green}33`,
+            borderRadius: 2,
+            fontFamily: FONT_MONO,
+            fontSize: 11,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: C.green,
+          }}
+        >
+          <UserCheck style={{ width: 14, height: 14 }} />
+          Friends
+        </span>
+      ) : null}
+
+      {/* Block button */}
+      <button
+        type="button"
+        onClick={handleBlockToggle}
+        disabled={isUpdatingBlock || viewerHasBlocked === undefined}
+        className="flex items-center gap-2 px-4 py-2"
+        style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 2,
+          background: "transparent",
+          color: C.textDim,
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          cursor: isUpdatingBlock ? "not-allowed" : "pointer",
+          opacity: isUpdatingBlock ? 0.5 : 1,
+          transition: "border-color 0.2s, color 0.2s",
+        }}
+      >
+        {isUpdatingBlock ? (
+          <Loader2
+            className="animate-spin"
+            style={{ width: 14, height: 14 }}
+          />
+        ) : (
+          <Shield style={{ width: 14, height: 14 }} />
+        )}
+        Block
+      </button>
+
+      {/* More menu (Report) */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center justify-center"
+            style={{
+              width: 36,
+              height: 36,
+              border: `1px solid ${C.border}`,
+              borderRadius: 2,
+              background: "transparent",
+              color: C.textDim,
+              cursor: "pointer",
+              transition: "border-color 0.2s, color 0.2s",
+            }}
+          >
+            <MoreHorizontal style={{ width: 16, height: 16 }} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          style={{
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 2,
+          }}
+        >
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setReportOpen(true);
+            }}
+            className="flex items-center gap-2 cursor-pointer"
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              color: C.textMuted,
+            }}
+          >
+            <Flag style={{ width: 12, height: 12 }} />
+            Report
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  ) : null;
+
+  // Build error banners
+  const errorBanner = (
+    <>
+      {friendActionError && (
+        <div
+          className="mt-2 px-3 py-2 relative"
+          style={{
+            border: `1px solid ${C.red}33`,
+            borderRadius: 2,
+            background: `${C.red}08`,
+          }}
+        >
+          <p
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 10,
+              letterSpacing: "0.06em",
+              color: C.red,
+            }}
+          >
+            {friendActionError}
+          </p>
+        </div>
+      )}
+      {blockActionError && (
+        <div
+          className="mt-2 px-3 py-2 relative"
+          style={{
+            border: `1px solid ${C.red}33`,
+            borderRadius: 2,
+            background: `${C.red}08`,
+          }}
+        >
+          <p
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 10,
+              letterSpacing: "0.06em",
+              color: C.red,
+            }}
+          >
+            {blockActionError}
+          </p>
+        </div>
+      )}
+    </>
+  );
 
   return (
-    <div className="min-h-screen bg-[var(--bkl-color-bg-primary)] pb-20 md:pb-8">
-      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        {/* Profile Header */}
-        <div className="bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-lg)] p-6 md:p-8 mb-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-6">
-              <Avatar className="h-24 w-24 border-2 border-[var(--bkl-color-accent-primary)]">
-                <AvatarFallback className="bg-[var(--bkl-color-accent-primary)] text-white text-3xl">
-                  {user.name?.charAt(0).toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
-
-              <div>
-                <h1
-                  className="text-[var(--bkl-color-text-primary)]"
-                  style={{ fontSize: "var(--bkl-font-size-3xl)", fontWeight: "var(--bkl-font-weight-bold)" }}
-                >
-                  {user.name}
-                </h1>
-                <p
-                  className="text-[var(--bkl-color-text-secondary)]"
-                  style={{ fontSize: "var(--bkl-font-size-sm)" }}
-                >
-                  @{user.username}
-                </p>
-                <div className="flex gap-8 mt-4">
-                  <div>
-                    <p
-                      className="text-[var(--bkl-color-accent-primary)]"
-                      style={{ fontSize: "var(--bkl-font-size-lg)", fontWeight: "var(--bkl-font-weight-bold)" }}
-                    >
-                      {profileData.reviewStats.reviewCount}
-                    </p>
-                    <p className="text-[var(--bkl-color-text-disabled)]">Reviews</p>
-                  </div>
-                  <div>
-                    <p
-                      className="text-[var(--bkl-color-accent-primary)]"
-                      style={{ fontSize: "var(--bkl-font-size-lg)", fontWeight: "var(--bkl-font-weight-bold)" }}
-                    >
-                      {followerCount ?? profileData.followerCount}
-                    </p>
-                    <p className="text-[var(--bkl-color-text-disabled)]">Followers</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {!profileData.viewerIsSelf && (
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
-                  {viewerIsBlockedBy ? (
-                    <>
-                      <p className="text-sm text-[var(--bkl-color-text-secondary)]">You are blocked by this user.</p>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-9 w-9">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault();
-                              setReportOpen(true);
-                            }}
-                          >
-                            Report
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </>
-                  ) : viewerHasBlocked ? (
-                    <Button
-                      variant="outline"
-                      className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
-                      onClick={handleBlockToggle}
-                      disabled={isUpdatingBlock || viewerHasBlocked === undefined}
-                    >
-                      Unblock
-                    </Button>
-                  ) : (
-                    <>
-                      {friendRelationship?.status === "none" ? (
-                        <Button
-                          variant="outline"
-                          className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
-                          onClick={handleSendFriendRequest}
-                          disabled={isSendingFriendRequest}
-                        >
-                          Add friend
-                        </Button>
-                      ) : friendRelationship?.status === "outgoing" ? (
-                        <Button
-                          variant="outline"
-                          className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
-                          disabled
-                        >
-                          Request sent
-                        </Button>
-                      ) : friendRelationship?.status === "incoming" ? (
-                        <Button
-                          variant="outline"
-                          className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
-                          disabled
-                        >
-                          Request received
-                        </Button>
-                      ) : friendRelationship?.status === "friends" ? (
-                        <Button
-                          variant="outline"
-                          className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
-                          disabled
-                        >
-                          Friends
-                        </Button>
-                      ) : null}
-
-                      <Button
-                        className="bg-[var(--bkl-color-accent-primary)] hover:bg-[var(--bkl-color-accent-primary)]/90"
-                        onClick={handleFollowToggle}
-                        disabled={isUpdatingFollow}
-                      >
-                        {isFollowing ? "Following" : "Follow"}
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)]"
-                        onClick={handleBlockToggle}
-                        disabled={isUpdatingBlock || viewerHasBlocked === undefined}
-                      >
-                        Block
-                      </Button>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-9 w-9">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault();
-                              setReportOpen(true);
-                            }}
-                          >
-                            Report
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </>
-                  )}
-                </div>
-
-                {friendActionError ? (
-                  <p className="text-xs text-[var(--bkl-color-feedback-error)]">{friendActionError}</p>
-                ) : null}
-
-                {blockActionError ? (
-                  <p className="text-xs text-[var(--bkl-color-feedback-error)]">{blockActionError}</p>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <section className="space-y-6">
-          <div>
-            <h2
-              className="text-[var(--bkl-color-text-primary)] font-[family-name:var(--bkl-font-serif)] mb-4"
-              style={{ fontSize: "var(--bkl-font-size-2xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-            >
-              Top Games
-            </h2>
-            {profileData.topGames.length ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {profileData.topGames.map((entry) => (
-                  <Card key={`${entry.game._id}-${entry.rank}`} className="bg-[var(--bkl-color-bg-secondary)] border-[var(--bkl-color-border)]">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex items-center gap-2 text-[var(--bkl-color-text-primary)]" style={{ fontSize: "var(--bkl-font-size-base)" }}>
-                        <Badge className="bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]">#{entry.rank}</Badge>
-                        {entry.game.title}
-                      </CardTitle>
-                      {entry.note && (
-                        <p className="text-xs text-[var(--bkl-color-text-secondary)] mt-2">{entry.note}</p>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      <Button
-                        variant="outline"
-                        className="w-full border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)] hover:bg-[var(--bkl-color-bg-tertiary)]"
-                        onClick={() => router.push(`/game/${entry.game._id}`)}
-                      >
-                        View Game
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="border border-dashed border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-md)] p-6 text-center text-[var(--bkl-color-text-secondary)]">
-                {user.username} has not pinned any top games yet.
-              </div>
-            )}
-          </div>
-
-          <div>
-            <h2
-              className="text-[var(--bkl-color-text-primary)] font-[family-name:var(--bkl-font-serif)] mb-4"
-              style={{ fontSize: "var(--bkl-font-size-2xl)", fontWeight: "var(--bkl-font-weight-semibold)" }}
-            >
-              Recent Reviews
-            </h2>
-            {profileData.recentReviews.length ? (
-              <div className="grid gap-4">
-                {profileData.recentReviews.map((review) => (
-                  <Card key={review._id} className="bg-[var(--bkl-color-bg-secondary)] border-[var(--bkl-color-border)]">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex items-center justify-between text-[var(--bkl-color-text-primary)]" style={{ fontSize: "var(--bkl-font-size-base)" }}>
-                        {review.game.title}
-                        <Badge className="bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]">
-                          {review.rating.toFixed(1)} / 10
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm text-[var(--bkl-color-text-secondary)]">
-                      {review.text ? review.text : "No review text provided."}
-                      <Button
-                        variant="outline"
-                        className="border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)] hover:bg-[var(--bkl-color-bg-tertiary)]"
-                        onClick={() => router.push(`/game/${review.game._id}`)}
-                      >
-                        View Game
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="border border-dashed border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-md)] p-6 text-center text-[var(--bkl-color-text-secondary)]">
-                {user.username} has not shared any recent reviews.
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
+    <>
+      <ProfileDashboardContent
+        data={dashboardWithOptimisticCounts}
+        socialActions={socialActions}
+        errorBanner={errorBanner}
+      />
 
       <ReportDialog
         open={reportOpen}
         onOpenChange={setReportOpen}
         targetType="user"
-        targetId={user._id}
+        targetId={profileData.user._id}
       />
-    </div>
+    </>
   );
 }

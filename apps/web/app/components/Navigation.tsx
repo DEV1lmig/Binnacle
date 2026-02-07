@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { C, FONT_HEADING, FONT_MONO } from "@/app/lib/design-system";
 
 export function Navigation() {
   const pathname = usePathname();
@@ -24,7 +25,6 @@ export function Navigation() {
   const { currentUser: convexUser } = useCurrentUser();
   const { signOut } = useClerk();
 
-  // Avoid querying Convex until the user record is available (prevents "User profile not found" during initial sync).
   const incomingRequests = useQuery(
     api.friends.listIncomingRequests,
     convexUser ? { limit: 99 } : "skip",
@@ -64,15 +64,26 @@ export function Navigation() {
     }
   };
 
-  // Logged-out navigation state
   if (!isSignedIn) {
     return (
-      <nav className="border-b border-[var(--bkl-color-border)] bg-[var(--bkl-color-bg-primary)] px-4 py-4 md:px-6">
+      <nav
+        className="px-4 py-4 md:px-6"
+        style={{
+          backgroundColor: C.bg,
+          borderBottom: `1px solid ${C.border}`,
+        }}
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link
             href="/"
-            className="text-[var(--bkl-color-accent-primary)] hover:text-[var(--bkl-color-accent-hover)] transition-colors"
-            style={{ fontSize: 'var(--bkl-font-size-xl)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+            className="transition-colors"
+            style={{
+              fontFamily: FONT_HEADING,
+              fontSize: 20,
+              fontWeight: 200,
+              letterSpacing: "-0.01em",
+              color: C.gold,
+            }}
           >
             Binnacle
           </Link>
@@ -80,18 +91,41 @@ export function Navigation() {
           <div className="flex items-center gap-3">
             <Link
               href="/sign-in"
-              className="px-4 py-2 rounded-lg border border-[var(--bkl-color-border)] text-[var(--bkl-color-text-primary)] hover:border-[var(--bkl-color-accent-primary)] hover:text-[var(--bkl-color-accent-primary)] transition-all"
-              style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
+              className="px-4 py-2 transition-all"
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 12,
+                fontWeight: 400,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: C.text,
+                border: `1px solid ${C.border}`,
+                borderRadius: 2,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = C.gold;
+                e.currentTarget.style.color = C.gold;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = C.border;
+                e.currentTarget.style.color = C.text;
+              }}
             >
               Sign In
             </Link>
             <Link
               href="/sign-up"
-              className="px-4 py-2 rounded-lg bg-[var(--bkl-color-accent-primary)] text-white hover:bg-[var(--bkl-color-accent-hover)] transition-all"
-              style={{ 
-                fontSize: 'var(--bkl-font-size-sm)', 
-                fontWeight: 'var(--bkl-font-weight-medium)',
-                boxShadow: '0 0 20px rgba(102, 192, 244, 0.3)'
+              className="px-4 py-2 transition-all"
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 12,
+                fontWeight: 400,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: C.bg,
+                backgroundColor: C.gold,
+                borderRadius: 2,
+                boxShadow: `0 0 20px ${C.bloom}, 0 0 40px ${C.bloom}`,
               }}
             >
               Get Started
@@ -102,123 +136,138 @@ export function Navigation() {
     );
   }
 
-  // Logged-in navigation state (existing)
   return (
     <>
-      <nav className="border-b border-[var(--bkl-color-border)] bg-[var(--bkl-color-bg-primary)] px-4 py-4 md:px-6">
+      <nav
+        className="px-4 py-4 md:px-6"
+        style={{
+          backgroundColor: C.bg,
+          borderBottom: `1px solid ${C.border}`,
+        }}
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6 md:gap-8">
             <Link
               href="/feed"
-              className="text-[var(--bkl-color-accent-primary)] hover:text-[var(--bkl-color-accent-hover)] transition-colors"
-              style={{ fontSize: 'var(--bkl-font-size-xl)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+              className="transition-colors"
+              style={{
+                fontFamily: FONT_HEADING,
+                fontSize: 20,
+                fontWeight: 200,
+                letterSpacing: "-0.01em",
+                color: C.gold,
+              }}
             >
               Binnacle
             </Link>
             <div className="hidden md:flex items-center gap-6">
-              <Link
-                href="/feed"
-                className={`transition-colors ${
-                  isActive('/feed')
-                    ? 'text-[var(--bkl-color-accent-primary)]'
-                    : 'text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]'
-                }`}
-                style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
-              >
-                Feed
-              </Link>
-              <Link
-                href="/friends"
-                className={`transition-colors ${
-                  isActive('/friends')
-                    ? 'text-[var(--bkl-color-accent-primary)]'
-                    : 'text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]'
-                }`}
-                style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
-              >
-                <span className="inline-flex items-center gap-2">
-                  Friends
-                  {pendingFriendRequests > 0 ? (
-                    <span
-                      className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]"
-                      style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
-                    >
-                      {pendingFriendRequests >= 99 ? '99+' : pendingFriendRequests}
+              {([
+                { href: "/feed", label: "Feed" },
+                { href: "/friends", label: "Friends", badge: pendingFriendRequests },
+                { href: "/backlog", label: "Backlog" },
+                { href: "/discover", label: "Discover" },
+                { href: "/notifications", label: "Notifications", badge: unreadCount },
+              ] as const).map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="transition-colors"
+                    style={{
+                      fontFamily: FONT_MONO,
+                      fontSize: 12,
+                      fontWeight: 400,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: active ? C.gold : C.textMuted,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!active) e.currentTarget.style.color = C.text;
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) e.currentTarget.style.color = C.textMuted;
+                    }}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      {item.label}
+                      {"badge" in item && (item.badge ?? 0) > 0 ? (
+                        <span
+                          className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full"
+                          style={{
+                            fontFamily: FONT_MONO,
+                            fontSize: 10,
+                            fontWeight: 600,
+                            backgroundColor: C.gold,
+                            color: C.bg,
+                          }}
+                        >
+                          {(item.badge ?? 0) >= 99 ? "99+" : item.badge}
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null}
-                </span>
-              </Link>
-              <Link
-                href="/backlog"
-                className={`transition-colors ${
-                  isActive('/backlog')
-                    ? 'text-[var(--bkl-color-accent-primary)]'
-                    : 'text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]'
-                }`}
-                style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
-              >
-                Backlog
-              </Link>
-              <Link
-                href="/discover"
-                className={`transition-colors ${
-                  isActive('/discover')
-                    ? 'text-[var(--bkl-color-accent-primary)]'
-                    : 'text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]'
-                }`}
-                style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
-              >
-                Discover
-              </Link>
-              <Link
-                href="/notifications"
-                className={`transition-colors ${
-                  isActive('/notifications')
-                    ? 'text-[var(--bkl-color-accent-primary)]'
-                    : 'text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]'
-                }`}
-                style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
-              >
-                <span className="inline-flex items-center gap-2">
-                  Notifications
-                  {unreadCount > 0 ? (
-                    <span
-                      className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]"
-                      style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
-                    >
-                      {unreadCount >= 99 ? '99+' : unreadCount}
-                    </span>
-                  ) : null}
-                </span>
-              </Link>
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-3 hover:opacity-80 transition-opacity outline-none">
-                <Avatar className="h-8 w-8 border border-[var(--bkl-color-border)]">
+                <Avatar
+                  className="h-8 w-8"
+                  style={{ border: `1px solid ${C.border}` }}
+                >
                   <AvatarImage src={clerkUser?.imageUrl} alt={clerkUser?.fullName || 'User'} />
-                  <AvatarFallback className="bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]">
+                  <AvatarFallback
+                    style={{
+                      background: `linear-gradient(135deg, ${C.accent}, ${C.gold})`,
+                      color: C.bg,
+                      fontFamily: FONT_MONO,
+                      fontSize: 12,
+                      fontWeight: 400,
+                    }}
+                  >
                     {clerkUser?.firstName?.charAt(0).toUpperCase() ?? 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <span
-                  className="hidden md:inline text-[var(--bkl-color-text-primary)]"
-                  style={{ fontSize: 'var(--bkl-font-size-sm)', fontWeight: 'var(--bkl-font-weight-medium)' }}
+                  className="hidden md:inline"
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 12,
+                    fontWeight: 400,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: C.text,
+                  }}
                 >
                   {convexUser?.username || clerkUser?.username || 'User'}
                 </span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="end" 
-              className="w-56 bg-[var(--bkl-color-bg-secondary)] border-[var(--bkl-color-border)]"
+            <DropdownMenuContent
+              align="end"
+              className="w-56"
+              style={{
+                backgroundColor: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 2,
+              }}
             >
               <DropdownMenuItem asChild>
-                <Link 
-                  href="/profile" 
-                  className="flex items-center gap-2 cursor-pointer text-[var(--bkl-color-text-primary)] hover:text-[var(--bkl-color-accent-primary)]"
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 cursor-pointer"
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 12,
+                    letterSpacing: "0.04em",
+                    color: C.text,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = C.gold; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = C.text; }}
                 >
                   <UserIcon className="w-4 h-4" />
                   <span>Profile</span>
@@ -227,7 +276,15 @@ export function Navigation() {
               <DropdownMenuItem asChild>
                 <Link
                   href="/friends"
-                  className="flex items-center justify-between gap-2 cursor-pointer text-[var(--bkl-color-text-primary)] hover:text-[var(--bkl-color-accent-primary)]"
+                  className="flex items-center justify-between gap-2 cursor-pointer"
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 12,
+                    letterSpacing: "0.04em",
+                    color: C.text,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = C.gold; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = C.text; }}
                 >
                   <span className="flex items-center gap-2">
                     <Users className="w-4 h-4" />
@@ -235,8 +292,14 @@ export function Navigation() {
                   </span>
                   {pendingFriendRequests > 0 ? (
                     <span
-                      className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]"
-                      style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-semibold)' }}
+                      className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full"
+                      style={{
+                        fontFamily: FONT_MONO,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        backgroundColor: C.gold,
+                        color: C.bg,
+                      }}
                     >
                       {pendingFriendRequests >= 99 ? '99+' : pendingFriendRequests}
                     </span>
@@ -244,18 +307,34 @@ export function Navigation() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link 
-                  href="/settings" 
-                  className="flex items-center gap-2 cursor-pointer text-[var(--bkl-color-text-primary)] hover:text-[var(--bkl-color-accent-primary)]"
+                <Link
+                  href="/settings"
+                  className="flex items-center gap-2 cursor-pointer"
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 12,
+                    letterSpacing: "0.04em",
+                    color: C.text,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = C.gold; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = C.text; }}
                 >
                   <Settings className="w-4 h-4" />
                   <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-[var(--bkl-color-border)]" />
-              <DropdownMenuItem 
+              <DropdownMenuSeparator style={{ backgroundColor: C.border }} />
+              <DropdownMenuItem
                 onClick={handleSignOut}
-                className="flex items-center gap-2 cursor-pointer text-[var(--bkl-color-text-secondary)] hover:text-red-500"
+                className="flex items-center gap-2 cursor-pointer"
+                style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: 12,
+                  letterSpacing: "0.04em",
+                  color: C.textMuted,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = C.red; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = C.textMuted; }}
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sign Out</span>
@@ -265,8 +344,13 @@ export function Navigation() {
         </div>
       </nav>
 
-      {/* Bottom navigation matches mobile design */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bkl-color-bg-secondary)] border-t border-[var(--bkl-color-border)] z-50">
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50"
+        style={{
+          backgroundColor: C.surface,
+          borderTop: `1px solid ${C.border}`,
+        }}
+      >
         <div className="flex items-center justify-around h-16">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
@@ -277,21 +361,35 @@ export function Navigation() {
               <Link
                 key={item.path}
                 href={item.path}
-                className={`relative flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors ${
-                  active
-                    ? 'text-[var(--bkl-color-accent-primary)]'
-                    : 'text-[var(--bkl-color-text-secondary)]'
-                }`}
+                className="relative flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors"
+                style={{ color: active ? C.gold : C.textMuted }}
               >
                 <div className="relative">
                   <Icon className="w-6 h-6" strokeWidth={active ? 2.5 : 2} />
                   {badge > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)] rounded-full flex items-center justify-center text-[10px] font-bold">
+                    <span
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center"
+                      style={{
+                        fontFamily: FONT_MONO,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        backgroundColor: C.gold,
+                        color: C.bg,
+                      }}
+                    >
                       {badge > 9 ? '9+' : badge}
                     </span>
                   )}
                 </div>
-                <span style={{ fontSize: 'var(--bkl-font-size-xs)', fontWeight: 'var(--bkl-font-weight-medium)' }}>
+                <span
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 10,
+                    fontWeight: 400,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                  }}
+                >
                   {item.label}
                 </span>
               </Link>

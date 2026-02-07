@@ -19,6 +19,7 @@ import {
 } from "@/app/components/ui/dropdown-menu";
 import { Button } from "@/app/components/ui/button";
 import { ReportDialog } from "@/app/components/ReportDialog";
+import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
 
 type ReviewAuthor = {
   _id: Id<"users">;
@@ -65,6 +66,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
     setLiked(review.viewerHasLiked ?? false);
@@ -122,39 +124,74 @@ export function ReviewCard({ review }: ReviewCardProps) {
   return (
     <article
       onClick={handleNavigate}
-      className="bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-lg)] p-4 md:p-6 cursor-pointer transition-all hover:border-[var(--bkl-color-accent-primary)] hover:shadow-[var(--bkl-shadow-glow)]"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="p-4 md:p-6 cursor-pointer"
+      style={{
+        background: C.surface,
+        border: `1px solid ${hovered ? C.gold : C.border}`,
+        borderRadius: 2,
+        boxShadow: hovered ? `0 0 16px ${C.bloom}` : "none",
+        transform: hovered ? "translateY(-1px)" : "none",
+        transition: "border-color 0.2s, box-shadow 0.2s, transform 0.2s",
+      }}
     >
       <header className="flex items-center gap-3 mb-4">
         <Avatar className="h-10 w-10">
           {review.author.avatarUrl ? (
             <AvatarImage src={review.author.avatarUrl} alt={review.author.name} />
           ) : null}
-          <AvatarFallback className="bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]">
+          <AvatarFallback
+            style={{
+              background: `linear-gradient(135deg, ${C.accent}, ${C.gold})`,
+              color: C.bg,
+            }}
+          >
             {review.author.name.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1">
           <p
-            className="text-[var(--bkl-color-text-primary)]"
-            style={{ fontSize: "var(--bkl-font-size-sm)", fontWeight: "var(--bkl-font-weight-semibold)" }}
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 14,
+              fontWeight: 500,
+              color: C.text,
+            }}
           >
             {review.author.name}
           </p>
           <p
-            className="text-[var(--bkl-color-text-disabled)]"
-            style={{ fontSize: "var(--bkl-font-size-xs)" }}
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 11,
+              color: C.textDim,
+              letterSpacing: "0.02em",
+            }}
           >
-            @{review.author.username} • {createdAt}
+            @{review.author.username} · {createdAt}
           </p>
         </div>
-        <div className="flex items-center gap-2" aria-label={`Rated ${review.rating} out of 10`}>
+        <div className="flex items-center gap-1" aria-label={`Rated ${review.rating} out of 10`}>
           <span
-            className="text-[var(--bkl-color-accent-secondary)] font-bold"
-            style={{ fontSize: "var(--bkl-font-size-sm)" }}
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 14,
+              fontWeight: 700,
+              color: C.amber,
+            }}
           >
             {normalizedRating.toFixed(1)}
           </span>
-          <span className="text-[var(--bkl-color-text-disabled)]">/10</span>
+          <span
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 14,
+              color: C.textDim,
+            }}
+          >
+            /10
+          </span>
         </div>
 
         <DropdownMenu>
@@ -163,7 +200,9 @@ export function ReviewCard({ review }: ReviewCardProps) {
               variant="ghost"
               size="icon"
               onClick={(event) => event.stopPropagation()}
-              className="text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]"
+              style={{ color: C.textMuted }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = C.textMuted; }}
               aria-label="More actions"
             >
               <MoreHorizontal className="w-4 h-4" />
@@ -183,7 +222,10 @@ export function ReviewCard({ review }: ReviewCardProps) {
       </header>
 
       <div className="flex gap-3 mb-4">
-        <div className="w-16 h-24 rounded-[var(--bkl-radius-sm)] overflow-hidden flex-shrink-0">
+        <div
+          className="overflow-hidden flex-shrink-0"
+          style={{ width: 64, height: 96, borderRadius: 2 }}
+        >
           <ImageWithFallback
             src={getStandardCoverUrl(review.game.coverUrl) ?? ""}
             alt={review.game.title}
@@ -192,15 +234,23 @@ export function ReviewCard({ review }: ReviewCardProps) {
         </div>
         <div className="flex flex-col justify-center">
           <p
-            className="text-[var(--bkl-color-text-primary)]"
-            style={{ fontSize: "var(--bkl-font-size-base)", fontWeight: "var(--bkl-font-weight-semibold)" }}
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 15,
+              fontWeight: 500,
+              color: C.text,
+            }}
           >
             {review.game.title}
           </p>
           {review.platform ? (
             <p
-              className="text-[var(--bkl-color-text-disabled)]"
-              style={{ fontSize: "var(--bkl-font-size-xs)" }}
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 11,
+                color: C.textDim,
+                textTransform: "uppercase",
+              }}
             >
               Played on {review.platform}
             </p>
@@ -210,31 +260,58 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
       {review.text ? (
         <p
-          className="text-[var(--bkl-color-text-secondary)] mb-4"
-          style={{ fontSize: "var(--bkl-font-size-sm)", lineHeight: "var(--bkl-leading-relaxed)" }}
+          className="mb-4"
+          style={{
+            fontFamily: FONT_BODY,
+            fontSize: 14,
+            fontWeight: 300,
+            color: C.textMuted,
+            lineHeight: 1.6,
+          }}
         >
           {review.text}
         </p>
       ) : null}
 
-      <footer className="flex items-center gap-4 pt-4 border-t border-[var(--bkl-color-border)]">
+      <footer
+        className="flex items-center gap-4 pt-4"
+        style={{ borderTop: `1px solid ${C.border}` }}
+      >
         <button
           onClick={handleLike}
           disabled={isBusy}
-          className={`flex items-center gap-2 transition-colors group ${
-            liked
-              ? "text-[var(--bkl-color-feedback-error)]"
-              : "text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)]"
-          }`}
+          className="flex items-center gap-2 group"
+          style={{
+            color: liked ? C.red : C.textMuted,
+            transition: "color 0.15s",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
+          onMouseEnter={(e) => { if (!liked) e.currentTarget.style.color = C.text; }}
+          onMouseLeave={(e) => { if (!liked) e.currentTarget.style.color = C.textMuted; }}
           title={liked ? "Unlike this review" : "Like this review"}
         >
-          <div className={`transition-transform duration-200 ${liked ? "scale-110" : "group-hover:scale-110"} ${isBusy ? "opacity-50" : ""}`}>
+          <div
+            className={`transition-transform duration-200 ${liked ? "scale-110" : "group-hover:scale-110"} ${isBusy ? "opacity-50" : ""}`}
+          >
             <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
           </div>
-          <span style={{ fontSize: "var(--bkl-font-size-sm)" }} className="flex items-center gap-1">
+          <span
+            className="flex items-center gap-1"
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 13,
+              color: C.textMuted,
+            }}
+          >
             {likeCount}
             {liked && (
-              <span className="text-[10px] font-medium opacity-80 hidden sm:inline-block">
+              <span
+                className="hidden sm:inline-block"
+                style={{ fontSize: 10, fontWeight: 500, opacity: 0.8 }}
+              >
                 (You)
               </span>
             )}
@@ -242,22 +319,48 @@ export function ReviewCard({ review }: ReviewCardProps) {
         </button>
         <button
           onClick={handleToggleComments}
-          className="flex items-center gap-2 text-[var(--bkl-color-text-secondary)] hover:text-[var(--bkl-color-text-primary)] transition-colors"
+          className="flex items-center gap-2"
+          style={{
+            color: C.textMuted,
+            transition: "color 0.15s",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = C.textMuted; }}
         >
           <MessageCircle className="w-4 h-4" />
-          <span style={{ fontSize: "var(--bkl-font-size-sm)" }}>{commentCount}</span>
+          <span
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 13,
+              color: C.textMuted,
+            }}
+          >
+            {commentCount}
+          </span>
         </button>
         {clerkUser && (
           <div className="ml-auto flex items-center gap-2">
             <Avatar className="h-6 w-6">
               <AvatarImage src={clerkUser.imageUrl || ""} alt={clerkUser.fullName || "User"} />
-              <AvatarFallback className="bg-[var(--bkl-color-accent-primary)] text-[var(--bkl-color-bg-primary)]">
+              <AvatarFallback
+                style={{
+                  background: `linear-gradient(135deg, ${C.accent}, ${C.gold})`,
+                  color: C.bg,
+                }}
+              >
                 {clerkUser.firstName?.charAt(0).toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <span
-              className="text-[var(--bkl-color-text-secondary)]"
-              style={{ fontSize: "var(--bkl-font-size-xs)" }}
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 11,
+                color: C.textDim,
+              }}
             >
               {clerkUser.firstName || clerkUser.username || "You"}
             </span>
@@ -267,7 +370,8 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
       {commentsOpen ? (
         <div
-          className="mt-4 pt-4 border-t border-[var(--bkl-color-border)]"
+          className="mt-4 pt-4"
+          style={{ borderTop: `1px solid ${C.border}` }}
           onClick={(event) => event.stopPropagation()}
         >
           <CommentSection

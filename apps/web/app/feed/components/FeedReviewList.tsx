@@ -4,6 +4,7 @@ import { AdSpace } from "@/app/components/AdSpace";
 import { ReviewCard, type ReviewCardData } from "@/app/components/ReviewCard";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
+import { C, FONT_BODY } from "@/app/lib/design-system";
 
 export type FeedReviewEntry = {
   review: {
@@ -36,7 +37,11 @@ export function FeedReviewList({ entries, isLoading, emptyMessage }: FeedReviewL
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, index) => (
-          <Skeleton key={index} className="h-32 bg-[var(--bkl-color-bg-secondary)]" />
+          <Skeleton
+            key={index}
+            className="h-32"
+            style={{ backgroundColor: C.surface }}
+          />
         ))}
       </div>
     );
@@ -44,8 +49,21 @@ export function FeedReviewList({ entries, isLoading, emptyMessage }: FeedReviewL
 
   if (!entries.length) {
     return (
-      <div className="text-center py-12 bg-[var(--bkl-color-bg-secondary)] rounded-[var(--bkl-radius-lg)] border border-[var(--bkl-color-border)]">
-        <p className="text-[var(--bkl-color-text-secondary)]" style={{ fontSize: "var(--bkl-font-size-base)" }}>
+      <div
+        className="text-center py-12"
+        style={{
+          backgroundColor: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 2,
+        }}
+      >
+        <p
+          style={{
+            color: C.textMuted,
+            fontFamily: FONT_BODY,
+            fontSize: 14,
+          }}
+        >
           {emptyMessage || "No activity yet. Follow users to see their reviews!"}
         </p>
       </div>

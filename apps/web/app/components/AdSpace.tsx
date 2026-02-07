@@ -1,4 +1,5 @@
 import { ExternalLink } from "lucide-react";
+import { C, FONT_MONO } from "@/app/lib/design-system";
 
 interface AdSpaceProps {
   variant?: "sidebar" | "banner" | "inline";
@@ -37,33 +38,55 @@ export function AdSpace({
 
   return (
     <div
-      className={`bg-[var(--bkl-color-bg-secondary)] border border-[var(--bkl-color-border)] rounded-[var(--bkl-radius-lg)] overflow-hidden ${adContent.height} ${className}`}
+      className={`overflow-hidden ${adContent.height} ${className}`}
+      style={{
+        backgroundColor: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 2,
+      }}
     >
-      <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-[var(--bkl-color-bg-tertiary)] to-[var(--bkl-color-bg-secondary)] relative group">
-        {/* Ad Label */}
+      <div
+        className="w-full h-full flex flex-col items-center justify-center gap-2 relative group"
+        style={{
+          background: `linear-gradient(to bottom right, ${C.bgAlt}, ${C.surface})`,
+        }}
+      >
         <div className="absolute top-2 right-2">
           <span
-            className="text-[var(--bkl-color-text-disabled)] bg-[var(--bkl-color-bg-primary)] px-2 py-1 rounded-[var(--bkl-radius-sm)]"
-            style={{ fontSize: "var(--bkl-font-size-xs)" }}
+            className="px-2 py-1"
+            style={{
+              color: C.textDim,
+              backgroundColor: C.bg,
+              borderRadius: 2,
+              fontFamily: FONT_MONO,
+              fontSize: 10,
+            }}
           >
             AD
           </span>
         </div>
 
-        {/* Placeholder Content */}
-        <ExternalLink className="w-8 h-8 text-[var(--bkl-color-text-disabled)] opacity-50" />
+        <ExternalLink
+          className="w-8 h-8"
+          style={{ color: C.textDim, opacity: 0.5 }}
+        />
         <p
-          className="text-[var(--bkl-color-text-disabled)]"
           style={{
-            fontSize: "var(--bkl-font-size-sm)",
-            fontWeight: "var(--bkl-font-weight-medium)",
+            color: C.textDim,
+            fontFamily: FONT_MONO,
+            fontSize: 14,
+            fontWeight: 500,
           }}
         >
           {adContent.text}
         </p>
         <p
-          className="text-[var(--bkl-color-text-disabled)] opacity-70"
-          style={{ fontSize: "var(--bkl-font-size-xs)" }}
+          style={{
+            color: C.textDim,
+            fontFamily: FONT_MONO,
+            fontSize: 12,
+            opacity: 0.7,
+          }}
         >
           {adContent.subtext}
         </p>
