@@ -271,6 +271,39 @@ export const getById = query({
 });
 
 /**
+ * Returns cover URLs for a list of game titles.
+ * Used by the landing page to display real game covers.
+ * No auth required — public query.
+ */
+export const getCoversByTitles = query({
+  args: {
+    titles: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const results: Array<{ title: string; coverUrl: string | null }> = [];
+
+    for (const title of args.titles) {
+      const matches = await ctx.db
+        .query("games")
+        .withSearchIndex("search_title", (q) => q.search("title", title))
+        .take(5);
+
+      const exact = matches.find(
+        (g) => g.title.toLowerCase() === title.toLowerCase()
+      );
+      const best = exact ?? matches[0];
+
+      results.push({
+        title,
+        coverUrl: best?.coverUrl ?? null,
+      });
+    }
+
+    return results;
+  },
+});
+
+/**
  * Count games by franchise name (internal use only for franchise metadata)
  * Searches the franchises JSON field for matching franchise names
  * Note: This still requires fetching all games, but it's only called when metadata is stale

@@ -10,10 +10,11 @@ import { Navigation } from './Navigation';
 export function ConditionalNavigation() {
   const pathname = usePathname();
   
-  // Hide navigation on auth pages
-  const hideNavigation = pathname?.startsWith('/sign-in') || 
+  const hideNavigation = pathname === '/' ||
+                         pathname?.startsWith('/sign-in') || 
                          pathname?.startsWith('/sign-up') || 
-                         pathname?.startsWith('/sign-out');
+                         pathname?.startsWith('/sign-out') ||
+                         pathname?.startsWith('/landingpage');
   
   if (hideNavigation) {
     return null;

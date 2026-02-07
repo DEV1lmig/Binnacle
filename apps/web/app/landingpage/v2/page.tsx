@@ -317,14 +317,16 @@ function useScrollProgress() {
 }
 
 // ─── Section color zones ───────────────────────────────────
+// Each zone defines the ambient color for that scroll region.
+// Colors are interpolated based on scroll progress.
 const SECTION_ZONES = [
-  { at: 0.0,  color: [96, 165, 250],   opacity: 0.07 },
-  { at: 0.15, color: [34, 211, 238],    opacity: 0.06 },
-  { at: 0.35, color: [34, 211, 238],    opacity: 0.05 },
-  { at: 0.50, color: [167, 139, 250],   opacity: 0.07 },
-  { at: 0.65, color: [251, 191, 36],    opacity: 0.04 },
-  { at: 0.80, color: [167, 139, 250],   opacity: 0.05 },
-  { at: 1.0,  color: [96, 165, 250],    opacity: 0.06 },
+  { at: 0.0,  color: [96, 165, 250],   opacity: 0.07 },  // blue (hero)
+  { at: 0.15, color: [34, 211, 238],    opacity: 0.06 },  // cyan (features)
+  { at: 0.35, color: [34, 211, 238],    opacity: 0.05 },  // cyan (how it works)
+  { at: 0.50, color: [167, 139, 250],   opacity: 0.07 },  // purple (stats)
+  { at: 0.65, color: [251, 191, 36],    opacity: 0.04 },  // warm amber (reviews)
+  { at: 0.80, color: [167, 139, 250],   opacity: 0.05 },  // purple (preview)
+  { at: 1.0,  color: [96, 165, 250],    opacity: 0.06 },  // blue (CTA)
 ] as const;
 
 function getAmbientColor(progress: number): { r: number; g: number; b: number; a: number } {
@@ -338,7 +340,7 @@ function getAmbientColor(progress: number): { r: number; g: number; b: number; a
   for (let i = 0; i < zones.length - 1; i++) {
     if (progress >= zones[i].at && progress <= zones[i + 1].at) {
       const t = (progress - zones[i].at) / (zones[i + 1].at - zones[i].at);
-      const smooth = t * t * (3 - 2 * t);
+      const smooth = t * t * (3 - 2 * t); // smoothstep
       return {
         r: zones[i].color[0] + (zones[i + 1].color[0] - zones[i].color[0]) * smooth,
         g: zones[i].color[1] + (zones[i + 1].color[1] - zones[i].color[1]) * smooth,
@@ -356,12 +358,14 @@ function DynamicBackground() {
   const scroll = useScrollProgress();
   const ambient = getAmbientColor(scroll);
 
-  const layer1Y = scroll * -120;
-  const layer2Y = scroll * -220;
-  const layer3Y = scroll * -340;
+  // Parallax offsets — different speeds create depth
+  const layer1Y = scroll * -120;  // slow — far
+  const layer2Y = scroll * -220;  // medium
+  const layer3Y = scroll * -340;  // fast — near
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+      {/* Layer 1: large slow ambient glow (far) */}
       <div
         className="absolute rounded-full"
         style={{
@@ -376,6 +380,7 @@ function DynamicBackground() {
         }}
       />
 
+      {/* Layer 2: medium orb, slightly offset color (mid) */}
       <div
         className="absolute rounded-full"
         style={{
@@ -390,6 +395,7 @@ function DynamicBackground() {
         }}
       />
 
+      {/* Layer 3: small fast accent orb (near) */}
       <div
         className="absolute rounded-full"
         style={{
@@ -404,6 +410,7 @@ function DynamicBackground() {
         }}
       />
 
+      {/* Mouse spotlight */}
       <div
         className="absolute"
         style={{
@@ -418,6 +425,7 @@ function DynamicBackground() {
         }}
       />
 
+      {/* Subtle horizontal gradient band that shifts with scroll */}
       <div
         className="absolute inset-x-0"
         style={{
@@ -670,7 +678,7 @@ function OrbitalCarousel({ coverUrls }: { coverUrls?: Record<string, string> }) 
 }
 
 // ─── Main Page ─────────────────────────────────────────────
-export default function LandingPage() {
+export default function LandingPageV2() {
   const heroReveal = useReveal(0.1);
   const featuresReveal = useReveal(0.1);
   const howItWorksReveal = useReveal(0.1);

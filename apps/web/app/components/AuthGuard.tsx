@@ -28,6 +28,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     "/game",
     "/profile",
     "/review",
+    "/landingpage",
   ];
 
   // Check if current path is public
