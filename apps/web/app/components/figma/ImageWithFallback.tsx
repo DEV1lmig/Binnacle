@@ -1,56 +1,52 @@
 import React, { useState } from 'react'
-import Image from 'next/image'
+import { C } from '@/app/lib/design-system'
+import { Gamepad2 } from 'lucide-react'
 
-const ERROR_IMG_SRC =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODgiIGhlaWdodD0iODgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBvcGFjaXR5PSIuMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIzLjciPjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiByeD0iNiIvPjxwYXRoIGQ9Im0xNiA1OCAxNi0xOCAzMiAzMiIvPjxjaXJjbGUgY3g9IjUzIiBjeT0iMzUiIHI9IjciLz48L3N2Zz4KCg=='
-
-export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElement> & { 
+interface ImageWithFallbackProps {
   src?: string | null;
   alt?: string;
-  quality?: number;
-  unoptimized?: boolean;
-}) {
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+export function ImageWithFallback({ src, alt, className, style }: ImageWithFallbackProps) {
   const [didError, setDidError] = useState(false)
 
-  const handleError = () => {
-    setDidError(true)
-  }
-
-  const { src, alt, style, className, width, height, quality, unoptimized } = props
-
-  // If src is missing, empty, or null, show the fallback immediately
   const hasSrc = src && typeof src === 'string' && src.trim() !== ''
 
-  // Default dimensions
-  const imgWidth = typeof width === 'number' ? width : typeof width === 'string' ? parseInt(width) : 1920
-  const imgHeight = typeof height === 'number' ? height : typeof height === 'string' ? parseInt(height) : 1080
-
-  return !hasSrc || didError ? (
-    <div
-      className={`inline-block bg-gray-100 text-center align-middle ${className ?? ''}`}
-      style={style}
-    >
-      <div className="flex items-center justify-center w-full h-full">
-        <Image 
-          src={ERROR_IMG_SRC} 
-          alt="Error loading image" 
-          width={imgWidth} 
-          height={imgHeight}
-          data-original-url={src as string} 
-        />
+  if (!hasSrc || didError) {
+    return (
+      <div
+        className={className}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          height: '100%',
+          background: C.bgAlt,
+          ...style,
+        }}
+      >
+        <Gamepad2 style={{ width: 24, height: 24, color: C.textDim, opacity: 0.5 }} />
       </div>
-    </div>
-  ) : (
-    <Image 
-      src={src as string} 
-      alt={alt || 'Image'} 
-      className={className} 
-      width={imgWidth} 
-      height={imgHeight}
-      quality={quality ?? 75}
-      unoptimized={unoptimized}
-      onError={handleError} 
+    )
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt || 'Image'}
+      className={className}
+      style={{
+        display: 'block',
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
+        background: C.bg,
+        ...style,
+      }}
+      onError={() => setDidError(true)}
     />
   )
 }
-

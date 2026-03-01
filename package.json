@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev": "pnpm run --parallel --filter backend --filter web dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

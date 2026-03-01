@@ -4,10 +4,10 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
 import Link from "next/link";
+import { LogOut } from "lucide-react";
+import { C, FONT_HEADING, FONT_MONO, FONT_BODY, FONT_IMPORT_URL } from "@/app/lib/design-system";
+import { CornerMarkers, GrainOverlay } from "@/app/lib/design-primitives";
 
-/**
- * Sign-out page that handles the Clerk sign-out flow
- */
 export default function SignOutPage() {
   const { signOut } = useClerk();
   const router = useRouter();
@@ -26,38 +26,76 @@ export default function SignOutPage() {
   }, [signOut, router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-stone-950 via-stone-950/95 to-stone-900 px-4 py-16 text-white">
-      <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-[2.25rem] border border-white/10 bg-stone-950/80 p-12 shadow-[0_40px_80px_rgba(2,6,23,0.55)] backdrop-blur-xl">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600/40 via-indigo-600/30 to-sky-500/30">
-          <svg
-            className="h-8 w-8 text-blue-100"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-            />
-          </svg>
+    <main className="flex min-h-screen items-center justify-center px-4 py-16" style={{ background: C.bg }}>
+      <style>{`@import url('${FONT_IMPORT_URL}')`}</style>
+      <GrainOverlay id="signout-grain" />
+
+      {/* Ambient orb */}
+      <div
+        className="pointer-events-none fixed"
+        style={{
+          top: "30%", left: "40%", width: 300, height: 300,
+          background: `radial-gradient(circle, ${C.gold}12 0%, transparent 70%)`,
+          filter: "blur(60px)",
+        }}
+      />
+
+      <div
+        className="relative flex w-full max-w-md flex-col items-center gap-6 p-12"
+        style={{
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 2,
+        }}
+      >
+        <CornerMarkers size={12} />
+
+        <div
+          className="flex items-center justify-center"
+          style={{
+            width: 56, height: 56,
+            borderRadius: 2,
+            background: `${C.gold}15`,
+            border: `1px solid ${C.gold}33`,
+          }}
+        >
+          <LogOut style={{ width: 24, height: 24, color: C.gold }} />
         </div>
 
         <div className="flex flex-col gap-2 text-center">
-          <h1 className="text-2xl font-semibold">Signing you out...</h1>
-          <p className="text-sm text-stone-400">
+          <h1 style={{ fontFamily: FONT_HEADING, fontSize: 22, fontWeight: 200, color: C.text }}>
+            Signing you out...
+          </h1>
+          <p style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 300, color: C.textMuted }}>
             You&apos;re being signed out of your Binnacle account.
           </p>
         </div>
 
-        <div className="flex h-8 w-8 animate-spin items-center justify-center rounded-full border-2 border-blue-400/20 border-t-blue-400" />
+        {/* Spinner */}
+        <div
+          className="animate-spin"
+          style={{
+            width: 32, height: 32,
+            borderRadius: "50%",
+            border: `2px solid ${C.border}`,
+            borderTopColor: C.gold,
+          }}
+        />
 
         <Link
           href="/"
-          className="text-sm text-blue-300 hover:text-blue-200 transition"
+          style={{
+            fontFamily: FONT_MONO,
+            fontSize: 11,
+            letterSpacing: "0.1em",
+            color: C.gold,
+            textDecoration: "none",
+            transition: "color 0.2s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = C.cyan; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = C.gold; }}
         >
-          Return to home
+          RETURN TO HOME
         </Link>
       </div>
     </main>

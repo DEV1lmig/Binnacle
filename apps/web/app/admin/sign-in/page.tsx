@@ -82,7 +82,7 @@ export default function AdminSignInPage() {
               Sign in to access the moderation dashboard.
             </p>
           </div>
-          <SignIn routing="path" path="/admin/sign-in" afterSignInUrl="/admin" />
+          <SignIn routing="path" path="/admin/sign-in" forceRedirectUrl="/admin" />
         </div>
       </div>
     </div>

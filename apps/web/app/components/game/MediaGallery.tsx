@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { C, FONT_HEADING, FONT_MONO } from "@/app/lib/design-system";
+import { CornerMarkers } from "@/app/lib/design-primitives";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface MediaGalleryProps {
   artworks?: string;
@@ -10,11 +13,6 @@ interface MediaGalleryProps {
   title: string;
 }
 
-/**
- * Media Gallery component for displaying game artworks, screenshots, and video links.
- * Artworks and screenshots are stored as JSON arrays of CDN URLs.
- * Videos are stored as JSON array of video IDs.
- */
 export function MediaGallery({
   artworks,
   screenshots,
@@ -25,6 +23,9 @@ export function MediaGallery({
     "screenshots"
   );
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  const [hoveredThumb, setHoveredThumb] = useState<number | null>(null);
+  const [hoveredNav, setHoveredNav] = useState<"prev" | "next" | null>(null);
 
   let artworkList: string[] = [];
   let screenshotList: string[] = [];
@@ -41,8 +42,7 @@ export function MediaGallery({
     }
     if (videos) {
       const parsed = JSON.parse(videos);
-      // Videos are stored as {id, video_id, name} objects, extract video_id
-      videoList = Array.isArray(parsed) 
+      videoList = Array.isArray(parsed)
         ? parsed.map((v: { video_id?: string } | string) => typeof v === "string" ? v : v.video_id).filter((id): id is string => Boolean(id))
         : [];
     }
@@ -64,38 +64,58 @@ export function MediaGallery({
 
   const currentImage = currentImages[selectedImageIndex];
 
-  return (
-    <section className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-stone-900/60 p-6">
-      <h2 className="text-2xl font-semibold">Media</h2>
+  const tabStyle = (key: string, isActive: boolean) => ({
+    background: "none" as const,
+    border: "none" as const,
+    cursor: "pointer" as const,
+    padding: "8px 16px",
+    fontFamily: FONT_MONO,
+    fontSize: 11,
+    fontWeight: 400 as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.08em",
+    transition: "color 0.15s",
+    color: isActive ? C.text : hoveredTab === key ? C.text : C.textMuted,
+    borderBottom: isActive ? `2px solid ${C.gold}` : "2px solid transparent",
+    marginBottom: -1,
+  });
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-white/10">
+  return (
+    <section
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        gap: 24,
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 2,
+        padding: 24,
+      }}
+    >
+      <CornerMarkers size={8} />
+
+      <h2 style={{ fontFamily: FONT_HEADING, fontWeight: 200, fontSize: 20, color: C.text, margin: 0 }}>
+        Media
+      </h2>
+
+      <div className="flex gap-2" style={{ borderBottom: `1px solid ${C.border}` }}>
         {artworkList.length > 0 && (
           <button
-            onClick={() => {
-              setActiveTab("artworks");
-              setSelectedImageIndex(0);
-            }}
-            className={`px-4 py-2 text-sm font-medium transition ${
-              activeTab === "artworks"
-                ? "border-b-2 border-blue-500 text-white"
-                : "text-stone-400 hover:text-white"
-            }`}
+            onClick={() => { setActiveTab("artworks"); setSelectedImageIndex(0); }}
+            onMouseEnter={() => setHoveredTab("artworks")}
+            onMouseLeave={() => setHoveredTab(null)}
+            style={tabStyle("artworks", activeTab === "artworks")}
           >
             Artworks ({artworkList.length})
           </button>
         )}
         {screenshotList.length > 0 && (
           <button
-            onClick={() => {
-              setActiveTab("screenshots");
-              setSelectedImageIndex(0);
-            }}
-            className={`px-4 py-2 text-sm font-medium transition ${
-              activeTab === "screenshots"
-                ? "border-b-2 border-blue-500 text-white"
-                : "text-stone-400 hover:text-white"
-            }`}
+            onClick={() => { setActiveTab("screenshots"); setSelectedImageIndex(0); }}
+            onMouseEnter={() => setHoveredTab("screenshots")}
+            onMouseLeave={() => setHoveredTab(null)}
+            style={tabStyle("screenshots", activeTab === "screenshots")}
           >
             Screenshots ({screenshotList.length})
           </button>
@@ -103,25 +123,22 @@ export function MediaGallery({
         {videoList.length > 0 && (
           <button
             onClick={() => setActiveTab("videos")}
-            className={`px-4 py-2 text-sm font-medium transition ${
-              activeTab === "videos"
-                ? "border-b-2 border-blue-500 text-white"
-                : "text-stone-400 hover:text-white"
-            }`}
+            onMouseEnter={() => setHoveredTab("videos")}
+            onMouseLeave={() => setHoveredTab(null)}
+            style={tabStyle("videos", activeTab === "videos")}
           >
             Videos ({videoList.length})
           </button>
         )}
       </div>
 
-      {/* Image/Video Viewer */}
       {activeTab === "videos" ? (
         <div className="flex flex-col gap-4">
           {videoList.map((videoId) => (
             <div
               key={videoId}
-              className="relative w-full overflow-hidden rounded-xl bg-black"
-              style={{ paddingBottom: "56.25%" }}
+              className="relative w-full overflow-hidden"
+              style={{ paddingBottom: "56.25%", background: C.bg, borderRadius: 2 }}
             >
               <iframe
                 className="absolute inset-0 h-full w-full"
@@ -135,7 +152,10 @@ export function MediaGallery({
         </div>
       ) : currentImage ? (
         <>
-          <div className="relative h-96 w-full overflow-hidden rounded-xl bg-stone-800">
+          <div
+            className="relative h-96 w-full overflow-hidden"
+            style={{ background: C.bgAlt, borderRadius: 2 }}
+          >
             <Image
               src={currentImage}
               alt={`${title} - ${activeTab}`}
@@ -146,35 +166,37 @@ export function MediaGallery({
             />
           </div>
 
-          {/* Thumbnail Navigation */}
           {currentImages.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-2">
               {currentImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImageIndex(idx)}
-                  className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${
-                    idx === selectedImageIndex
-                      ? "border-blue-500"
-                      : "border-white/20 hover:border-white/40"
-                  }`}
+                  onMouseEnter={() => setHoveredThumb(idx)}
+                  onMouseLeave={() => setHoveredThumb(null)}
+                  className="relative h-20 w-20 flex-shrink-0 overflow-hidden"
+                  style={{
+                    background: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    borderRadius: 1,
+                    transition: "border-color 0.15s",
+                    border: idx === selectedImageIndex
+                      ? `2px solid ${C.gold}`
+                      : hoveredThumb === idx
+                        ? `2px solid ${C.textDim}`
+                        : `2px solid ${C.border}`,
+                  }}
                 >
-                  <Image
-                    src={img}
-                    alt={`Thumbnail ${idx + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="80px"
-                  />
+                  <Image src={img} alt={`Thumbnail ${idx + 1}`} fill className="object-cover" sizes="80px" />
                 </button>
               ))}
             </div>
           )}
 
-          {/* Image Counter */}
           {currentImages.length > 1 && (
-            <div className="flex items-center justify-between text-sm text-stone-400">
-              <span>
+            <div className="flex items-center justify-between">
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textDim }}>
                 {selectedImageIndex + 1} of {currentImages.length}
               </span>
               <div className="flex gap-2">
@@ -184,17 +206,51 @@ export function MediaGallery({
                       (idx) => (idx - 1 + currentImages.length) % currentImages.length
                     )
                   }
-                  className="rounded-lg border border-white/20 px-3 py-1 transition hover:border-white/40 hover:text-white"
+                  onMouseEnter={() => setHoveredNav("prev")}
+                  onMouseLeave={() => setHoveredNav(null)}
+                  className="flex items-center gap-1"
+                  style={{
+                    background: "none",
+                    cursor: "pointer",
+                    padding: "4px 12px",
+                    borderRadius: 2,
+                    fontFamily: FONT_MONO,
+                    fontSize: 11,
+                    fontWeight: 400,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    transition: "border-color 0.15s, color 0.15s",
+                    border: hoveredNav === "prev" ? `1px solid ${C.gold}` : `1px solid ${C.border}`,
+                    color: hoveredNav === "prev" ? C.text : C.textMuted,
+                  }}
                 >
-                  ← Prev
+                  <ChevronLeft className="w-3 h-3" />
+                  Prev
                 </button>
                 <button
                   onClick={() =>
                     setSelectedImageIndex((idx) => (idx + 1) % currentImages.length)
                   }
-                  className="rounded-lg border border-white/20 px-3 py-1 transition hover:border-white/40 hover:text-white"
+                  onMouseEnter={() => setHoveredNav("next")}
+                  onMouseLeave={() => setHoveredNav(null)}
+                  className="flex items-center gap-1"
+                  style={{
+                    background: "none",
+                    cursor: "pointer",
+                    padding: "4px 12px",
+                    borderRadius: 2,
+                    fontFamily: FONT_MONO,
+                    fontSize: 11,
+                    fontWeight: 400,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    transition: "border-color 0.15s, color 0.15s",
+                    border: hoveredNav === "next" ? `1px solid ${C.gold}` : `1px solid ${C.border}`,
+                    color: hoveredNav === "next" ? C.text : C.textMuted,
+                  }}
                 >
-                  Next →
+                  Next
+                  <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
             </div>

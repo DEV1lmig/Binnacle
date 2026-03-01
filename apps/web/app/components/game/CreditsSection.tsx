@@ -1,5 +1,8 @@
 "use client";
 
+import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
+import { CornerMarkers } from "@/app/lib/design-primitives";
+
 interface CreditsData {
   name: string;
   isDeveloper: boolean;
@@ -11,10 +14,6 @@ interface CreditsSectionProps {
   publishers?: string;
 }
 
-/**
- * CreditsSection component for displaying game developers and publishers.
- * Data is stored as JSON array with name, isDeveloper, isPublisher fields.
- */
 export function CreditsSection({
   developers,
   publishers,
@@ -43,23 +42,59 @@ export function CreditsSection({
   );
 
   return (
-    <section className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-stone-900/60 p-6">
-      <h2 className="text-2xl font-semibold">Credits</h2>
-
+    <section
+      className="flex flex-col gap-6 p-6"
+      style={{
+        position: "relative",
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 2,
+      }}
+    >
+      <CornerMarkers size={8} />
+      <h2
+        style={{
+          fontFamily: FONT_HEADING,
+          fontWeight: 200,
+          fontSize: 20,
+          color: C.text,
+          margin: 0,
+        }}
+      >
+        Credits
+      </h2>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {uniqueDevelopers.length > 0 && (
           <div className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-400">
+            <h3
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 10,
+                fontWeight: 400,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: C.textMuted,
+                margin: 0,
+              }}
+            >
               Developers
             </h3>
             <div className="flex flex-col gap-2">
               {uniqueDevelopers.map((dev) => (
                 <div
                   key={dev.name}
-                  className="flex items-center gap-2 rounded-lg border border-white/10 bg-stone-800/50 px-3 py-2 text-sm text-stone-200"
+                  className="flex items-center gap-2 px-3 py-2"
+                  style={{
+                    background: C.bgAlt,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 1,
+                    color: C.text,
+                    fontFamily: FONT_BODY,
+                    fontSize: 13,
+                  }}
                 >
                   <svg
-                    className="h-4 w-4 text-blue-400"
+                    style={{ width: 16, height: 16, color: C.gold, flexShrink: 0 }}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -71,20 +106,37 @@ export function CreditsSection({
             </div>
           </div>
         )}
-
         {uniquePublishers.length > 0 && (
           <div className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-400">
+            <h3
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 10,
+                fontWeight: 400,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: C.textMuted,
+                margin: 0,
+              }}
+            >
               Publishers
             </h3>
             <div className="flex flex-col gap-2">
               {uniquePublishers.map((pub) => (
                 <div
                   key={pub.name}
-                  className="flex items-center gap-2 rounded-lg border border-white/10 bg-stone-800/50 px-3 py-2 text-sm text-stone-200"
+                  className="flex items-center gap-2 px-3 py-2"
+                  style={{
+                    background: C.bgAlt,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 1,
+                    color: C.text,
+                    fontFamily: FONT_BODY,
+                    fontSize: 13,
+                  }}
                 >
                   <svg
-                    className="h-4 w-4 text-amber-400"
+                    style={{ width: 16, height: 16, color: C.amber, flexShrink: 0 }}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >

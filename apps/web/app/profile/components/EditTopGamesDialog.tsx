@@ -344,7 +344,7 @@ export function EditTopGamesDialog({
                         backgroundColor: C.bg,
                       }}
                     >
-                      <ImageWithFallback src={result.coverUrl} alt={result.title} className="w-full h-full object-cover" />
+                      <ImageWithFallback src={result.coverUrl} alt={result.title} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p
@@ -488,10 +488,9 @@ export function EditTopGamesDialog({
                           }}
                         >
                           {entry.coverUrl ? (
-                            <img
+                            <ImageWithFallback
                               src={entry.coverUrl}
                               alt={entry.title}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                           ) : (
                             <div className="flex items-center justify-center w-full h-full">

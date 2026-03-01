@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { GameCard } from "@/app/components/GameCard";
+import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import {
   Gamepad2,
@@ -529,14 +530,9 @@ export function ProfileDashboardContent({
                       }}
                     >
                       {entry.game.coverUrl ? (
-                        <img
+                        <ImageWithFallback
                           src={entry.game.coverUrl}
                           alt={entry.game.title}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
                         />
                       ) : (
                         <div
@@ -1002,14 +998,9 @@ export function ProfileDashboardContent({
                         }}
                       >
                         {review.game.coverUrl ? (
-                          <img
+                          <ImageWithFallback
                             src={review.game.coverUrl}
                             alt={review.game.title}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
                           />
                         ) : (
                           <div className="flex items-center justify-center w-full h-full">

@@ -1,5 +1,8 @@
 "use client";
 
+import { C, FONT_HEADING, FONT_MONO } from "@/app/lib/design-system";
+import { CornerMarkers } from "@/app/lib/design-primitives";
+
 interface MetadataChipsProps {
   genres?: string;
   themes?: string;
@@ -8,10 +11,12 @@ interface MetadataChipsProps {
   platforms?: string;
 }
 
-/**
- * MetadataChips component for displaying game taxonomy data.
- * Data is stored as JSON arrays of {id, name} objects.
- */
+interface ChipSection {
+  label: string;
+  items: string[];
+  chipStyle: React.CSSProperties;
+}
+
 export function MetadataChips({
   genres,
   themes,
@@ -23,7 +28,6 @@ export function MetadataChips({
     if (!data) return [];
     try {
       const parsed = JSON.parse(data);
-      // Handle both array of objects {id, name} and array of strings
       if (Array.isArray(parsed)) {
         return parsed.map((item) => (typeof item === "string" ? item : item.name)).filter(Boolean);
       }
@@ -48,39 +52,66 @@ export function MetadataChips({
 
   if (!hasData) return null;
 
-  interface ChipSection {
-    label: string;
-    items: string[];
-    color: string;
-  }
-
   const sections: ChipSection[] = [
-    { label: "Genres", items: genreList, color: "bg-blue-500/20 text-blue-300" },
-    { label: "Themes", items: themeList, color: "bg-purple-500/20 text-purple-300" },
-    {
-      label: "Perspectives",
-      items: perspectiveList,
-      color: "bg-indigo-500/20 text-indigo-300",
-    },
-    { label: "Modes", items: modeList, color: "bg-pink-500/20 text-pink-300" },
-    { label: "Platforms", items: platformList, color: "bg-emerald-500/20 text-emerald-300" },
+    { label: "Genres", items: genreList, chipStyle: { background: C.gold + "15", color: C.gold, border: "1px solid " + C.gold + "30" } },
+    { label: "Themes", items: themeList, chipStyle: { background: C.accent + "15", color: C.accent, border: "1px solid " + C.accent + "30" } },
+    { label: "Perspectives", items: perspectiveList, chipStyle: { background: C.cyan + "15", color: C.cyan, border: "1px solid " + C.cyan + "30" } },
+    { label: "Modes", items: modeList, chipStyle: { background: C.red + "15", color: C.red, border: "1px solid " + C.red + "30" } },
+    { label: "Platforms", items: platformList, chipStyle: { background: C.green + "15", color: C.green, border: "1px solid " + C.green + "30" } },
   ];
 
   return (
-    <section className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-stone-900/60 p-6">
-      <h2 className="text-2xl font-semibold">About This Game</h2>
-
+    <section
+      style={{
+        position: "relative",
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 2,
+        padding: 24,
+      }}
+      className="flex flex-col gap-6"
+    >
+      <CornerMarkers size={8} />
+      <h2
+        style={{
+          fontFamily: FONT_HEADING,
+          fontWeight: 200,
+          fontSize: 20,
+          color: C.text,
+          margin: 0,
+        }}
+      >
+        About This Game
+      </h2>
       {sections.map((section, sectionIdx) =>
         section.items.length > 0 && (
           <div key={`${section.label}-${sectionIdx}`} className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-400">
+            <h3
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 10,
+                fontWeight: 400,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: C.textMuted,
+                margin: 0,
+              }}
+            >
               {section.label}
             </h3>
             <div className="flex flex-wrap gap-2">
               {section.items.map((item, itemIdx) => (
                 <span
                   key={`${item}-${itemIdx}`}
-                  className={`rounded-full px-3 py-1 text-sm font-medium ${section.color}`}
+                  style={{
+                    ...section.chipStyle,
+                    borderRadius: 1,
+                    padding: "4px 10px",
+                    fontFamily: FONT_MONO,
+                    fontSize: 11,
+                    fontWeight: 400,
+                    letterSpacing: "0.04em",
+                  }}
                 >
                   {item}
                 </span>

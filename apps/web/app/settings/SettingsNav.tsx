@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Shield, User, UserX } from "lucide-react";
+import { C, FONT_MONO } from "@/app/lib/design-system";
 
 const navItems = [
   { href: "/settings/profile", label: "Profile", icon: User },
@@ -15,7 +16,7 @@ export function SettingsNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="space-y-1">
+    <nav className="flex flex-col gap-1">
       {navItems.map((item) => {
         const isActive = pathname === item.href;
         const Icon = item.icon;
@@ -24,17 +25,35 @@ export function SettingsNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left ${
-              isActive
-                ? "bg-[var(--bkl-color-accent-primary)]/20 text-[var(--bkl-color-accent-primary)] border border-[var(--bkl-color-accent-primary)]/30"
-                : "text-[var(--bkl-color-text-secondary)] hover:bg-[var(--bkl-color-bg-secondary)] hover:text-[var(--bkl-color-text-primary)]"
-            }`}
+            className="flex items-center gap-3 px-4 py-3 no-underline"
+            style={{
+              borderRadius: 2,
+              transition: "all 0.2s",
+              background: isActive ? `${C.gold}15` : "transparent",
+              border: isActive ? `1px solid ${C.gold}33` : "1px solid transparent",
+              color: isActive ? C.gold : C.textMuted,
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.background = C.surface;
+                e.currentTarget.style.color = C.text;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = C.textMuted;
+              }
+            }}
           >
-            <Icon className="w-5 h-5" />
+            <Icon className="w-4 h-4" />
             <span
               style={{
-                fontSize: "var(--bkl-font-size-sm)",
-                fontWeight: "var(--bkl-font-weight-medium)",
+                fontFamily: FONT_MONO,
+                fontSize: 11,
+                fontWeight: 400,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
               }}
             >
               {item.label}

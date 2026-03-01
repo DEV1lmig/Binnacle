@@ -5,34 +5,26 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useCurrentUser } from "@/app/context/CurrentUserContext";
 import { FeedPageSkeleton } from "@/app/components/PageSkeleton";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/app/components/ui/card";
 import { Switch } from "@/app/components/ui/switch";
-import { Label } from "@/app/components/ui/label";
 import { toast } from "sonner";
+import { Mail, Bell } from "lucide-react";
+import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
+import { CornerMarkers, HudDivider } from "@/app/lib/design-primitives";
+
+const TOGGLE_ITEMS = [
+  { key: "newFollower" as const, label: "New Followers", desc: "When someone starts following you" },
+  { key: "friendRequest" as const, label: "Friend Requests", desc: "When someone sends you a friend request" },
+  { key: "likes" as const, label: "Likes", desc: "When someone likes your reviews" },
+  { key: "comments" as const, label: "Comments", desc: "When someone comments on your reviews" },
+] as const;
 
 export default function SettingsNotificationsPage() {
   const { currentUser, isLoading: isUserLoading } = useCurrentUser();
   const updatePreferences = useMutation(api.notifications.updatePreferences);
-  
+
   const [preferences, setPreferences] = useState({
-    email: {
-      newFollower: true,
-      friendRequest: true,
-      likes: true,
-      comments: true,
-    },
-    push: {
-      newFollower: true,
-      friendRequest: true,
-      likes: true,
-      comments: true,
-    },
+    email: { newFollower: true, friendRequest: true, likes: true, comments: true },
+    push: { newFollower: true, friendRequest: true, likes: true, comments: true },
   });
 
   useEffect(() => {
@@ -58,24 +50,19 @@ export default function SettingsNotificationsPage() {
     channel: "email" | "push",
     key: "newFollower" | "friendRequest" | "likes" | "comments"
   ) => {
+    const prev = preferences;
     const newPreferences = {
       ...preferences,
-      [channel]: {
-        ...preferences[channel],
-        [key]: !preferences[channel][key],
-      },
+      [channel]: { ...preferences[channel], [key]: !preferences[channel][key] },
     };
-
     setPreferences(newPreferences);
-
     try {
       await updatePreferences({ preferences: newPreferences });
       toast.success("Preferences updated");
     } catch (error) {
       console.error("Failed to update preferences", error);
       toast.error("Failed to update preferences");
-      // Revert on error
-      setPreferences(preferences);
+      setPreferences(prev);
     }
   };
 
@@ -84,132 +71,85 @@ export default function SettingsNotificationsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-[var(--bkl-color-bg-secondary)] border-[var(--bkl-color-border)]">
-        <CardHeader>
-          <CardTitle className="text-[var(--bkl-color-text-primary)]">Email Notifications</CardTitle>
-          <CardDescription className="text-[var(--bkl-color-text-secondary)]">
-            Choose what updates you want to receive via email.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="email-follows" className="flex flex-col space-y-1">
-              <span className="text-[var(--bkl-color-text-primary)] font-medium">New Followers</span>
-              <span className="text-[var(--bkl-color-text-secondary)] text-xs font-normal">
-                When someone starts following you
-              </span>
-            </Label>
-            <Switch
-              id="email-follows"
-              checked={preferences.email.newFollower}
-              onCheckedChange={() => handleToggle("email", "newFollower")}
-            />
-          </div>
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="email-requests" className="flex flex-col space-y-1">
-              <span className="text-[var(--bkl-color-text-primary)] font-medium">Friend Requests</span>
-              <span className="text-[var(--bkl-color-text-secondary)] text-xs font-normal">
-                When someone sends you a friend request
-              </span>
-            </Label>
-            <Switch
-              id="email-requests"
-              checked={preferences.email.friendRequest}
-              onCheckedChange={() => handleToggle("email", "friendRequest")}
-            />
-          </div>
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="email-likes" className="flex flex-col space-y-1">
-              <span className="text-[var(--bkl-color-text-primary)] font-medium">Likes</span>
-              <span className="text-[var(--bkl-color-text-secondary)] text-xs font-normal">
-                When someone likes your reviews
-              </span>
-            </Label>
-            <Switch
-              id="email-likes"
-              checked={preferences.email.likes}
-              onCheckedChange={() => handleToggle("email", "likes")}
-            />
-          </div>
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="email-comments" className="flex flex-col space-y-1">
-              <span className="text-[var(--bkl-color-text-primary)] font-medium">Comments</span>
-              <span className="text-[var(--bkl-color-text-secondary)] text-xs font-normal">
-                When someone comments on your reviews
-              </span>
-            </Label>
-            <Switch
-              id="email-comments"
-              checked={preferences.email.comments}
-              onCheckedChange={() => handleToggle("email", "comments")}
-            />
-          </div>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-6">
+      {/* Email Notifications */}
+      <NotificationCard
+        icon={Mail}
+        title="Email Notifications"
+        description="Choose what updates you want to receive via email."
+        channel="email"
+        preferences={preferences}
+        onToggle={handleToggle}
+      />
 
-      <Card className="bg-[var(--bkl-color-bg-secondary)] border-[var(--bkl-color-border)]">
-        <CardHeader>
-          <CardTitle className="text-[var(--bkl-color-text-primary)]">Push Notifications</CardTitle>
-          <CardDescription className="text-[var(--bkl-color-text-secondary)]">
-            Choose what updates you want to receive on your device.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="push-follows" className="flex flex-col space-y-1">
-              <span className="text-[var(--bkl-color-text-primary)] font-medium">New Followers</span>
-              <span className="text-[var(--bkl-color-text-secondary)] text-xs font-normal">
-                When someone starts following you
-              </span>
-            </Label>
-            <Switch
-              id="push-follows"
-              checked={preferences.push.newFollower}
-              onCheckedChange={() => handleToggle("push", "newFollower")}
-            />
+      {/* Push Notifications */}
+      <NotificationCard
+        icon={Bell}
+        title="Push Notifications"
+        description="Choose what updates you want to receive on your device."
+        channel="push"
+        preferences={preferences}
+        onToggle={handleToggle}
+      />
+    </div>
+  );
+}
+
+function NotificationCard({
+  icon: Icon,
+  title,
+  description,
+  channel,
+  preferences,
+  onToggle,
+}: {
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  title: string;
+  description: string;
+  channel: "email" | "push";
+  preferences: {
+    email: { newFollower: boolean; friendRequest: boolean; likes: boolean; comments: boolean };
+    push: { newFollower: boolean; friendRequest: boolean; likes: boolean; comments: boolean };
+  };
+  onToggle: (channel: "email" | "push", key: "newFollower" | "friendRequest" | "likes" | "comments") => void;
+}) {
+  return (
+    <div className="relative" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 2, padding: 24 }}>
+      <CornerMarkers size={10} />
+
+      <div className="flex items-center gap-3 mb-1">
+        <Icon className="w-4 h-4" style={{ color: C.gold }} />
+        <h2 style={{ fontFamily: FONT_HEADING, fontSize: 20, fontWeight: 200, color: C.text }}>{title}</h2>
+      </div>
+      <p style={{ fontFamily: FONT_BODY, fontSize: 13, fontWeight: 300, color: C.textMuted, marginBottom: 16 }}>
+        {description}
+      </p>
+
+      <HudDivider />
+
+      <div className="flex flex-col gap-0 mt-4">
+        {TOGGLE_ITEMS.map((item, idx) => (
+          <div key={item.key}>
+            <div className="flex items-center justify-between py-3">
+              <div className="flex flex-col gap-0.5">
+                <span style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 400, color: C.text }}>
+                  {item.label}
+                </span>
+                <span style={{ fontFamily: FONT_BODY, fontSize: 12, fontWeight: 300, color: C.textDim }}>
+                  {item.desc}
+                </span>
+              </div>
+              <Switch
+                checked={preferences[channel][item.key]}
+                onCheckedChange={() => onToggle(channel, item.key)}
+              />
+            </div>
+            {idx < TOGGLE_ITEMS.length - 1 && (
+              <div style={{ height: 1, background: C.border }} />
+            )}
           </div>
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="push-requests" className="flex flex-col space-y-1">
-              <span className="text-[var(--bkl-color-text-primary)] font-medium">Friend Requests</span>
-              <span className="text-[var(--bkl-color-text-secondary)] text-xs font-normal">
-                When someone sends you a friend request
-              </span>
-            </Label>
-            <Switch
-              id="push-requests"
-              checked={preferences.push.friendRequest}
-              onCheckedChange={() => handleToggle("push", "friendRequest")}
-            />
-          </div>
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="push-likes" className="flex flex-col space-y-1">
-              <span className="text-[var(--bkl-color-text-primary)] font-medium">Likes</span>
-              <span className="text-[var(--bkl-color-text-secondary)] text-xs font-normal">
-                When someone likes your reviews
-              </span>
-            </Label>
-            <Switch
-              id="push-likes"
-              checked={preferences.push.likes}
-              onCheckedChange={() => handleToggle("push", "likes")}
-            />
-          </div>
-          <div className="flex items-center justify-between space-x-2">
-            <Label htmlFor="push-comments" className="flex flex-col space-y-1">
-              <span className="text-[var(--bkl-color-text-primary)] font-medium">Comments</span>
-              <span className="text-[var(--bkl-color-text-secondary)] text-xs font-normal">
-                When someone comments on your reviews
-              </span>
-            </Label>
-            <Switch
-              id="push-comments"
-              checked={preferences.push.comments}
-              onCheckedChange={() => handleToggle("push", "comments")}
-            />
-          </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
     </div>
   );
 }

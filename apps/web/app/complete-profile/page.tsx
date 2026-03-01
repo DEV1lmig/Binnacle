@@ -5,13 +5,24 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { api } from "@binnacle/convex-generated/api";
+import { C, FONT_HEADING, FONT_MONO, FONT_BODY, FONT_IMPORT_URL } from "@/app/lib/design-system";
+import { CornerMarkers, GrainOverlay, HudBadge } from "@/app/lib/design-primitives";
+import { Loader2 } from "lucide-react";
 
-const inputClasses =
-  "w-full rounded-xl border border-white/15 bg-stone-900/60 px-4 py-3 text-white placeholder:text-stone-500 focus:border-blue-400 focus:outline-none";
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "12px 16px",
+  background: C.bgAlt,
+  border: `1px solid ${C.border}`,
+  borderRadius: 2,
+  color: C.text,
+  fontFamily: FONT_BODY,
+  fontSize: 14,
+  fontWeight: 300,
+  outline: "none",
+  transition: "border-color 0.2s",
+};
 
-/**
- * Renders a post-sign up step where newly registered players can review and update their profile names.
- */
 export default function CompleteProfilePage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
@@ -22,44 +33,41 @@ export default function CompleteProfilePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
-
+    if (!isLoaded) return;
     if (!user) {
       router.replace("/sign-in");
       return;
     }
-
     setFirstName(user.firstName ?? "");
     setLastName(user.lastName ?? "");
   }, [isLoaded, router, user]);
 
-  // Show loading state while Clerk is initializing
   if (!isLoaded) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-stone-950 via-stone-950/95 to-stone-900 px-4 py-16 text-white">
-        <p className="text-sm text-stone-400">Loading your profile...</p>
+      <main className="flex min-h-screen items-center justify-center" style={{ background: C.bg }}>
+        <style>{`@import url('${FONT_IMPORT_URL}')`}</style>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-6 h-6 animate-spin" style={{ color: C.gold }} />
+          <p style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: "0.1em", color: C.textMuted }}>
+            LOADING PROFILE...
+          </p>
+        </div>
       </main>
     );
   }
 
-  // Show loading state while redirecting if no user
   if (!user) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-stone-950 via-stone-950/95 to-stone-900 px-4 py-16 text-white">
-        <p className="text-sm text-stone-400">Redirecting...</p>
+      <main className="flex min-h-screen items-center justify-center" style={{ background: C.bg }}>
+        <style>{`@import url('${FONT_IMPORT_URL}')`}</style>
+        <p style={{ fontFamily: FONT_BODY, fontSize: 14, color: C.textMuted }}>Redirecting...</p>
       </main>
     );
-  }  /**
-   * Persists the player's preferred names in Clerk and syncs the Convex profile.
-   */
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!user) {
-      return;
-    }
+    if (!user) return;
 
     const trimmedFirst = firstName.trim();
     const trimmedLast = lastName.trim();
@@ -84,26 +92,59 @@ export default function CompleteProfilePage() {
     }
   };
 
-  /**
-   * Allows the player to exit the profile step without making additional changes.
-   */
   const handleSkip = () => {
     router.replace("/feed");
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-stone-950 via-stone-950/95 to-stone-900 px-4 py-16 text-white">
-      <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-stone-950/90 p-10 shadow-[0_40px_80px_rgba(2,6,23,0.5)] backdrop-blur-xl">
+    <main className="flex min-h-screen items-center justify-center px-4 py-16" style={{ background: C.bg }}>
+      <style>{`@import url('${FONT_IMPORT_URL}')`}</style>
+      <GrainOverlay id="profile-setup-grain" />
+
+      {/* Ambient orbs */}
+      <div
+        className="pointer-events-none fixed"
+        style={{
+          top: -120, left: -120, width: 400, height: 400,
+          background: `radial-gradient(circle, ${C.gold}15 0%, transparent 70%)`,
+          filter: "blur(60px)",
+        }}
+      />
+      <div
+        className="pointer-events-none fixed"
+        style={{
+          bottom: -120, right: -120, width: 400, height: 400,
+          background: `radial-gradient(circle, ${C.accent}12 0%, transparent 70%)`,
+          filter: "blur(60px)",
+        }}
+      />
+
+      <div
+        className="relative w-full max-w-xl p-10"
+        style={{
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 2,
+        }}
+      >
+        <CornerMarkers size={14} />
+
         <header className="mb-8 flex flex-col gap-3">
-          <p className="text-xs uppercase tracking-[0.35em] text-blue-300/70">Profile setup</p>
-          <h1 className="text-3xl font-semibold text-white">Double-check your name</h1>
-          <p className="text-sm text-stone-300">
+          <HudBadge color={C.gold}>Profile Setup</HudBadge>
+          <h1 style={{ fontFamily: FONT_HEADING, fontSize: 28, fontWeight: 200, color: C.text, letterSpacing: "-0.01em" }}>
+            Double-check your name
+          </h1>
+          <p style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 300, color: C.textMuted, lineHeight: 1.6 }}>
             Some providers skip name entry during quick sign up. Take a moment to set how your crew will see you.
           </p>
         </header>
+
         <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-2">
-            <label htmlFor="firstName" className="text-sm text-stone-300">
+            <label
+              htmlFor="firstName"
+              style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 400, letterSpacing: "0.12em", textTransform: "uppercase", color: C.textMuted }}
+            >
               First name
             </label>
             <input
@@ -111,14 +152,20 @@ export default function CompleteProfilePage() {
               name="firstName"
               type="text"
               autoComplete="given-name"
-              className={inputClasses}
+              style={inputStyle}
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
               disabled={isSubmitting}
+              onFocus={(e) => { e.currentTarget.style.borderColor = C.gold; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
             />
           </div>
+
           <div className="flex flex-col gap-2">
-            <label htmlFor="lastName" className="text-sm text-stone-300">
+            <label
+              htmlFor="lastName"
+              style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 400, letterSpacing: "0.12em", textTransform: "uppercase", color: C.textMuted }}
+            >
               Last name
             </label>
             <input
@@ -126,26 +173,62 @@ export default function CompleteProfilePage() {
               name="lastName"
               type="text"
               autoComplete="family-name"
-              className={inputClasses}
+              style={inputStyle}
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
               disabled={isSubmitting}
+              onFocus={(e) => { e.currentTarget.style.borderColor = C.gold; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
             />
           </div>
-          {errorMessage ? <p className="text-sm text-red-400">{errorMessage}</p> : null}
+
+          {errorMessage && (
+            <p style={{ fontFamily: FONT_BODY, fontSize: 13, color: C.red }}>{errorMessage}</p>
+          )}
+
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-blue-500 px-4 py-3 text-sm font-medium text-white hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-70"
               disabled={isSubmitting}
+              style={{
+                flex: 1,
+                padding: "12px 16px",
+                background: C.gold,
+                color: C.bg,
+                fontFamily: FONT_MONO,
+                fontSize: 12,
+                fontWeight: 400,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                border: "none",
+                borderRadius: 2,
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                opacity: isSubmitting ? 0.7 : 1,
+                boxShadow: `0 0 20px ${C.bloom}`,
+                transition: "all 0.2s",
+              }}
             >
               {isSubmitting ? "Saving..." : "Save and continue"}
             </button>
             <button
               type="button"
               onClick={handleSkip}
-              className="text-sm font-medium text-stone-400 underline-offset-4 hover:text-stone-200 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isSubmitting}
+              style={{
+                padding: "12px 16px",
+                background: "transparent",
+                color: C.textMuted,
+                fontFamily: FONT_MONO,
+                fontSize: 12,
+                fontWeight: 300,
+                letterSpacing: "0.06em",
+                border: "none",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                opacity: isSubmitting ? 0.6 : 1,
+                transition: "color 0.2s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = C.textMuted; }}
             >
               Skip for now
             </button>

@@ -1,7 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import { ConvexHttpClient } from 'convex/browser';
-import { api } from '@binnacle/convex-generated/api';
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -14,7 +12,7 @@ const isPublicRoute = createRouteMatcher([
   '/review/(.*)',
 ]);
 
-export default clerkMiddleware(async (auth, request) => {
+export const proxy = clerkMiddleware(async (auth, request) => {
   const hostHeader = request.headers.get('host');
   const hostname = (hostHeader ?? request.nextUrl.hostname).split(':')[0] ?? '';
   const pathname = request.nextUrl.pathname;
@@ -32,39 +30,11 @@ export default clerkMiddleware(async (auth, request) => {
   const isAdminHost = isAdminSubdomain || isAdminVercelDomain;
   const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/');
   const isAdminArea = isAdminHost || isAdminPath;
+  const isAdminSignIn = pathname === '/admin/sign-in';
 
-  // Serve the admin dashboard at the root of admin.<domain>
-  if (isAdminArea && !isApiRoute && !isAuthRoute && !isNotAuthorizedRoute) {
+  // Admin routes: require Clerk auth only (role check handled by AdminGuard client-side)
+  if (isAdminArea && !isApiRoute && !isAuthRoute && !isNotAuthorizedRoute && !isAdminSignIn) {
     await auth.protect();
-
-    try {
-      const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-      if (!convexUrl) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/not-authorized';
-        return NextResponse.redirect(url);
-      }
-
-      const token = await (auth as any).getToken?.({ template: 'convex' });
-      const convex = new ConvexHttpClient(convexUrl);
-      if (token) convex.setAuth(token);
-
-      const [roleInfo, needsSetup] = await Promise.all([
-        convex.query(api.admin.getCurrentUserRole, {}),
-        convex.query(api.admin.needsAdminSetup, {}),
-      ]);
-
-      // Allow bootstrap flow when no admins exist yet.
-      if (!needsSetup && !roleInfo.isAdmin) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/not-authorized';
-        return NextResponse.redirect(url);
-      }
-    } catch {
-      const url = request.nextUrl.clone();
-      url.pathname = '/not-authorized';
-      return NextResponse.redirect(url);
-    }
   }
 
   if (isAdminHost) {

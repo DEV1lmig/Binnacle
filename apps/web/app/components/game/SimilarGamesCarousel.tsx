@@ -1,25 +1,23 @@
 "use client";
 
+import { useState } from "react";
+import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
+import { CornerMarkers } from "@/app/lib/design-primitives";
+import { Gamepad2, ChevronRight } from "lucide-react";
+
 interface SimilarGamesCarouselProps {
   similarGames?: string;
 }
 
-/**
- * SimilarGamesCarousel component for displaying recommended similar games.
- * Data is stored as JSON array of game names.
- */
-export function SimilarGamesCarousel({
-  similarGames,
-}: SimilarGamesCarouselProps) {
+export function SimilarGamesCarousel({ similarGames }: SimilarGamesCarouselProps) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
   const parseSimilarGames = (data: string | undefined): string[] => {
     if (!data) return [];
     try {
       const parsed = JSON.parse(data);
-      // Handle both array of objects {id, name} and array of strings
       if (Array.isArray(parsed)) {
-        return parsed
-          .map((item) => (typeof item === "string" ? item : item.name))
-          .filter(Boolean);
+        return parsed.map((item) => (typeof item === "string" ? item : item.name)).filter(Boolean);
       }
       return [];
     } catch {
@@ -28,49 +26,76 @@ export function SimilarGamesCarousel({
   };
 
   const gamesList = parseSimilarGames(similarGames);
-
   if (gamesList.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-stone-900/60 p-6">
-      <h2 className="text-2xl font-semibold">Similar Games</h2>
-
+    <section
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        gap: 24,
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 2,
+        padding: 24,
+      }}
+    >
+      <CornerMarkers size={8} />
+      <h2
+        style={{
+          fontFamily: FONT_HEADING,
+          fontWeight: 200,
+          fontSize: 20,
+          color: C.text,
+          margin: 0,
+        }}
+      >
+        Similar Games
+      </h2>
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {gamesList.slice(0, 6).map((gameName, idx) => (
             <div
               key={`${gameName}-${idx}`}
-              className="flex items-center gap-3 rounded-lg border border-white/10 bg-stone-800/50 px-4 py-3 transition hover:border-blue-400/50 hover:bg-stone-800/80"
+              className="flex items-center gap-3"
+              style={{
+                background: C.bgAlt,
+                border: `1px solid ${hoveredIdx === idx ? C.gold : C.border}`,
+                borderRadius: 1,
+                padding: "12px 16px",
+                cursor: "pointer",
+                transition: "border-color 0.2s, box-shadow 0.2s",
+                boxShadow: hoveredIdx === idx ? `0 0 12px ${C.bloom}` : "none",
+              }}
+              onMouseEnter={() => setHoveredIdx(idx)}
+              onMouseLeave={() => setHoveredIdx(null)}
             >
-              <svg
-                className="h-5 w-5 flex-shrink-0 text-blue-400"
-                fill="currentColor"
-                viewBox="0 0 20 20"
+              <Gamepad2 className="flex-shrink-0" style={{ color: C.gold, width: 16, height: 16 }} />
+              <span
+                className="flex-1"
+                style={{
+                  fontFamily: FONT_BODY,
+                  fontSize: 13,
+                  fontWeight: 400,
+                  color: C.text,
+                }}
               >
-                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-              </svg>
-              <span className="flex-1 text-sm font-medium text-stone-200">
                 {gameName}
               </span>
-              <svg
-                className="h-4 w-4 text-stone-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+              <ChevronRight style={{ color: C.textDim, width: 16, height: 16 }} />
             </div>
           ))}
         </div>
-
         {gamesList.length > 6 && (
-          <p className="text-xs text-stone-500">
+          <p
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 10,
+              color: C.textDim,
+              margin: 0,
+            }}
+          >
             +{gamesList.length - 6} more recommendations
           </p>
         )}

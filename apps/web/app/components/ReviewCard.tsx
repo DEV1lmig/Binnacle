@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
-import { Heart, MessageCircle, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { getStandardCoverUrl } from "@/lib/igdb-images";
@@ -20,6 +20,14 @@ import {
 import { Button } from "@/app/components/ui/button";
 import { ReportDialog } from "@/app/components/ReportDialog";
 import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
+import { useCurrentUser } from "@/app/context/CurrentUserContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/app/components/ui/dialog";
 
 type ReviewAuthor = {
   _id: Id<"users">;
@@ -58,7 +66,9 @@ interface ReviewCardProps {
 export function ReviewCard({ review }: ReviewCardProps) {
   const router = useRouter();
   const { user: clerkUser } = useUser();
+  const { currentUser } = useCurrentUser();
   const toggleLike = useMutation(api.likes.toggle);
+  const removeReview = useMutation(api.reviews.remove);
 
   const [liked, setLiked] = useState(review.viewerHasLiked ?? false);
   const [likeCount, setLikeCount] = useState(review.likeCount ?? 0);
@@ -67,6 +77,10 @@ export function ReviewCard({ review }: ReviewCardProps) {
   const [isBusy, setIsBusy] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const isOwner = Boolean(currentUser && currentUser._id === review.userId);
 
   useEffect(() => {
     setLiked(review.viewerHasLiked ?? false);
@@ -89,6 +103,18 @@ export function ReviewCard({ review }: ReviewCardProps) {
       day: "numeric",
     });
   }, [review._creationTime]);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await removeReview({ reviewId: review._id });
+      setDeleteOpen(false);
+    } catch (error) {
+      console.error("[ReviewCard] Failed to delete review", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleLike = async (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -208,12 +234,48 @@ export function ReviewCard({ review }: ReviewCardProps) {
               <MoreHorizontal className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+          <DropdownMenuContent
+            align="end"
+            onClick={(event) => event.stopPropagation()}
+            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 2 }}
+          >
+            {isOwner && (
+              <>
+                <DropdownMenuItem
+                  onSelect={() => router.push(`/review/${review._id}?edit=true`)}
+                  style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.text, letterSpacing: "0.04em" }}
+                  className="cursor-pointer focus:bg-transparent"
+                  onMouseEnter={(e) => { e.currentTarget.style.background = C.gold + "18"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  <Pencil className="w-3.5 h-3.5 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    setDeleteOpen(true);
+                  }}
+                  style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.red, letterSpacing: "0.04em" }}
+                  className="cursor-pointer focus:bg-transparent"
+                  onMouseEnter={(e) => { e.currentTarget.style.background = C.red + "18"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+                <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
+              </>
+            )}
             <DropdownMenuItem
               onSelect={(event) => {
                 event.preventDefault();
                 setReportOpen(true);
               }}
+              style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.text, letterSpacing: "0.04em" }}
+              className="cursor-pointer focus:bg-transparent"
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.gold + "18"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             >
               Report
             </DropdownMenuItem>
@@ -229,7 +291,6 @@ export function ReviewCard({ review }: ReviewCardProps) {
           <ImageWithFallback
             src={getStandardCoverUrl(review.game.coverUrl) ?? ""}
             alt={review.game.title}
-            className="w-full h-full object-cover"
           />
         </div>
         <div className="flex flex-col justify-center">
@@ -387,6 +448,80 @@ export function ReviewCard({ review }: ReviewCardProps) {
         targetType="review"
         targetId={review._id}
       />
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent
+          onClick={(event) => event.stopPropagation()}
+          style={{
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 2,
+            maxWidth: 420,
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: FONT_HEADING, fontWeight: 200, fontSize: 20, color: C.text }}>
+              Delete Review
+            </DialogTitle>
+            <DialogDescription style={{ fontFamily: FONT_BODY, fontWeight: 300, fontSize: 13, color: C.textMuted }}>
+              This will permanently delete your review of{" "}
+              <span style={{ color: C.text, fontWeight: 500 }}>{review.game.title}</span>.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div
+            className="flex gap-3 justify-end"
+            style={{ paddingTop: 16, borderTop: `1px solid ${C.border}` }}
+          >
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(false)}
+              disabled={isDeleting}
+              style={{
+                padding: "10px 20px",
+                background: "transparent",
+                border: `1px solid ${C.border}`,
+                borderRadius: 2,
+                fontFamily: FONT_MONO,
+                fontSize: 11,
+                fontWeight: 400,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: C.textMuted,
+                cursor: isDeleting ? "not-allowed" : "pointer",
+                opacity: isDeleting ? 0.5 : 1,
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => { if (!isDeleting) { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.text; } }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              style={{
+                padding: "10px 20px",
+                background: C.red,
+                color: "#fff",
+                border: "none",
+                borderRadius: 2,
+                fontFamily: FONT_MONO,
+                fontSize: 11,
+                fontWeight: 400,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: isDeleting ? "not-allowed" : "pointer",
+                opacity: isDeleting ? 0.5 : 1,
+                transition: "all 0.2s",
+              }}
+            >
+              {isDeleting ? "Deleting..." : "Delete Review"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </article>
   );
 }

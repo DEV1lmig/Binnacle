@@ -30,7 +30,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
     return (
       <button
         onClick={onClick}
-        className="group relative overflow-hidden transition-all"
+        className="group w-full overflow-hidden transition-all text-left"
         style={{
           borderRadius: 2,
           border: `1px solid ${C.border}`,
@@ -47,11 +47,10 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
           e.currentTarget.style.transform = 'translateY(0)';
         }}
       >
-        <div className="aspect-[2/3] relative">
+        <div className="aspect-[2/3] w-full overflow-hidden relative">
           <ImageWithFallback
             src={coverImage}
             alt={game.title}
-            className="w-full h-full object-cover"
           />
           <div
             className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -90,7 +89,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
           </div>
         </div>
 
-        <div className="p-3 min-h-[72px] flex flex-col justify-between">
+        <div className="p-3 h-[60px] flex flex-col justify-between">
           <h3
             className="line-clamp-2"
             style={{
@@ -102,16 +101,18 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
           >
             {game.title}
           </h3>
-          <p
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: 11,
-              color: C.textDim,
-              textTransform: 'uppercase',
-            }}
-          >
-            {game.releaseYear ?? 'N/A'}
-          </p>
+          {game.releaseYear && (
+            <p
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 11,
+                color: C.textDim,
+                textTransform: 'uppercase',
+              }}
+            >
+              {game.releaseYear}
+            </p>
+          )}
         </div>
       </button>
     );
@@ -139,13 +140,12 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
     >
       <div className="flex gap-4 p-4">
         <div
-          className="relative w-24 h-36 flex-shrink-0 overflow-hidden"
+          className="w-24 h-36 flex-shrink-0 overflow-hidden"
           style={{ borderRadius: 2 }}
         >
           <ImageWithFallback
             src={game.cover}
             alt={game.title}
-            className="w-full h-full object-cover"
           />
           {game.userRating && (
             <div
@@ -196,7 +196,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
                   textTransform: 'uppercase',
                 }}
               >
-                {game.releaseYear ?? 'N/A'}{game.developer ? ` / ${game.developer}` : ''}
+                {[game.releaseYear, game.developer].filter(Boolean).join(' / ') || ''}
               </p>
             </div>
             {game.status && <StatusBadge status={game.status} />}

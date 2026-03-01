@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { ChevronDown } from "lucide-react";
+import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
+import { CornerMarkers } from "@/app/lib/design-primitives";
 
 interface DLC {
   id: number;
@@ -19,41 +22,35 @@ interface DlcExpansionSectionProps {
   }>;
 }
 
-const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
-  dlc: { label: "DLC / Add-on", color: "bg-amber-500/20 text-amber-300" },
-  expansion: { label: "Expansion", color: "bg-purple-500/20 text-purple-300" },
-  standalone_expansion: { label: "Standalone Expansion", color: "bg-violet-500/20 text-violet-300" },
-  mod: { label: "Mod", color: "bg-pink-500/20 text-pink-300" },
-  episode: { label: "Episode", color: "bg-blue-500/20 text-blue-300" },
-  season: { label: "Season", color: "bg-cyan-500/20 text-cyan-300" },
-  pack: { label: "Content Pack", color: "bg-indigo-500/20 text-indigo-300" },
-  bundle: { label: "Bundle", color: "bg-orange-500/20 text-orange-300" },
-  remake: { label: "Remake", color: "bg-emerald-500/20 text-emerald-300" },
-  remaster: { label: "Remaster", color: "bg-teal-500/20 text-teal-300" },
-  expanded_game: { label: "Expanded Game", color: "bg-fuchsia-500/20 text-fuchsia-300" },
-  port: { label: "Port", color: "bg-sky-500/20 text-sky-300" },
-  fork: { label: "Fork", color: "bg-rose-500/20 text-rose-300" },
-  update: { label: "Update", color: "bg-lime-500/20 text-lime-300" },
-  related: { label: "Related", color: "bg-stone-800/60 text-stone-300" },
+function badgeStyle(color: string): React.CSSProperties {
+  return { background: color + "15", color, border: "1px solid " + color + "25" };
+}
+
+const CATEGORY_LABELS: Record<string, { label: string; style: React.CSSProperties }> = {
+  dlc: { label: "DLC / Add-on", style: badgeStyle(C.amber) },
+  expansion: { label: "Expansion", style: badgeStyle(C.accent) },
+  standalone_expansion: { label: "Standalone Expansion", style: badgeStyle(C.accentDim) },
+  mod: { label: "Mod", style: badgeStyle(C.red) },
+  episode: { label: "Episode", style: badgeStyle(C.gold) },
+  season: { label: "Season", style: badgeStyle(C.cyan) },
+  pack: { label: "Content Pack", style: badgeStyle(C.goldDim) },
+  bundle: { label: "Bundle", style: badgeStyle(C.amber) },
+  remake: { label: "Remake", style: badgeStyle(C.green) },
+  remaster: { label: "Remaster", style: badgeStyle(C.cyan) },
+  expanded_game: { label: "Expanded Game", style: badgeStyle(C.accent) },
+  port: { label: "Port", style: badgeStyle(C.gold) },
+  fork: { label: "Fork", style: badgeStyle(C.red) },
+  update: { label: "Update", style: badgeStyle(C.green) },
+  related: { label: "Related", style: badgeStyle(C.textMuted) },
 };
 
-/**
- * Displays DLCs, expansions, mods and related content for a game in categorized sections.
- */
 export function DlcExpansionSection({ dlcsAndExpansions, relatedContent }: DlcExpansionSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
 
-  // Memoize the parsed DLC list to avoid re-parsing on every render
   const dlcList = useMemo(() => {
-    // First, try to use the relatedContent prop (from action result)
-    if (relatedContent && relatedContent.length > 0) {
-      return relatedContent;
-    }
-
-    // Otherwise, try to parse the dlcsAndExpansions JSON string (from database)
-    if (!dlcsAndExpansions) {
-      return [];
-    }
+    if (relatedContent && relatedContent.length > 0) return relatedContent;
+    if (!dlcsAndExpansions) return [];
     try {
       const parsed = JSON.parse(dlcsAndExpansions) as DLC[];
       return parsed;
@@ -63,81 +60,160 @@ export function DlcExpansionSection({ dlcsAndExpansions, relatedContent }: DlcEx
     }
   }, [dlcsAndExpansions, relatedContent]);
 
-  // If there's no data, don't render
-  if (!dlcList || dlcList.length === 0) {
-    return null;
-  }
+  if (!dlcList || dlcList.length === 0) return null;
 
-  // Group by category
-  const grouped = dlcList.reduce(
-    (acc, dlc) => {
-      const category = dlc.category?.toLowerCase() || "dlc";
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category].push(dlc);
-      return acc;
-    },
-    {} as Record<string, DLC[]>
-  );
+  const grouped = dlcList.reduce((acc, dlc) => {
+    const category = dlc.category?.toLowerCase() || "dlc";
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(dlc);
+    return acc;
+  }, {} as Record<string, DLC[]>);
 
   const totalItems = dlcList.length;
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-stone-900/60 p-6">
+    <section
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 2,
+        padding: 24,
+      }}
+    >
+      <CornerMarkers size={8} />
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between transition hover:opacity-80"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: "none",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          transition: "opacity 150ms",
+        }}
       >
-        <h2 className="text-2xl font-semibold">Related Content</h2>
+        <h2
+          style={{
+            fontFamily: FONT_HEADING,
+            fontWeight: 200,
+            fontSize: 20,
+            color: C.text,
+            margin: 0,
+          }}
+        >
+          Related Content
+        </h2>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-stone-400">
+          <span
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 11,
+              color: C.textMuted,
+            }}
+          >
             {totalItems} {totalItems === 1 ? "item" : "items"}
           </span>
-          <svg
-            className={`h-6 w-6 text-stone-400 transition ${isExpanded ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
+          <ChevronDown
+            size={20}
+            color={C.textMuted}
+            style={{
+              transition: "transform 200ms",
+              transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          />
         </div>
       </button>
-
       {isExpanded && (
         <div className="flex flex-col gap-6">
           {Object.entries(grouped).map(([category, items]) => {
             const info = CATEGORY_LABELS[category] || {
               label: category.charAt(0).toUpperCase() + category.slice(1),
-              color: "bg-stone-800/60 text-stone-300",
+              style: badgeStyle(C.textMuted),
             };
-
             return (
               <div key={category} className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-stone-300">
+                  <h3
+                    style={{
+                      fontFamily: FONT_MONO,
+                      fontSize: 12,
+                      fontWeight: 400,
+                      color: C.textMuted,
+                      margin: 0,
+                    }}
+                  >
                     {info.label}
                   </h3>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${info.color}`}>
+                  <span
+                    style={{
+                      ...info.style,
+                      borderRadius: 1,
+                      padding: "2px 8px",
+                      fontFamily: FONT_MONO,
+                      fontSize: 10,
+                    }}
+                  >
                     {items.length}
                   </span>
                 </div>
-
                 <div className="space-y-2">
                   {items.map((dlc) => (
                     <div
                       key={dlc.id}
-                      className="flex items-center justify-between rounded-lg border border-white/5 bg-stone-950/50 px-4 py-3 transition hover:border-white/10 hover:bg-stone-950/80"
+                      onMouseEnter={() => setHoveredId(dlc.id)}
+                      onMouseLeave={() => setHoveredId(null)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        background: C.bg,
+                        border: `1px solid ${hoveredId === dlc.id ? C.borderLight : C.border}`,
+                        borderRadius: 1,
+                        padding: "12px 16px",
+                        transition: "border-color 150ms",
+                      }}
                     >
-                      <div className="flex flex-1 flex-col gap-0.5">
-                        <span className="font-medium text-white">{dlc.title}</span>
+                      <div className="flex flex-1 flex-col gap-0.5" style={{ minWidth: 0 }}>
+                        <span
+                          style={{
+                            fontFamily: FONT_BODY,
+                            fontSize: 13,
+                            fontWeight: 400,
+                            color: C.text,
+                          }}
+                        >
+                          {dlc.title}
+                        </span>
                         {dlc.releaseDate && (
-                          <span className="text-xs text-stone-500">{dlc.releaseDate}</span>
+                          <span
+                            style={{
+                              fontFamily: FONT_MONO,
+                              fontSize: 10,
+                              color: C.textDim,
+                            }}
+                          >
+                            {dlc.releaseDate}
+                          </span>
                         )}
                       </div>
                       <div
-                        className={`ml-4 flex h-7 items-center rounded-lg px-2 text-xs font-semibold ${info.color}`}
+                        style={{
+                          ...info.style,
+                          marginLeft: 16,
+                          display: "flex",
+                          alignItems: "center",
+                          height: 28,
+                          borderRadius: 1,
+                          padding: "0 8px",
+                          fontFamily: FONT_MONO,
+                          fontSize: 10,
+                        }}
                       >
                         {info.label}
                       </div>

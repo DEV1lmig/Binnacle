@@ -6,6 +6,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useCurrentUser } from "@/app/context/CurrentUserContext";
 import { GameCard } from "@/app/components/GameCard";
+import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { Input } from "@/app/components/ui/input";
 import {
   Select,
@@ -561,10 +562,9 @@ export default function BacklogPage() {
                             style={{ borderRadius: 2, border: `1px solid ${C.border}` }}
                           >
                             {item.game.coverUrl ? (
-                              <img
+                              <ImageWithFallback
                                 src={item.game.coverUrl}
                                 alt={item.game.title}
-                                className="w-full h-full object-cover"
                               />
                             ) : (
                               <div
