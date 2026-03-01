@@ -773,6 +773,10 @@ export default function DiscoverPage() {
                     {GENRES.map((genre) => (
                       <button
                         key={genre}
+                        onClick={() => {
+                          setSearchQuery(genre);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
                         className="transition-all"
                         style={{
                           padding: "8px 16px",
@@ -783,6 +787,7 @@ export default function DiscoverPage() {
                           fontSize: 11,
                           letterSpacing: "0.06em",
                           color: C.textMuted,
+                          cursor: "pointer",
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.borderColor = C.gold;
