@@ -1,0 +1,308 @@
+import { useEffect, useMemo, useState } from "react";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@binnacle/convex-generated/api";
+import { Body, Button, Heading, Input, Screen } from "@/src/ui/primitives";
+import { LoadingState } from "@/src/ui/LoadingState";
+import { UserRow } from "@/src/ui/UserRow";
+import { spacing } from "@/src/ui/theme";
+
+type Visibility = "public" | "friends" | "private";
+type FriendRequestPolicy = "everyone" | "friends_of_friends" | "nobody";
+
+const VISIBILITIES: Visibility[] = ["public", "friends", "private"];
+const FRIEND_REQUEST_POLICIES: FriendRequestPolicy[] = ["everyone", "friends_of_friends", "nobody"];
+
+export default function SettingsPage() {
+  const preferences = useQuery(api.settings.getPreferences);
+  const privacy = useQuery(api.privacy.getSettings);
+  const blocked = useQuery(api.blocking.listBlocked, { limit: 100 });
+
+  const updatePreferences = useMutation(api.settings.updatePreferences);
+  const updatePrivacy = useMutation(api.privacy.updateSettings);
+  const updateUsername = useMutation(api.settings.updateUsername);
+  const checkUsernameAvailable = useQuery(
+    api.settings.checkUsernameAvailable,
+    { username: "placeholder" }
+  );
+  const unblock = useMutation(api.blocking.unblock);
+
+  const [theme, setTheme] = useState<"dark" | "light" | "system">("system");
+  const [cardView, setCardView] = useState<"compact" | "comfortable">("comfortable");
+  const [profileVisibility, setProfileVisibility] = useState<Visibility>("public");
+  const [backlogVisibility, setBacklogVisibility] = useState<Visibility>("public");
+  const [reviewsVisibility, setReviewsVisibility] = useState<Visibility>("public");
+  const [activityVisibility, setActivityVisibility] = useState<Visibility>("public");
+  const [allowFriendRequests, setAllowFriendRequests] = useState<FriendRequestPolicy>("everyone");
+  const [showStats, setShowStats] = useState(true);
+  const [showOnlineStatus, setShowOnlineStatus] = useState(true);
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    if (!preferences) {
+      return;
+    }
+    setTheme((preferences.theme as "dark" | "light" | "system" | undefined) ?? "system");
+    setCardView((preferences.cardView as "compact" | "comfortable" | undefined) ?? "comfortable");
+  }, [preferences]);
+
+  useEffect(() => {
+    if (!privacy) {
+      return;
+    }
+    setProfileVisibility(privacy.profileVisibility);
+    setBacklogVisibility(privacy.backlogVisibility);
+    setReviewsVisibility(privacy.reviewsVisibility);
+    setActivityVisibility(privacy.activityVisibility);
+    setAllowFriendRequests(privacy.allowFriendRequests);
+    setShowStats(privacy.showStats);
+    setShowOnlineStatus(privacy.showOnlineStatus);
+  }, [privacy]);
+
+  const usernameCheck = useQuery(
+    api.settings.checkUsernameAvailable,
+    username.trim() ? { username: username.trim().toLowerCase() } : "skip"
+  );
+
+  const usernameHelper = useMemo(() => {
+    if (!username.trim()) {
+      return "Enter a new username";
+    }
+    if (!usernameCheck) {
+      return "Checking availability...";
+    }
+    return usernameCheck.available ? "Username is available" : usernameCheck.reason ?? "Unavailable";
+  }, [username, usernameCheck]);
+
+  if (preferences === undefined || privacy === undefined || blocked === undefined) {
+    return <LoadingState label="Loading settings..." />;
+  }
+
+  const savePreferences = async () => {
+    try {
+      await updatePreferences({ theme, cardView });
+      Alert.alert("Saved", "Preferences updated.");
+    } catch (error: any) {
+      Alert.alert("Could not save preferences", error?.message ?? "Please try again.");
+    }
+  };
+
+  const savePrivacy = async () => {
+    try {
+      await updatePrivacy({
+        profileVisibility,
+        backlogVisibility,
+        reviewsVisibility,
+        activityVisibility,
+        allowFriendRequests,
+        showStats,
+        showOnlineStatus,
+      });
+      Alert.alert("Saved", "Privacy settings updated.");
+    } catch (error: any) {
+      Alert.alert("Could not save privacy", error?.message ?? "Please try again.");
+    }
+  };
+
+  const onUpdateUsername = async () => {
+    const nextUsername = username.trim().toLowerCase();
+    if (!nextUsername) {
+      return;
+    }
+    try {
+      await updateUsername({ username: nextUsername });
+      setUsername("");
+      Alert.alert("Saved", "Username updated.");
+    } catch (error: any) {
+      Alert.alert("Could not update username", error?.message ?? "Please try again.");
+    }
+  };
+
+  return (
+    <Screen>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Heading>Settings</Heading>
+
+        <View style={styles.section}>
+          <Body style={styles.sectionTitle}>Username</Body>
+          <Input
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="new_username"
+          />
+          <Body style={styles.helper}>{usernameHelper}</Body>
+          <Button label="Update Username" onPress={() => void onUpdateUsername()} />
+        </View>
+
+        <View style={styles.section}>
+          <Body style={styles.sectionTitle}>Preferences</Body>
+          <Body style={styles.fieldLabel}>Theme</Body>
+          <View style={styles.inlineButtons}>
+            {(["system", "light", "dark"] as const).map((option) => (
+              <Button
+                key={option}
+                label={option}
+                variant={theme === option ? "primary" : "secondary"}
+                onPress={() => setTheme(option)}
+              />
+            ))}
+          </View>
+
+          <Body style={styles.fieldLabel}>Card View</Body>
+          <View style={styles.inlineButtons}>
+            {(["comfortable", "compact"] as const).map((option) => (
+              <Button
+                key={option}
+                label={option}
+                variant={cardView === option ? "primary" : "secondary"}
+                onPress={() => setCardView(option)}
+              />
+            ))}
+          </View>
+          <Button label="Save Preferences" onPress={() => void savePreferences()} />
+        </View>
+
+        <View style={styles.section}>
+          <Body style={styles.sectionTitle}>Privacy</Body>
+
+          <Body style={styles.fieldLabel}>Profile Visibility</Body>
+          <View style={styles.inlineButtons}>
+            {VISIBILITIES.map((option) => (
+              <Button
+                key={`profile-${option}`}
+                label={option}
+                variant={profileVisibility === option ? "primary" : "secondary"}
+                onPress={() => setProfileVisibility(option)}
+              />
+            ))}
+          </View>
+
+          <Body style={styles.fieldLabel}>Backlog Visibility</Body>
+          <View style={styles.inlineButtons}>
+            {VISIBILITIES.map((option) => (
+              <Button
+                key={`backlog-${option}`}
+                label={option}
+                variant={backlogVisibility === option ? "primary" : "secondary"}
+                onPress={() => setBacklogVisibility(option)}
+              />
+            ))}
+          </View>
+
+          <Body style={styles.fieldLabel}>Reviews Visibility</Body>
+          <View style={styles.inlineButtons}>
+            {VISIBILITIES.map((option) => (
+              <Button
+                key={`reviews-${option}`}
+                label={option}
+                variant={reviewsVisibility === option ? "primary" : "secondary"}
+                onPress={() => setReviewsVisibility(option)}
+              />
+            ))}
+          </View>
+
+          <Body style={styles.fieldLabel}>Activity Visibility</Body>
+          <View style={styles.inlineButtons}>
+            {VISIBILITIES.map((option) => (
+              <Button
+                key={`activity-${option}`}
+                label={option}
+                variant={activityVisibility === option ? "primary" : "secondary"}
+                onPress={() => setActivityVisibility(option)}
+              />
+            ))}
+          </View>
+
+          <Body style={styles.fieldLabel}>Friend Requests</Body>
+          <View style={styles.inlineButtons}>
+            {FRIEND_REQUEST_POLICIES.map((option) => (
+              <Button
+                key={`requests-${option}`}
+                label={option.replace(/_/g, " ")}
+                variant={allowFriendRequests === option ? "primary" : "secondary"}
+                onPress={() => setAllowFriendRequests(option)}
+              />
+            ))}
+          </View>
+
+          <Body style={styles.fieldLabel}>Show Stats</Body>
+          <View style={styles.inlineButtons}>
+            <Button label="On" variant={showStats ? "primary" : "secondary"} onPress={() => setShowStats(true)} />
+            <Button label="Off" variant={!showStats ? "primary" : "secondary"} onPress={() => setShowStats(false)} />
+          </View>
+
+          <Body style={styles.fieldLabel}>Online Status</Body>
+          <View style={styles.inlineButtons}>
+            <Button
+              label="On"
+              variant={showOnlineStatus ? "primary" : "secondary"}
+              onPress={() => setShowOnlineStatus(true)}
+            />
+            <Button
+              label="Off"
+              variant={!showOnlineStatus ? "primary" : "secondary"}
+              onPress={() => setShowOnlineStatus(false)}
+            />
+          </View>
+
+          <Button label="Save Privacy" onPress={() => void savePrivacy()} />
+        </View>
+
+        <View style={styles.section}>
+          <Body style={styles.sectionTitle}>Blocked Users</Body>
+          {blocked.length === 0 ? (
+            <Body>No blocked users.</Body>
+          ) : (
+            blocked.map((entry) => (
+              <View key={`${entry.blocked._id}`} style={styles.blockedCard}>
+                <UserRow name={entry.blocked.name} username={entry.blocked.username} />
+                <Button
+                  label="Unblock"
+                  variant="secondary"
+                  onPress={() => {
+                    void unblock({ targetUserId: entry.blocked._id });
+                  }}
+                />
+              </View>
+            ))
+          )}
+        </View>
+      </ScrollView>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    gap: spacing.lg,
+    paddingBottom: 100,
+  },
+  section: {
+    gap: spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  fieldLabel: {
+    fontWeight: "600",
+    color: "#f3f5ff",
+  },
+  helper: {
+    fontSize: 12,
+  },
+  inlineButtons: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+  },
+  blockedCard: {
+    borderWidth: 1,
+    borderColor: "#2d3b66",
+    borderRadius: 12,
+    padding: spacing.sm,
+    gap: spacing.sm,
+  },
+});

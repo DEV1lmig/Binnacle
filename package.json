@@ -4,6 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "pnpm run dev:web",
+    "dev:web": "pnpm --filter web dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:mobile": "pnpm --filter mobile dev",
+    "dev:mobile:backend": "pnpm --parallel --filter backend --filter mobile dev",
+    "dev:full": "pnpm --parallel -r dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
