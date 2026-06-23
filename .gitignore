@@ -8,4 +8,5 @@ node_modules/
 *.md
 apps/backend/backup.zip
 *.heapsnapshot
+*.tsbuildinfo
 nul
