@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -82,21 +82,16 @@ export default function UserProfilePage() {
   const [blockActionError, setBlockActionError] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
 
-  useEffect(() => {
-    if (!profileData) return;
-
-    setIsFollowing((prev) => {
-      const next = profileData.viewerFollows;
-      if (isUpdatingFollow && prev !== null) return prev;
-      return prev === next ? prev : next;
-    });
-
-    setFollowerCount((prev) => {
-      const next = profileData.followerCount;
-      if (isUpdatingFollow && prev !== null) return prev;
-      return prev === next ? prev : next;
-    });
-  }, [isUpdatingFollow, profileData]);
+  const prevProfileDataRef = useRef(profileData);
+  if (
+    profileData &&
+    !isUpdatingFollow &&
+    prevProfileDataRef.current !== profileData
+  ) {
+    prevProfileDataRef.current = profileData;
+    setIsFollowing(profileData.viewerFollows);
+    setFollowerCount(profileData.followerCount);
+  }
 
   const handleFollowToggle = async () => {
     if (!profileData || profileData.viewerIsSelf) return;

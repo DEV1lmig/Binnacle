@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/app/components/ui/button";
@@ -335,10 +335,6 @@ export default function AdminPage() {
       setSingleSeedLoading(false);
     }
   };
-
-  useEffect(() => {
-    setCustomCategoryLimit((prev) => sanitizeLimitValue(customCategory, categoryLimits[customCategory] ?? prev));
-  }, [customCategory, categoryLimits]);
 
   const handleFlexibleCategorySeed = async () => {
     const limit = sanitizeLimitValue(customCategory, customCategoryLimit);
@@ -1064,7 +1060,11 @@ export default function AdminPage() {
                   <label className="text-xs text-muted-foreground">Category</label>
                   <select
                     value={customCategory}
-                    onChange={(e) => setCustomCategory(e.target.value as SeedCategory)}
+                    onChange={(e) => {
+                      const category = e.target.value as SeedCategory;
+                      setCustomCategory(category);
+                      setCustomCategoryLimit(sanitizeLimitValue(category, categoryLimits[category]));
+                    }}
                     className="w-full px-3 py-2 border border-border rounded-md bg-background"
                     disabled={customCategoryLoading}
                   >

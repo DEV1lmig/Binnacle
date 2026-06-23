@@ -2,6 +2,7 @@
 
 import { useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import {
@@ -490,14 +491,12 @@ export function ProfileDashboardContent({
                       }}
                     >
                       {entry.game.coverUrl ? (
-                        <img
+                        <Image
                           src={entry.game.coverUrl}
                           alt={entry.game.title}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
+                          fill
+                          sizes="(max-width: 768px) 33vw, 16vw"
+                          style={{ objectFit: "cover" }}
                         />
                       ) : (
                         <div
@@ -954,7 +953,7 @@ export function ProfileDashboardContent({
 
                       {/* Cover thumbnail */}
                       <div
-                        className="flex-shrink-0 overflow-hidden"
+                        className="relative flex-shrink-0 overflow-hidden"
                         style={{
                           width: 56,
                           height: 72,
@@ -963,14 +962,12 @@ export function ProfileDashboardContent({
                         }}
                       >
                         {review.game.coverUrl ? (
-                          <img
+                          <Image
                             src={review.game.coverUrl}
                             alt={review.game.title}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
+                            fill
+                            sizes="56px"
+                            style={{ objectFit: "cover" }}
                           />
                         ) : (
                           <div className="flex items-center justify-center w-full h-full">

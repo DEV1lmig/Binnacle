@@ -439,6 +439,7 @@ function ReviewShareCard({
                 borderColor: colors.border,
               }}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={coverUrl}
                 alt={review.game.title}
@@ -551,6 +552,7 @@ function ReviewShareCard({
         >
           <div style={{ display: "flex", alignItems: "center", gap: Math.round(gap * 0.8) }}>
             {review.author.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={review.author.avatarUrl}
                 alt={review.author.name}

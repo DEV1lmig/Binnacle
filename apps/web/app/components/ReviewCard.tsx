@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
@@ -68,11 +68,28 @@ export function ReviewCard({ review }: ReviewCardProps) {
   const [reportOpen, setReportOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
 
-  useEffect(() => {
+  const reviewSnapshotRef = useRef({
+    id: review._id,
+    viewerHasLiked: review.viewerHasLiked,
+    likeCount: review.likeCount,
+    commentCount: review.commentCount,
+  });
+  if (
+    reviewSnapshotRef.current.id !== review._id ||
+    reviewSnapshotRef.current.viewerHasLiked !== review.viewerHasLiked ||
+    reviewSnapshotRef.current.likeCount !== review.likeCount ||
+    reviewSnapshotRef.current.commentCount !== review.commentCount
+  ) {
+    reviewSnapshotRef.current = {
+      id: review._id,
+      viewerHasLiked: review.viewerHasLiked,
+      likeCount: review.likeCount,
+      commentCount: review.commentCount,
+    };
     setLiked(review.viewerHasLiked ?? false);
     setLikeCount(review.likeCount ?? 0);
     setCommentCount(review.commentCount ?? 0);
-  }, [review._id, review.viewerHasLiked, review.likeCount, review.commentCount]);
+  }
 
   const normalizedRating = useMemo(() => {
     return Math.max(0, Math.min(10, review.rating));

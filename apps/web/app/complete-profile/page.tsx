@@ -16,23 +16,17 @@ export default function CompleteProfilePage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const syncCurrentUser = useMutation(api.users.syncCurrent);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [draft, setDraft] = useState<{ firstName: string; lastName: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const firstName = draft?.firstName ?? user?.firstName ?? "";
+  const lastName = draft?.lastName ?? user?.lastName ?? "";
+
   useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
-
-    if (!user) {
+    if (isLoaded && !user) {
       router.replace("/sign-in");
-      return;
     }
-
-    setFirstName(user.firstName ?? "");
-    setLastName(user.lastName ?? "");
   }, [isLoaded, router, user]);
 
   // Show loading state while Clerk is initializing
@@ -113,7 +107,12 @@ export default function CompleteProfilePage() {
               autoComplete="given-name"
               className={inputClasses}
               value={firstName}
-              onChange={(event) => setFirstName(event.target.value)}
+              onChange={(event) =>
+                setDraft((prev) => ({
+                  firstName: event.target.value,
+                  lastName: prev?.lastName ?? user?.lastName ?? "",
+                }))
+              }
               disabled={isSubmitting}
             />
           </div>
@@ -128,7 +127,12 @@ export default function CompleteProfilePage() {
               autoComplete="family-name"
               className={inputClasses}
               value={lastName}
-              onChange={(event) => setLastName(event.target.value)}
+              onChange={(event) =>
+                setDraft((prev) => ({
+                  firstName: prev?.firstName ?? user?.firstName ?? "",
+                  lastName: event.target.value,
+                }))
+              }
               disabled={isSubmitting}
             />
           </div>

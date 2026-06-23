@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useState, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -520,14 +521,16 @@ export default function BacklogPage() {
                           }}
                         >
                           <div
-                            className="flex-shrink-0 w-12 h-16 overflow-hidden"
+                            className="relative flex-shrink-0 w-12 h-16 overflow-hidden"
                             style={{ borderRadius: 2, border: `1px solid ${C.border}` }}
                           >
                             {item.game.coverUrl ? (
-                              <img
+                              <Image
                                 src={item.game.coverUrl}
                                 alt={item.game.title}
-                                className="w-full h-full object-cover"
+                                fill
+                                sizes="48px"
+                                className="object-cover"
                               />
                             ) : (
                               <div

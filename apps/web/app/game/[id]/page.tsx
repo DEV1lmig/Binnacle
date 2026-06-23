@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAction, useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -131,13 +131,11 @@ export default function GameDetailPage() {
   const [isUpdatingBacklog, setIsUpdatingBacklog] = useState(false);
   
   // Initialize status from backlog data
-  useEffect(() => {
-    if (backlogItem) {
-      setStatus(backlogItem.status);
-    } else {
-      setStatus(null);
-    }
-  }, [backlogItem]);
+  const prevBacklogItemRef = useRef(backlogItem);
+  if (prevBacklogItemRef.current !== backlogItem && !isUpdatingBacklog) {
+    prevBacklogItemRef.current = backlogItem;
+    setStatus(backlogItem?.status ?? null);
+  }
 
   const cachedRelatedContent = useMemo<RelatedContentItem[]>(() => {
     // dlcsAndExpansions field was removed from schema in Phase 2B optimization

@@ -53,17 +53,18 @@ function NewReviewPageContent() {
     playtimeHours?: number;
   } | null>(null);
 
+  const authorName = currentUser?.name;
   const authorInitials = useMemo(() => {
-    if (!currentUser?.name) {
+    if (!authorName) {
       return "?";
     }
 
-    return currentUser.name
+    return authorName
       .split(" ")
       .map((part) => part.charAt(0).toUpperCase())
       .slice(0, 2)
       .join("");
-  }, [currentUser?.name]);
+  }, [authorName]);
 
   const isReady = Boolean(currentUser) && Boolean(typedGameId);
 

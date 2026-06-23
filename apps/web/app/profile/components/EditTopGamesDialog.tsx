@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useAction } from 'convex/react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/app/components/ui/dialog';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
@@ -53,13 +54,13 @@ export function EditTopGamesDialog({
 
   const searchAction = useAction(api.igdb.searchOptimizedWithFallback);
 
-  useEffect(() => {
-    if (open) {
-      setSelected(initialGames.map((entry) => ({ ...entry, note: entry.note ?? '' })));
-      setSearchTerm('');
-      setSearchResults([]);
-    }
-  }, [open, initialGames]);
+  const prevOpenRef = useRef(open);
+  if (prevOpenRef.current !== open && open) {
+    prevOpenRef.current = open;
+    setSelected(initialGames.map((entry) => ({ ...entry, note: entry.note ?? '' })));
+    setSearchTerm('');
+    setSearchResults([]);
+  }
 
   useEffect(() => {
     const performSearch = async () => {
@@ -479,7 +480,7 @@ export function EditTopGamesDialog({
 
                         {/* Cover thumb */}
                         <div
-                          className="flex-shrink-0 overflow-hidden"
+                          className="relative flex-shrink-0 overflow-hidden"
                           style={{
                             width: 40,
                             height: 52,
@@ -488,10 +489,12 @@ export function EditTopGamesDialog({
                           }}
                         >
                           {entry.coverUrl ? (
-                            <img
+                            <Image
                               src={entry.coverUrl}
                               alt={entry.title}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              fill
+                              sizes="40px"
+                              style={{ objectFit: 'cover' }}
                             />
                           ) : (
                             <div className="flex items-center justify-center w-full h-full">
