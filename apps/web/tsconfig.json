@@ -25,9 +25,6 @@
     "paths": {
       "@/*": [
         "./*"
-      ],
-      "@binnacle/shared-types": [
-        "../../packages/shared-types/index.d.ts"
       ]
     }
   },

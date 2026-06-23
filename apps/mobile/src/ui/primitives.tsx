@@ -1,25 +1,31 @@
 import { ReactNode } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextInput,
-  TextInputProps,
-  TextStyle,
-  View,
-  ViewStyle,
-} from "react-native";
-import { colors } from "./theme";
+import { ActivityIndicator, StyleProp, TextStyle, ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LucideIcon } from "lucide-react-native";
+import { View, Text, Pressable, TextInput, ScrollView } from "@/src/tw";
+import { colors, spacing } from "./theme";
 
 type ScreenProps = {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
+  edges?: ("top" | "bottom" | "left" | "right")[];
 };
 
-export function Screen({ children, style }: ScreenProps) {
-  return <View style={[styles.screen, style]}>{children}</View>;
+export function Screen({ children, style, edges = ["top", "left", "right"] }: ScreenProps) {
+  const insets = useSafeAreaInsets();
+
+  const safeStyle: ViewStyle = {
+    paddingTop: edges.includes("top") ? insets.top + spacing.md : spacing.md,
+    paddingBottom: edges.includes("bottom") ? insets.bottom + spacing.md : spacing.md,
+    paddingLeft: edges.includes("left") ? insets.left + spacing.md : spacing.md,
+    paddingRight: edges.includes("right") ? insets.right + spacing.md : spacing.md,
+  };
+
+  return (
+    <View className="flex-1 bg-bg" style={[safeStyle, style]}>
+      {children}
+    </View>
+  );
 }
 
 type CardProps = {
@@ -28,27 +34,64 @@ type CardProps = {
 };
 
 export function Card({ children, style }: CardProps) {
-  return <View style={[styles.card, style]}>{children}</View>;
+  return (
+    <View
+      className="bg-surface rounded-sm border border-border p-4 gap-2 overflow-hidden"
+      style={style}
+    >
+      {children}
+    </View>
+  );
+}
+
+type SectionTagProps = {
+  label: string;
+  color?: string;
+  style?: StyleProp<ViewStyle>;
+};
+
+export function SectionTag({ label, color = colors.accent, style }: SectionTagProps) {
+  return (
+    <View
+      className="flex-row items-center self-start bg-transparent border border-borderLight rounded-sm px-2 py-1 gap-1.5 mb-2"
+      style={style}
+    >
+      <View className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+      <Text className="text-[10px] font-semibold tracking-widest uppercase text-textMuted">
+        {label}
+      </Text>
+    </View>
+  );
 }
 
 type HeadingProps = {
   children: ReactNode;
   style?: StyleProp<TextStyle>;
+  className?: string;
 };
 
 export function Heading({ children, style }: HeadingProps) {
-  return <Text style={[styles.heading, style]}>{children}</Text>;
+  return (
+    <Text className="text-text text-[28px] font-light tracking-tight" style={style}>
+      {children}
+    </Text>
+  );
 }
 
 type BodyProps = {
   children: ReactNode;
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
+  className?: string;
 };
 
 export function Body({ children, style, numberOfLines }: BodyProps) {
   return (
-    <Text style={[styles.body, style]} numberOfLines={numberOfLines}>
+    <Text
+      className="text-textMuted text-[15px] leading-6"
+      style={style}
+      numberOfLines={numberOfLines}
+    >
       {children}
     </Text>
   );
@@ -71,45 +114,56 @@ export function Button({
   loading,
   style,
 }: ButtonProps) {
-  const variantStyle =
+  const baseClasses =
+    "min-h-12 rounded-sm items-center justify-center px-4 flex-row gap-2";
+  const variantClasses =
     variant === "primary"
-      ? styles.buttonPrimary
+      ? "bg-gold"
       : variant === "danger"
-        ? styles.buttonDanger
-        : styles.buttonSecondary;
+        ? "bg-red"
+        : "bg-surface border border-border";
+  const stateClasses = disabled || loading ? "opacity-50" : "active:opacity-80 active:scale-[0.98]";
+
+  const textColor = variant === "primary" ? "text-bg" : "text-text";
+
+  // bg-red via NativeWind may not resolve on native — provide explicit fallback
+  const variantStyle =
+    variant === "danger" ? { backgroundColor: colors.danger } : undefined;
 
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      style={({ pressed }) => [
-        styles.buttonBase,
-        variantStyle,
-        pressed && styles.buttonPressed,
-        (disabled || loading) && styles.buttonDisabled,
-        style,
-      ]}
+      className={`${baseClasses} ${variantClasses} ${stateClasses}`}
+      style={[variantStyle, style]}
     >
       {loading ? (
-        <ActivityIndicator color={colors.textPrimary} />
+        <ActivityIndicator color={variant === "primary" ? colors.bg : colors.textPrimary} />
       ) : (
-        <Text style={styles.buttonLabel}>{label}</Text>
+        <Text className={`text-sm font-semibold tracking-wider uppercase ${textColor}`}>
+          {label}
+        </Text>
       )}
     </Pressable>
   );
 }
 
-type InputProps = TextInputProps & {
+type InputProps = React.ComponentProps<typeof TextInput> & {
   label?: string;
 };
 
 export function Input({ label, style, ...props }: InputProps) {
   return (
-    <View style={styles.inputWrap}>
-      {label ? <Text style={styles.inputLabel}>{label}</Text> : null}
+    <View className="gap-1">
+      {label ? (
+        <Text className="text-text text-[13px] font-semibold tracking-wide uppercase">
+          {label}
+        </Text>
+      ) : null}
       <TextInput
         placeholderTextColor={colors.textSecondary}
-        style={[styles.input, style]}
+        className="rounded-sm border border-border bg-bg text-text px-4 py-3 text-base"
+        style={[{ color: colors.textPrimary, backgroundColor: colors.bg }, style]}
         {...props}
       />
     </View>
@@ -119,98 +173,23 @@ export function Input({ label, style, ...props }: InputProps) {
 type EmptyStateProps = {
   title: string;
   description?: string;
+  icon?: LucideIcon;
 };
 
-export function EmptyState({ title, description }: EmptyStateProps) {
+export function EmptyState({ title, description, icon: Icon }: EmptyStateProps) {
   return (
-    <Card style={styles.emptyState}>
-      <Heading style={styles.emptyTitle}>{title}</Heading>
-      {description ? <Body style={styles.emptyDescription}>{description}</Body> : null}
-    </Card>
+    <View className="items-center justify-center min-h-[180px] gap-2 p-6 rounded-md border border-dashed border-border">
+      {Icon && (
+        <View className="w-16 h-16 rounded-full bg-surface items-center justify-center mb-1 border border-border">
+          <Icon size={32} color={colors.textSecondary} strokeWidth={1.5} />
+        </View>
+      )}
+      <Heading className="text-lg text-center">{title}</Heading>
+      {description ? (
+        <Body className="text-center max-w-[260px]">{description}</Body>
+      ) : null}
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    padding: 16,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-    gap: 8,
-  },
-  heading: {
-    color: colors.textPrimary,
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  body: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  buttonBase: {
-    minHeight: 46,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-  },
-  buttonPrimary: {
-    backgroundColor: colors.accent,
-  },
-  buttonSecondary: {
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  buttonDanger: {
-    backgroundColor: colors.danger,
-  },
-  buttonPressed: {
-    opacity: 0.8,
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  buttonLabel: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  inputWrap: {
-    gap: 6,
-  },
-  inputLabel: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  input: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceAlt,
-    color: colors.textPrimary,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 140,
-  },
-  emptyTitle: {
-    fontSize: 18,
-  },
-  emptyDescription: {
-    textAlign: "center",
-    maxWidth: 260,
-  },
-});
+export { ScrollView };

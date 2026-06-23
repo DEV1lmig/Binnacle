@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@binnacle/convex-generated": "workspace:*",
+    "@binnacle/design-tokens": "workspace:*",
     "@binnacle/shared-types": "workspace:*",
     "@clerk/elements": "^0.24.2",
     "@clerk/nextjs": "^6.36.5",

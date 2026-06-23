@@ -8,9 +8,32 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Binnacle to save review cards to your photo library.",
+          "savePhotosPermission": "Allow Binnacle to save review cards to your photo library."
+        }
+      ],
+      [
+        "react-native-share",
+        {
+          "ios": ["instagram", "instagram-stories"],
+          "android": ["com.instagram.android"],
+          "enableBase64ShareAndroid": true
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "shareBaseUrl": "http://localhost:3000",
+      "facebookAppId": ""
     },
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -18,9 +41,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.binnacle.mobile"
     },
     "android": {
+      "package": "com.binnacle.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

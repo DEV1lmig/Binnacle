@@ -1,0 +1,28 @@
+{
+  "name": "@binnacle/design-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "react-native": "./index.native.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "react-native": {
+        "types": "./index.native.ts",
+        "default": "./index.native.ts"
+      },
+      "types": "./index.ts",
+      "default": "./index.ts"
+    },
+    "./tokens": {
+      "react-native": {
+        "types": "./tokens.native.ts",
+        "default": "./tokens.native.ts"
+      },
+      "types": "./tokens.ts",
+      "default": "./tokens.ts"
+    },
+    "./theme.css": "./theme.css"
+  }
+}

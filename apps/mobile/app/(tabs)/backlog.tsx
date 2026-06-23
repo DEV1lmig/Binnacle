@@ -1,110 +1,313 @@
+import { ListTodo, Search } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@binnacle/convex-generated/api";
-import { Body, Button, EmptyState, Heading, Screen } from "@/src/ui/primitives";
-import { GameTile } from "@/src/ui/GameTile";
+import { Screen } from "@/src/ui/primitives";
+import { GameCard } from "@/src/ui/GameCard";
 import { LoadingState } from "@/src/ui/LoadingState";
-import { spacing } from "@/src/ui/theme";
+import { HudBadge, HudDivider, CornerMarkers } from "@/src/ui/hud";
+import { C, FONT_MONO, FONT_HEADING, FONT_BODY, STATUS_COLORS } from "@binnacle/design-tokens";
+import { View, Text, ScrollView, Pressable, TextInput } from "@/src/tw";
 
-const STATUSES = [
-  { key: "all", label: "All" },
-  { key: "want_to_play", label: "Want" },
-  { key: "playing", label: "Playing" },
-  { key: "completed", label: "Done" },
-  { key: "on_hold", label: "On Hold" },
-  { key: "dropped", label: "Dropped" },
+const STATUS_META = [
+  { key: "all", label: "All", color: C.text },
+  { key: "want_to_play", label: "Want to Play", color: C.gold },
+  { key: "playing", label: "Playing", color: C.green },
+  { key: "completed", label: "Completed", color: C.amber },
+  { key: "on_hold", label: "On Hold", color: C.amber },
+  { key: "dropped", label: "Dropped", color: C.red },
 ] as const;
 
 export default function BacklogTab() {
   const router = useRouter();
   const currentUser = useQuery(api.users.current);
-  const removeByGameId = useMutation(api.backlog.removeByGameId);
+  const dashboard = useQuery(api.users.dashboard, {});
 
-  const [activeStatus, setActiveStatus] = useState<(typeof STATUSES)[number]["key"]>("all");
+  const [activeStatus, setActiveStatus] = useState<(typeof STATUS_META)[number]["key"]>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const backlog = useQuery(
     api.backlog.listForUser,
-    currentUser ? { userId: currentUser._id, limit: 100 } : "skip"
+    currentUser ? { userId: currentUser._id, limit: 200 } : "skip"
   );
 
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      all: backlog?.length ?? 0,
+      want_to_play: 0,
+      playing: 0,
+      completed: 0,
+      on_hold: 0,
+      dropped: 0,
+    };
+    for (const item of backlog ?? []) {
+      if (counts[item.status] !== undefined) {
+        counts[item.status]++;
+      }
+    }
+    return counts;
+  }, [backlog]);
+
+  const completionPct = useMemo(() => {
+    const total = backlog?.length ?? 0;
+    if (total === 0) return 0;
+    const completed = statusCounts.completed;
+    return Math.round((completed / total) * 100);
+  }, [backlog, statusCounts]);
+
   const filteredItems = useMemo(() => {
-    if (!backlog) {
-      return [];
+    if (!backlog) return [];
+    let items = backlog;
+    if (activeStatus !== "all") {
+      items = items.filter((item) => item.status === activeStatus);
     }
-
-    if (activeStatus === "all") {
-      return backlog;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      items = items.filter((item) => (item.game?.title ?? "").toLowerCase().includes(q));
     }
+    return items;
+  }, [backlog, activeStatus, searchQuery]);
 
-    return backlog.filter((item) => item.status === activeStatus);
-  }, [activeStatus, backlog]);
-
-  if (currentUser === undefined || backlog === undefined) {
+  if (currentUser === undefined || backlog === undefined || dashboard === undefined) {
     return <LoadingState label="Loading backlog..." />;
   }
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Heading>Backlog</Heading>
+      <ScrollView contentContainerClassName="px-4 py-4 gap-4 pb-24">
+        {/* Header */}
+        <View style={{ gap: 12 }}>
+          <HudBadge color={C.gold}>Collection</HudBadge>
+          <View style={{ gap: 4 }}>
+            <Text style={{ fontFamily: FONT_HEADING, fontSize: 28, fontWeight: "200", color: C.text, letterSpacing: -0.5 }}>
+              Your Backlog
+            </Text>
+            <Text style={{ fontFamily: FONT_MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, color: C.gold, fontWeight: "400" }}>
+              {statusCounts.all} GAMES TRACKED
+            </Text>
+          </View>
+        </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-          {STATUSES.map((status) => (
-            <Button
-              key={status.key}
-              label={status.label}
-              variant={activeStatus === status.key ? "primary" : "secondary"}
-              onPress={() => setActiveStatus(status.key)}
+        {/* Search bar */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: C.border,
+            backgroundColor: C.bg,
+            borderRadius: 2,
+            paddingHorizontal: 12,
+            height: 44,
+            gap: 10,
+          }}
+        >
+          <Search size={16} color={C.textDim} strokeWidth={2} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search your backlog..."
+            placeholderTextColor={C.textDim}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={{ flex: 1, fontFamily: FONT_BODY, fontSize: 14, color: C.text }}
+          />
+        </View>
+
+        {/* Completion progress */}
+        <View
+          style={{
+            backgroundColor: C.surface,
+            borderWidth: 1,
+            borderColor: C.border,
+            borderRadius: 2,
+            padding: 16,
+            gap: 10,
+          }}
+        >
+          <View className="flex-row items-center justify-between">
+            <Text style={{ fontFamily: FONT_MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: C.textMuted }}>
+              Completion
+            </Text>
+            <Text style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: "600", color: C.green }}>
+              {completionPct}%
+            </Text>
+          </View>
+          <View
+            style={{
+              height: 4,
+              backgroundColor: C.bg,
+              borderRadius: 2,
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                width: `${completionPct}%`,
+                height: "100%",
+                backgroundColor: C.green,
+                borderRadius: 2,
+              }}
             />
-          ))}
+          </View>
+          <Text style={{ fontFamily: FONT_BODY, fontSize: 12, color: C.textDim }}>
+            {statusCounts.completed} of {statusCounts.all} games completed
+          </Text>
+        </View>
+
+        {/* Status filter pills */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+          {STATUS_META.map((status) => {
+            const isActive = activeStatus === status.key;
+            const count = statusCounts[status.key] ?? 0;
+            return (
+              <Pressable
+                key={status.key}
+                onPress={() => setActiveStatus(status.key)}
+                className="flex-row items-center active:opacity-70"
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  borderWidth: 1,
+                  borderColor: isActive ? status.color : C.border,
+                  backgroundColor: isActive ? `${status.color}15` : C.surface,
+                  borderRadius: 2,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  gap: 8,
+                }}
+              >
+                <View
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 9999,
+                    backgroundColor: status.color,
+                  }}
+                />
+                <Text
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                    fontWeight: isActive ? "600" : "400",
+                    color: isActive ? status.color : C.textMuted,
+                  }}
+                >
+                  {status.label}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 11,
+                    fontWeight: "600",
+                    color: isActive ? status.color : C.textDim,
+                  }}
+                >
+                  {count}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
 
-        {filteredItems.length === 0 ? (
-          <EmptyState
-            title="Your backlog is empty"
-            description="Add games from Discover or from game detail pages."
-          />
-        ) : (
-          filteredItems.map((item) => (
-            <View key={`${item._id}`} style={styles.row}>
-              <GameTile
-                title={item.game?.title ?? "Untitled Game"}
-                releaseYear={item.game?.releaseYear}
-                rating={item.game?.aggregatedRating}
-                subtitle={item.status.replace(/_/g, " ")}
-                onPress={() => router.push({ pathname: "/game/[id]", params: { id: `${item.gameId}` } })}
-              />
-              <Button
-                label="Remove"
-                variant="danger"
-                onPress={() => {
-                  void removeByGameId({ gameId: item.gameId });
-                }}
-              />
-            </View>
-          ))
-        )}
+        <HudDivider />
 
-        <Body style={styles.caption}>Tip: tap a game to update its status from the detail screen.</Body>
+        {/* Grid */}
+        {filteredItems.length === 0 ? (
+          <View
+            style={{
+              borderWidth: 1,
+              borderStyle: "dashed",
+              borderColor: C.borderLight,
+              borderRadius: 2,
+              padding: 32,
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <CornerMarkers size={8} color={C.borderLight} />
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 9999,
+                backgroundColor: C.bgAlt,
+                borderWidth: 1,
+                borderColor: C.borderLight,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ListTodo size={24} color={C.textDim} strokeWidth={1.5} />
+            </View>
+            <Text style={{ fontFamily: FONT_HEADING, fontSize: 18, color: C.textMuted, fontWeight: "300" }}>
+              {searchQuery ? "No matching games" : "Your backlog is empty"}
+            </Text>
+            <Text style={{ fontFamily: FONT_BODY, fontSize: 13, color: C.textDim, textAlign: "center" }}>
+              {searchQuery
+                ? "Try a different search term."
+                : "Add games from Discover or from game detail pages."}
+            </Text>
+          </View>
+        ) : (
+          <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+            {filteredItems.map((item) => {
+              const statusColor = STATUS_COLORS[item.status === "want_to_play" ? "backlog" : item.status === "on_hold" ? "onhold" : item.status] ?? C.textDim;
+              return (
+                <View key={`${item._id}`} style={{ width: "48%" }}>
+                  <Pressable
+                    onPress={() => router.push({ pathname: "/game/[id]", params: { id: `${item.gameId}` } })}
+                    className="active:opacity-80"
+                  >
+                    <GameCard
+                      gameId={item.gameId}
+                      title={item.game?.title ?? "Untitled Game"}
+                      coverUrl={item.game?.coverUrl}
+                      width={160}
+                      style={{ width: "100%" }}
+                    />
+                  </Pressable>
+                  <View
+                    className="flex-row items-center self-start"
+                    style={{
+                      marginTop: 6,
+                      gap: 6,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 2,
+                      backgroundColor: `${statusColor}15`,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: 9999,
+                        backgroundColor: statusColor,
+                      }}
+                    />
+                    <Text
+                      style={{
+                        fontFamily: FONT_MONO,
+                        fontSize: 10,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                        color: statusColor,
+                        fontWeight: "500",
+                      }}
+                    >
+                      {item.status.replace(/_/g, " ")}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.md,
-    paddingBottom: 100,
-  },
-  filters: {
-    gap: spacing.sm,
-  },
-  row: {
-    gap: spacing.sm,
-  },
-  caption: {
-    fontSize: 12,
-  },
-});

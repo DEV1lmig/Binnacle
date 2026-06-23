@@ -12,6 +12,8 @@ const isPublicRoute = createRouteMatcher([
   '/game/(.*)',
   '/profile/(.*)', // Public profiles
   '/review/(.*)',
+  '/api/og/review/(.*)',
+  '/api/og/test',
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

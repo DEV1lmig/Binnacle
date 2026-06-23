@@ -1,0 +1,122 @@
+/*
+ * Binnacle canonical design tokens (HUD aesthetic).
+ *
+ * Consumed by:
+ *   - web via `@import "@binnacle/design-tokens/theme.css"` in globals.css
+ *   - mobile via `@import "@binnacle/design-tokens/theme.css"` in global.css
+ *
+ * Tailwind v4 reads the `@theme` block and generates utilities such as
+ * `bg-surface`, `text-textMuted`, `border-borderLight`, `text-gold`, etc.
+ *
+ * NOTE: this file intentionally does NOT `@import "tailwindcss"`. The host
+ * app must import Tailwind once in its own global CSS so module resolution
+ * works correctly in a monorepo.
+ */
+
+@theme {
+  /* -------------------------------------------------------------------------
+   * Canonical HUD palette
+   * ------------------------------------------------------------------------- */
+  --color-bg: #0b0e14;
+  --color-bgAlt: #111620;
+  --color-surface: #161b26;
+  --color-border: #1e2636;
+  --color-borderLight: #2a3448;
+
+  --color-text: #e2e8f0;
+  --color-textMuted: #8494a7;
+  --color-textDim: #4a5568;
+
+  /* "Gold" in the codebase is the blue accent. */
+  --color-gold: #60a5fa;
+  --color-goldDim: #3b82f6;
+  --color-bloom: rgba(96, 165, 250, 0.08);
+
+  --color-cyan: #22d3ee;
+  --color-cyanDim: #06b6d4;
+
+  --color-accent: #a78bfa;
+  --color-accentDim: #7c3aed;
+
+  --color-green: #34d399;
+  --color-amber: #fbbf24;
+  --color-red: #ef4444;
+
+  /* -------------------------------------------------------------------------
+   * shadcn / legacy compatibility tokens (now rendered with HUD colors)
+   * ------------------------------------------------------------------------- */
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-text);
+  --color-primary: var(--color-gold);
+  --color-primary-foreground: var(--color-bg);
+  --color-secondary: var(--color-bgAlt);
+  --color-secondary-foreground: var(--color-text);
+  --color-muted: var(--color-bgAlt);
+  --color-muted-foreground: var(--color-textMuted);
+  --color-destructive: var(--color-red);
+  --color-destructive-foreground: var(--color-text);
+  --color-input: var(--color-bgAlt);
+  --color-ring: var(--color-gold);
+
+  /* -------------------------------------------------------------------------
+   * Status colors
+   * ------------------------------------------------------------------------- */
+  --color-status-playing: var(--color-green);
+  --color-status-completed: var(--color-amber);
+  --color-status-backlog: var(--color-gold);
+  --color-status-onhold: var(--color-amber);
+  --color-status-dropped: var(--color-red);
+
+  /* -------------------------------------------------------------------------
+   * Typography
+   * ------------------------------------------------------------------------- */
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+  --font-heading: "Outfit", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-none: 1;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+
+  /* -------------------------------------------------------------------------
+   * Spacing & radius — Tailwind default 4px scale, exposed as legacy vars too
+   * ------------------------------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* -------------------------------------------------------------------------
+   * Shadows
+   * ------------------------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.12);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+  --shadow-glow: 0 0 12px 0 var(--color-gold);
+}

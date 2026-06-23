@@ -1,0 +1,208 @@
+name: Build mobile (APK + IPA)
+
+# Builds the Expo app locally on GitHub runners (no EAS) and attaches the
+# Android APK and an UNSIGNED iOS IPA to a GitHub Release.
+#
+# Triggers:
+#   - push a tag like `v1.2.3`  -> builds + creates the release with binaries
+#   - manual run (workflow_dispatch) -> builds only, binaries as run artifacts
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   EXPO_PUBLIC_CONVEX_URL
+#   EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
+#   EXPO_PUBLIC_SHARE_BASE_URL
+#   EXPO_PUBLIC_FACEBOOK_APP_ID   (optional)
+#
+# Notes:
+#   - The Android APK is signed with the Expo-generated debug keystore, so it is
+#     standalone and installable. For Play Store / consistent update keys, wire a
+#     real upload keystore into the release build type.
+#   - The iOS IPA is UNSIGNED: install via AltStore / Sideloadly. It cannot be
+#     installed directly or via TestFlight without code signing.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  WORKING_DIR: apps/mobile
+  EXPO_PUBLIC_CONVEX_URL: ${{ secrets.EXPO_PUBLIC_CONVEX_URL }}
+  EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+  EXPO_PUBLIC_SHARE_BASE_URL: ${{ secrets.EXPO_PUBLIC_SHARE_BASE_URL }}
+  EXPO_PUBLIC_FACEBOOK_APP_ID: ${{ secrets.EXPO_PUBLIC_FACEBOOK_APP_ID }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        # node-linker=hoisted is required for native autolinking under pnpm.
+        run: pnpm install --frozen-lockfile --config.node-linker=hoisted
+
+      - name: Write .env
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          {
+            echo "EXPO_PUBLIC_CONVEX_URL=${EXPO_PUBLIC_CONVEX_URL}"
+            echo "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=${EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}"
+            echo "EXPO_PUBLIC_SHARE_BASE_URL=${EXPO_PUBLIC_SHARE_BASE_URL}"
+            echo "EXPO_PUBLIC_FACEBOOK_APP_ID=${EXPO_PUBLIC_FACEBOOK_APP_ID}"
+          } > .env
+
+      - name: Expo prebuild (android)
+        working-directory: ${{ env.WORKING_DIR }}
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build release APK
+        working-directory: ${{ env.WORKING_DIR }}/android
+        run: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Collect APK
+        run: |
+          TAG="${GITHUB_REF_NAME//\//-}"
+          mkdir -p dist
+          cp "${WORKING_DIR}/android/app/build/outputs/apk/release/app-release.apk" \
+             "dist/Binnacle-${TAG}.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: dist/*.apk
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  ios:
+    name: Build iOS IPA (unsigned)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --config.node-linker=hoisted
+
+      - name: Write .env
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          {
+            echo "EXPO_PUBLIC_CONVEX_URL=${EXPO_PUBLIC_CONVEX_URL}"
+            echo "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=${EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}"
+            echo "EXPO_PUBLIC_SHARE_BASE_URL=${EXPO_PUBLIC_SHARE_BASE_URL}"
+            echo "EXPO_PUBLIC_FACEBOOK_APP_ID=${EXPO_PUBLIC_FACEBOOK_APP_ID}"
+          } > .env
+
+      - name: Expo prebuild (ios)
+        working-directory: ${{ env.WORKING_DIR }}
+        run: npx expo prebuild --platform ios --no-install
+
+      - name: Install CocoaPods
+        working-directory: ${{ env.WORKING_DIR }}/ios
+        run: pod install --repo-update
+
+      - name: Build unsigned archive
+        working-directory: ${{ env.WORKING_DIR }}/ios
+        run: |
+          WORKSPACE="$(ls -d *.xcworkspace | head -1)"
+          SCHEME="$(basename "$WORKSPACE" .xcworkspace)"
+          echo "Workspace=$WORKSPACE Scheme=$SCHEME"
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Binnacle.xcarchive" \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS=""
+
+      - name: Package unsigned IPA
+        run: |
+          TAG="${GITHUB_REF_NAME//\//-}"
+          APP="$(ls -d "$RUNNER_TEMP/Binnacle.xcarchive/Products/Applications/"*.app | head -1)"
+          echo "App=$APP"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/Payload/"
+          mkdir -p dist
+          ( cd "$RUNNER_TEMP" && zip -qr "$GITHUB_WORKSPACE/dist/Binnacle-${TAG}-unsigned.ipa" Payload )
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: dist/*.ipa
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  release:
+    name: Publish GitHub Release
+    needs: [android, ios]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create / update release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.apk
+            artifacts/**/*.ipa
+          fail_on_unmatched_files: true
+          generate_release_notes: true

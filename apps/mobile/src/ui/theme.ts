@@ -1,21 +1,32 @@
+/**
+ * Mobile theme entry point — re-exports canonical tokens with legacy names
+ * so existing StyleSheet code keeps compiling while the app migrates to
+ * Tailwind className usage.
+ *
+ * Prefer importing from `@binnacle/design-tokens` for new code.
+ */
+
+import {
+  colors as canonicalColors,
+  spacing as canonicalSpacing,
+  radius as canonicalRadius,
+} from "@binnacle/design-tokens";
+
 export const colors = {
-  bg: "#0b1020",
-  surface: "#131a30",
-  surfaceAlt: "#1a2340",
-  border: "#2d3b66",
-  textPrimary: "#f3f5ff",
-  textSecondary: "#a8b2d6",
-  accent: "#4cc9f0",
-  accentMuted: "#1f8ebd",
-  success: "#2dd4bf",
-  danger: "#f97373",
-  warning: "#f59e0b",
+  bg: canonicalColors.bg,
+  surface: canonicalColors.surface,
+  surfaceAlt: canonicalColors.bgAlt,
+  border: canonicalColors.border,
+  textPrimary: canonicalColors.text,
+  textSecondary: canonicalColors.textMuted,
+  accent: canonicalColors.gold,
+  accentMuted: canonicalColors.goldDim,
+  success: canonicalColors.green,
+  danger: canonicalColors.red,
+  warning: canonicalColors.amber,
 } as const;
 
-export const spacing = {
-  xs: 6,
-  sm: 10,
-  md: 14,
-  lg: 20,
-  xl: 28,
-} as const;
+export const spacing = canonicalSpacing;
+export const radius = canonicalRadius;
+
+export { STATUS_COLORS } from "@binnacle/design-tokens";

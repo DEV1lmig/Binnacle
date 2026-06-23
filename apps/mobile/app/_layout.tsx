@@ -1,3 +1,4 @@
+import "@/src/global.css";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -15,7 +16,12 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="game/[id]" />
+            <Stack.Screen name="review/new" />
             <Stack.Screen name="review/[id]" />
+            <Stack.Screen
+              name="share-story/[id]"
+              options={{ presentation: "modal" }}
+            />
             <Stack.Screen name="user/[username]" />
             <Stack.Screen name="friends/index" />
             <Stack.Screen name="settings/index" />

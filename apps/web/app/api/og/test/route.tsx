@@ -1,0 +1,10 @@
+import { ImageResponse } from "next/og";
+
+export const runtime = "nodejs";
+
+export async function GET() {
+  return new ImageResponse(
+    <div style={{ width: 100, height: 100, backgroundColor: "red" }}>Test</div>,
+    { width: 100, height: 100 }
+  );
+}

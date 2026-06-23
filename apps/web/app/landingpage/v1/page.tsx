@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { C } from "@/app/lib/design-system";
 import {
   LayoutDashboard,
   Star,
@@ -175,8 +176,8 @@ export default function LandingPageV1() {
             0deg,
             transparent,
             transparent 2px,
-            rgba(102, 192, 244, 0.03) 2px,
-            rgba(102, 192, 244, 0.03) 3px
+            color-mix(in srgb, var(--color-gold) 3%, transparent) 2px,
+            color-mix(in srgb, var(--color-gold) 3%, transparent) 3px
           );
           background-size: 100% 6px;
           animation: scanline 8s linear infinite;
@@ -191,8 +192,8 @@ export default function LandingPageV1() {
 
         /* Glow pulse on CTAs */
         @keyframes glowPulse {
-          0%, 100% { box-shadow: 0 0 20px rgba(102, 192, 244, 0.2); }
-          50% { box-shadow: 0 0 35px rgba(102, 192, 244, 0.4); }
+          0%, 100% { box-shadow: 0 0 20px color-mix(in srgb, var(--color-gold) 20%, transparent); }
+          50% { box-shadow: 0 0 35px color-mix(in srgb, var(--color-gold) 40%, transparent); }
         }
         .glow-pulse:hover { animation: glowPulse 2s ease-in-out infinite; }
 
@@ -208,7 +209,7 @@ export default function LandingPageV1() {
           inset: 0;
           border-radius: 16px;
           padding: 1px;
-          background: linear-gradient(135deg, #66c0f4, #e1b168, #66c0f4);
+          background: linear-gradient(135deg, var(--color-gold), var(--color-amber), var(--color-gold));
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask-composite: exclude;
@@ -222,7 +223,7 @@ export default function LandingPageV1() {
           left: 24px;
           right: 24px;
           height: 2px;
-          background: linear-gradient(90deg, #66c0f4, #e1b168);
+          background: linear-gradient(90deg, var(--color-gold), var(--color-amber));
           z-index: 0;
         }
       `}</style>
@@ -259,10 +260,10 @@ export default function LandingPageV1() {
                 alignItems: "center",
                 gap: 8,
                 textDecoration: "none",
-                color: "#E8EAED",
+                color: C.text,
               }}
             >
-              <Gamepad2 size={24} color="#66c0f4" />
+              <Gamepad2 size={24} color="var(--color-gold)" />
               <span className="font-display" style={{ fontSize: 20, letterSpacing: "-0.02em" }}>
                 Binnacle
               </span>
@@ -271,7 +272,7 @@ export default function LandingPageV1() {
               <Link
                 href="/sign-in"
                 style={{
-                  color: "#8B8D93",
+                  color: C.textMuted,
                   textDecoration: "none",
                   fontSize: 14,
                   padding: "8px 16px",
@@ -284,8 +285,8 @@ export default function LandingPageV1() {
               <Link
                 href="/sign-up"
                 style={{
-                  background: "#66c0f4",
-                  color: "#0C0D0F",
+                  background: "var(--color-gold)",
+                  color: C.bg,
                   textDecoration: "none",
                   fontSize: 14,
                   fontWeight: 700,
@@ -323,7 +324,7 @@ export default function LandingPageV1() {
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
-                color: "#66c0f4",
+                color: "var(--color-gold)",
                 marginBottom: 16,
               }}
             >
@@ -340,13 +341,13 @@ export default function LandingPageV1() {
             >
               Your Gaming
               <br />
-              <span style={{ color: "#66c0f4" }}>Command Center</span>
+              <span style={{ color: "var(--color-gold)" }}>Command Center</span>
             </h1>
             <p
               style={{
                 fontSize: 18,
                 lineHeight: 1.6,
-                color: "#8B8D93",
+                color: C.textMuted,
                 margin: "0 0 36px",
                 maxWidth: 440,
               }}
@@ -362,8 +363,8 @@ export default function LandingPageV1() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  background: "#66c0f4",
-                  color: "#0C0D0F",
+                  background: "var(--color-gold)",
+                  color: C.bg,
                   fontWeight: 700,
                   fontSize: 15,
                   padding: "14px 28px",
@@ -381,7 +382,7 @@ export default function LandingPageV1() {
                   alignItems: "center",
                   gap: 8,
                   background: "transparent",
-                  color: "#E8EAED",
+                  color: C.text,
                   fontWeight: 600,
                   fontSize: 15,
                   padding: "14px 28px",
@@ -391,15 +392,15 @@ export default function LandingPageV1() {
                   transition: "border-color 0.2s, background 0.2s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#66c0f4";
-                  e.currentTarget.style.background = "rgba(102,192,244,0.06)";
+                  e.currentTarget.style.borderColor = "var(--color-gold)";
+                  e.currentTarget.style.background = `${C.gold}0F`;
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "#1E2023";
+                  e.currentTarget.style.borderColor = C.border;
                   e.currentTarget.style.background = "transparent";
                 }}
               >
-                <Play size={14} fill="#E8EAED" /> Watch Demo
+                <Play size={14} fill={C.text} /> Watch Demo
               </button>
             </div>
           </div>
@@ -434,7 +435,7 @@ export default function LandingPageV1() {
             >
               Everything you need
             </h2>
-            <p style={{ color: "#8B8D93", fontSize: 16, margin: 0 }}>
+            <p style={{ color: C.textMuted, fontSize: 16, margin: 0 }}>
               Built for gamers who take their hobby seriously.
             </p>
           </div>
@@ -553,7 +554,7 @@ export default function LandingPageV1() {
             >
               Ready to take command?
             </h2>
-            <p style={{ color: "#8B8D93", fontSize: 16, margin: "0 0 36px", maxWidth: 420, marginInline: "auto" }}>
+            <p style={{ color: C.textMuted, fontSize: 16, margin: "0 0 36px", maxWidth: 420, marginInline: "auto" }}>
               Join thousands of gamers already organizing their libraries and sharing discoveries.
             </p>
             <Link
@@ -563,8 +564,8 @@ export default function LandingPageV1() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                background: "#66c0f4",
-                color: "#0C0D0F",
+                background: "var(--color-gold)",
+                color: C.bg,
                 fontWeight: 700,
                 fontSize: 16,
                 padding: "16px 36px",
@@ -598,16 +599,16 @@ export default function LandingPageV1() {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Gamepad2 size={18} color="#66c0f4" />
-              <span style={{ fontSize: 14, color: "#8B8D93" }}>
+              <Gamepad2 size={18} color="var(--color-gold)" />
+              <span style={{ fontSize: 14, color: C.textMuted }}>
                 &copy; {new Date().getFullYear()} Binnacle
               </span>
             </div>
             <div style={{ display: "flex", gap: 24 }}>
-              <Link href="/sign-in" style={{ color: "#8B8D93", textDecoration: "none", fontSize: 13 }}>
+              <Link href="/sign-in" style={{ color: C.textMuted, textDecoration: "none", fontSize: 13 }}>
                 Sign In
               </Link>
-              <Link href="/sign-up" style={{ color: "#8B8D93", textDecoration: "none", fontSize: 13 }}>
+              <Link href="/sign-up" style={{ color: C.textMuted, textDecoration: "none", fontSize: 13 }}>
                 Sign Up
               </Link>
             </div>
@@ -654,13 +655,13 @@ function DashboardMock({
           style={{
             transform: perspective,
             transition: "transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-            background: "#141517",
+            background: C.bgAlt,
             borderRadius: 16,
             border: "1px solid #1E2023",
             padding: 20,
             position: "relative",
             overflow: "hidden",
-            boxShadow: "0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(102,192,244,0.08)",
+            boxShadow: `0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px ${C.gold}14`,
           }}
         >
           {/* Scanline overlay */}
@@ -679,10 +680,10 @@ function DashboardMock({
           >
             <div style={{ display: "flex", gap: 6 }}>
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#e05252" }} />
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#e1b168" }} />
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--color-amber)" }} />
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#52c97a" }} />
             </div>
-            <span style={{ fontSize: 12, color: "#8B8D93", marginLeft: 8 }}>
+            <span style={{ fontSize: 12, color: C.textMuted, marginLeft: 8 }}>
               binnacle.gg/dashboard
             </span>
           </div>
@@ -706,7 +707,7 @@ function DashboardMock({
                       fontWeight: 700,
                       textTransform: "uppercase",
                       letterSpacing: "0.06em",
-                      color: "#8B8D93",
+                      color: C.textMuted,
                       marginBottom: 8,
                       display: "flex",
                       alignItems: "center",
@@ -716,11 +717,11 @@ function DashboardMock({
                     <span>{col}</span>
                     <span
                       style={{
-                        background: "#1E2023",
+                        background: C.border,
                         borderRadius: 4,
                         padding: "1px 6px",
                         fontSize: 10,
-                        color: "#66c0f4",
+                        color: "var(--color-gold)",
                       }}
                     >
                       {games.length}
@@ -731,7 +732,7 @@ function DashboardMock({
                       <div
                         key={g.title}
                         style={{
-                          background: "#1A1B1E",
+                          background: C.surface,
                           borderRadius: 8,
                           padding: "10px 12px",
                           border: "1px solid #1E2023",
@@ -749,7 +750,7 @@ function DashboardMock({
                             flexShrink: 0,
                           }}
                         />
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "#E8EAED" }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>
                           {g.title}
                         </span>
                       </div>
@@ -783,12 +784,12 @@ function FeatureCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        background: "#141517",
+        background: C.bgAlt,
         borderRadius: 14,
-        border: `1px solid ${isHovered ? "rgba(102,192,244,0.3)" : "#1E2023"}`,
+        border: `1px solid ${isHovered ? `${C.gold}4D` : C.border}`,
         padding: large ? "32px 28px" : "24px 22px",
         transition: "border-color 0.3s, box-shadow 0.3s",
-        boxShadow: isHovered ? "0 0 30px rgba(102,192,244,0.08)" : "none",
+        boxShadow: isHovered ? `0 0 30px ${C.gold}14` : "none",
         display: "flex",
         flexDirection: "column",
         gap: 14,
@@ -799,13 +800,13 @@ function FeatureCard({
           width: 40,
           height: 40,
           borderRadius: 10,
-          background: "rgba(102,192,244,0.1)",
+          background: `${C.gold}1A`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Icon size={20} color="#66c0f4" />
+        <Icon size={20} color="var(--color-gold)" />
       </div>
       <h3
         className="font-display"
@@ -813,7 +814,7 @@ function FeatureCard({
       >
         {title}
       </h3>
-      <p style={{ color: "#8B8D93", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{desc}</p>
+      <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{desc}</p>
 
       {large && <MiniChart />}
     </div>
@@ -825,7 +826,7 @@ function MiniChart() {
 
   return (
     <div style={{ marginTop: 8 }}>
-      <div style={{ fontSize: 11, color: "#8B8D93", marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 8 }}>
         Games added this year
       </div>
       <svg
@@ -841,7 +842,7 @@ function MiniChart() {
             width={14}
             height={h * 0.6}
             rx={3}
-            fill={i === bars.length - 1 ? "#66c0f4" : "#1E2023"}
+            fill={i === bars.length - 1 ? "var(--color-gold)" : C.border}
             style={{ transition: "fill 0.3s" }}
           />
         ))}
@@ -871,13 +872,13 @@ function StatItem({
           fontSize: "clamp(32px, 4vw, 48px)",
           letterSpacing: "-0.03em",
           fontVariantNumeric: "tabular-nums",
-          color: "#E8EAED",
+          color: C.text,
         }}
       >
         {count.toLocaleString()}
         {suffix}
       </div>
-      <div style={{ fontSize: 14, color: "#8B8D93", marginTop: 4 }}>{label}</div>
+      <div style={{ fontSize: 14, color: C.textMuted, marginTop: 4 }}>{label}</div>
     </div>
   );
 }
@@ -900,15 +901,15 @@ function TimelineStep({
           width: 48,
           height: 48,
           borderRadius: "50%",
-          background: "linear-gradient(135deg, #66c0f4, #4a9fd4)",
+          background: "linear-gradient(135deg, var(--color-gold), var(--color-goldDim))",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           margin: "0 auto 16px",
-          boxShadow: "0 0 20px rgba(102,192,244,0.2)",
+          boxShadow: `0 0 20px ${C.gold}33`,
         }}
       >
-        <Icon size={20} color="#0C0D0F" />
+        <Icon size={20} color={C.bg} />
       </div>
       <div
         className="font-display"
@@ -916,7 +917,7 @@ function TimelineStep({
           fontSize: 11,
           textTransform: "uppercase",
           letterSpacing: "0.06em",
-          color: "#66c0f4",
+          color: "var(--color-gold)",
           marginBottom: 6,
         }}
       >
@@ -928,7 +929,7 @@ function TimelineStep({
       >
         {title}
       </h3>
-      <p style={{ color: "#8B8D93", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{desc}</p>
+      <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{desc}</p>
     </div>
   );
 }

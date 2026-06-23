@@ -6,18 +6,19 @@ type UserRowProps = {
   name: string;
   username: string;
   trailing?: string;
+  style?: import("react-native").StyleProp<import("react-native").ViewStyle>;
   onPress?: () => void;
 };
 
-export function UserRow({ name, username, trailing, onPress }: UserRowProps) {
+export function UserRow({ name, username, trailing, style, onPress }: UserRowProps) {
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={styles.row}>
+    <Pressable onPress={onPress} disabled={!onPress} style={[styles.row, style]}>
       <View style={styles.avatar}>
         <Body style={styles.avatarText}>{name.slice(0, 1).toUpperCase()}</Body>
       </View>
       <View style={styles.textWrap}>
-        <Body style={styles.name}>{name}</Body>
-        <Body style={styles.username}>@{username}</Body>
+        <Body style={styles.name} numberOfLines={1}>{name}</Body>
+        <Body style={styles.username} numberOfLines={1}>@{username}</Body>
       </View>
       {trailing ? <Body style={styles.trailing}>{trailing}</Body> : null}
     </Pressable>

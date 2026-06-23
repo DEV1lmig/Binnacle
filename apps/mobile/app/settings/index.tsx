@@ -2,13 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@binnacle/convex-generated/api";
-import { Body, Button, Heading, Input, Screen } from "@/src/ui/primitives";
+import { Body, Button, Heading, Input, Screen, SectionTag } from "@/src/ui/primitives";
 import { LoadingState } from "@/src/ui/LoadingState";
 import { UserRow } from "@/src/ui/UserRow";
-import { spacing } from "@/src/ui/theme";
+import { colors, spacing } from "@/src/ui/theme";
 
 type Visibility = "public" | "friends" | "private";
 type FriendRequestPolicy = "everyone" | "friends_of_friends" | "nobody";
+
+type NotificationPreferences = {
+  email: { newFollower: boolean; friendRequest: boolean; likes: boolean; comments: boolean };
+  push: { newFollower: boolean; friendRequest: boolean; likes: boolean; comments: boolean };
+};
 
 const VISIBILITIES: Visibility[] = ["public", "friends", "private"];
 const FRIEND_REQUEST_POLICIES: FriendRequestPolicy[] = ["everyone", "friends_of_friends", "nobody"];
@@ -17,10 +22,12 @@ export default function SettingsPage() {
   const preferences = useQuery(api.settings.getPreferences);
   const privacy = useQuery(api.privacy.getSettings);
   const blocked = useQuery(api.blocking.listBlocked, { limit: 100 });
+  const currentUser = useQuery(api.users.current);
 
   const updatePreferences = useMutation(api.settings.updatePreferences);
   const updatePrivacy = useMutation(api.privacy.updateSettings);
   const updateUsername = useMutation(api.settings.updateUsername);
+  const updateNotifications = useMutation(api.notifications.updatePreferences);
   const checkUsernameAvailable = useQuery(
     api.settings.checkUsernameAvailable,
     { username: "placeholder" }
@@ -37,6 +44,16 @@ export default function SettingsPage() {
   const [showStats, setShowStats] = useState(true);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [username, setUsername] = useState("");
+
+  const defaultNotifications: NotificationPreferences = {
+    email: { newFollower: true, friendRequest: true, likes: true, comments: true },
+    push: { newFollower: true, friendRequest: true, likes: true, comments: true },
+  };
+
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({
+    ...defaultNotifications,
+  });
+  const [notifsHydrated, setNotifsHydrated] = useState(false);
 
   useEffect(() => {
     if (!preferences) {
@@ -59,6 +76,28 @@ export default function SettingsPage() {
     setShowOnlineStatus(privacy.showOnlineStatus);
   }, [privacy]);
 
+  useEffect(() => {
+    if (currentUser === undefined || notifsHydrated) {
+      return;
+    }
+    if (currentUser?.notificationPreferences) {
+      setNotificationPrefs(currentUser.notificationPreferences as NotificationPreferences);
+    } else {
+      setNotificationPrefs(defaultNotifications);
+    }
+    setNotifsHydrated(true);
+  }, [currentUser, notifsHydrated]);
+
+  const toggleNotif = (
+    channel: "email" | "push",
+    key: "newFollower" | "friendRequest" | "likes" | "comments"
+  ) => {
+    setNotificationPrefs((prev) => ({
+      ...prev,
+      [channel]: { ...prev[channel], [key]: !prev[channel][key] },
+    }));
+  };
+
   const usernameCheck = useQuery(
     api.settings.checkUsernameAvailable,
     username.trim() ? { username: username.trim().toLowerCase() } : "skip"
@@ -74,7 +113,7 @@ export default function SettingsPage() {
     return usernameCheck.available ? "Username is available" : usernameCheck.reason ?? "Unavailable";
   }, [username, usernameCheck]);
 
-  if (preferences === undefined || privacy === undefined || blocked === undefined) {
+  if (preferences === undefined || privacy === undefined || blocked === undefined || currentUser === undefined) {
     return <LoadingState label="Loading settings..." />;
   }
 
@@ -98,9 +137,10 @@ export default function SettingsPage() {
         showStats,
         showOnlineStatus,
       });
-      Alert.alert("Saved", "Privacy settings updated.");
+      await updateNotifications({ preferences: notificationPrefs });
+      Alert.alert("Saved", "Privacy and notification settings updated.");
     } catch (error: any) {
-      Alert.alert("Could not save privacy", error?.message ?? "Please try again.");
+      Alert.alert("Could not save settings", error?.message ?? "Please try again.");
     }
   };
 
@@ -124,7 +164,7 @@ export default function SettingsPage() {
         <Heading>Settings</Heading>
 
         <View style={styles.section}>
-          <Body style={styles.sectionTitle}>Username</Body>
+          <SectionTag label="Username" color={colors.accent} />
           <Input
             value={username}
             onChangeText={setUsername}
@@ -137,7 +177,7 @@ export default function SettingsPage() {
         </View>
 
         <View style={styles.section}>
-          <Body style={styles.sectionTitle}>Preferences</Body>
+          <SectionTag label="Preferences" color={colors.warning} />
           <Body style={styles.fieldLabel}>Theme</Body>
           <View style={styles.inlineButtons}>
             {(["system", "light", "dark"] as const).map((option) => (
@@ -165,7 +205,7 @@ export default function SettingsPage() {
         </View>
 
         <View style={styles.section}>
-          <Body style={styles.sectionTitle}>Privacy</Body>
+          <SectionTag label="Privacy" color={colors.success} />
 
           <Body style={styles.fieldLabel}>Profile Visibility</Body>
           <View style={styles.inlineButtons}>
@@ -247,11 +287,30 @@ export default function SettingsPage() {
             />
           </View>
 
-          <Button label="Save Privacy" onPress={() => void savePrivacy()} />
+          <View style={styles.divider} />
+          <SectionTag label="Notifications" color={colors.accentMuted} />
+
+          <Body style={styles.fieldLabel}>Push Notifications</Body>
+          <View style={styles.inlineButtons}>
+            <Button label="New Followers" variant={notificationPrefs.push.newFollower ? "primary" : "secondary"} onPress={() => toggleNotif("push", "newFollower")} />
+            <Button label="Friend Requests" variant={notificationPrefs.push.friendRequest ? "primary" : "secondary"} onPress={() => toggleNotif("push", "friendRequest")} />
+            <Button label="Likes" variant={notificationPrefs.push.likes ? "primary" : "secondary"} onPress={() => toggleNotif("push", "likes")} />
+            <Button label="Comments" variant={notificationPrefs.push.comments ? "primary" : "secondary"} onPress={() => toggleNotif("push", "comments")} />
+          </View>
+
+          <Body style={styles.fieldLabel}>Email Notifications</Body>
+          <View style={styles.inlineButtons}>
+            <Button label="New Followers" variant={notificationPrefs.email.newFollower ? "primary" : "secondary"} onPress={() => toggleNotif("email", "newFollower")} />
+            <Button label="Friend Requests" variant={notificationPrefs.email.friendRequest ? "primary" : "secondary"} onPress={() => toggleNotif("email", "friendRequest")} />
+            <Button label="Likes" variant={notificationPrefs.email.likes ? "primary" : "secondary"} onPress={() => toggleNotif("email", "likes")} />
+            <Button label="Comments" variant={notificationPrefs.email.comments ? "primary" : "secondary"} onPress={() => toggleNotif("email", "comments")} />
+          </View>
+
+          <Button label="Save Privacy & Notifications" onPress={() => void savePrivacy()} />
         </View>
 
         <View style={styles.section}>
-          <Body style={styles.sectionTitle}>Blocked Users</Body>
+          <SectionTag label="Blocked Users" color={colors.danger} />
           {blocked.length === 0 ? (
             <Body>No blocked users.</Body>
           ) : (
@@ -281,14 +340,11 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+    marginTop: spacing.md,
   },
   fieldLabel: {
     fontWeight: "600",
-    color: "#f3f5ff",
+    color: colors.textPrimary,
   },
   helper: {
     fontSize: 12,
@@ -297,10 +353,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.md,
   },
   blockedCard: {
     borderWidth: 1,
-    borderColor: "#2d3b66",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: spacing.sm,
     gap: spacing.sm,

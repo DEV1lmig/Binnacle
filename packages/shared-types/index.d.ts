@@ -64,3 +64,48 @@ export type ReportListItem = {
   target: ReportListTarget | null;
   targetUser: (PublicUserSummary & { moderationStatus?: ModerationStatus }) | null;
 };
+
+// ---------------------------------------------------------------------------
+// Review share card (OG image / social sharing)
+// ---------------------------------------------------------------------------
+
+export type ShareCardFormat = "story" | "square" | "wide";
+
+export type ShareCardAccent = "gold" | "cyan" | "accent" | "green" | "amber";
+
+export type ShareCardOptions = {
+  format: ShareCardFormat;
+  accent: ShareCardAccent;
+  showText: boolean;
+  showPoster: boolean;
+};
+
+export const SHARE_CARD_FORMATS: ShareCardFormat[];
+export const SHARE_CARD_ACCENTS: ShareCardAccent[];
+
+export const DEFAULT_SHARE_OPTIONS: ShareCardOptions;
+
+export const SHARE_CARD_DIMENSIONS: Record<
+  ShareCardFormat,
+  { width: number; height: number }
+>;
+
+export const SHARE_ACCENT_COLORS: Record<ShareCardAccent, string>;
+
+export function ratingToFiveStar(ratingOutOf10: number | undefined | null): number;
+
+export function buildShareImagePath(
+  reviewId: string,
+  options?: Partial<ShareCardOptions>
+): string;
+
+export function getShareImageDimensions(format: ShareCardFormat): {
+  width: number;
+  height: number;
+};
+
+export function getShareCardAccentColor(accent: ShareCardAccent): string;
+
+export function parseShareOptions(
+  searchParams: { get(name: string): string | null } | URLSearchParams
+): ShareCardOptions;

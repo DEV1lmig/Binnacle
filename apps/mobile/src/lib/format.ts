@@ -1,3 +1,7 @@
+import {
+  ratingToFiveStar as sharedRatingToFiveStar,
+} from "@binnacle/shared-types";
+
 export function formatNumber(value: number | undefined | null) {
   if (!value || Number.isNaN(value)) {
     return "0";
@@ -27,10 +31,4 @@ export function formatDate(timestamp: number | undefined | null) {
   });
 }
 
-export function ratingToFiveStar(ratingOutOf10: number | undefined | null) {
-  if (!ratingOutOf10 || Number.isNaN(ratingOutOf10)) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(5, ratingOutOf10 / 2));
-}
+export const ratingToFiveStar = sharedRatingToFiveStar;

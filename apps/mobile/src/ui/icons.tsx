@@ -1,36 +1,48 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { 
+  Home, 
+  Compass, 
+  Library, 
+  Bell, 
+  User,
+  LucideIcon 
+} from "lucide-react-native";
 import { colors } from "./theme";
 
 type IconProps = {
-  symbol: string;
+  icon: LucideIcon;
   active?: boolean;
 };
 
-export function TabIcon({ symbol, active }: IconProps) {
+export function TabIcon({ icon: Icon, active }: IconProps) {
   return (
     <View style={[styles.wrap, active && styles.wrapActive]}>
-      <Text style={[styles.label, active && styles.labelActive]}>{symbol}</Text>
+      <Icon 
+        size={22} 
+        strokeWidth={active ? 2.5 : 2} 
+        color={active ? colors.accent : colors.textSecondary} 
+      />
     </View>
   );
 }
 
+export const TabIcons = {
+  feed: Home,
+  discover: Compass,
+  backlog: Library,
+  notifications: Bell,
+  profile: User,
+};
+
 const styles = StyleSheet.create({
   wrap: {
-    width: 24,
-    height: 24,
+    width: 44,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
   },
   wrapActive: {
-    backgroundColor: colors.surfaceAlt,
-  },
-  label: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  labelActive: {
-    color: colors.accent,
+    backgroundColor: `${colors.accent}15`, // subtle tint of accent
   },
 });

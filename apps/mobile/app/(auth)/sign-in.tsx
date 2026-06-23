@@ -1,17 +1,62 @@
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
-import { Link, useRouter } from "expo-router";
-import { useSignIn } from "@clerk/clerk-expo";
-import { Body, Button, Heading, Input, Screen } from "@/src/ui/primitives";
-import { colors, spacing } from "@/src/ui/theme";
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, Text, Pressable } from "react-native";
+import * as Linking from "expo-linking";
+import { useRouter } from "expo-router";
+import { useSSO, useSignIn } from "@clerk/clerk-expo";
+import {
+  AuthScreen,
+  AuthTag,
+  AuthButton,
+  AuthInput,
+  AuthDivider,
+  authTheme,
+} from "@/src/features/auth/AuthComponents";
+
+type OAuthProvider = "google" | "discord";
 
 export default function SignInScreen() {
   const router = useRouter();
   const { isLoaded, signIn, setActive } = useSignIn();
+  const { startSSOFlow } = useSSO();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [oauthProvider, setOauthProvider] = useState<OAuthProvider | null>(null);
+
+  const onOAuthPress = async (provider: OAuthProvider) => {
+    if (!isLoaded) {
+      return;
+    }
+
+    const strategy = provider === "google" ? "oauth_google" : "oauth_discord";
+
+    try {
+      setOauthProvider(provider);
+
+      const { createdSessionId, setActive: setActiveFromSSO } = await startSSOFlow({
+        strategy,
+        redirectUrl: Linking.createURL("/(auth)/sign-in"),
+      });
+
+      if (createdSessionId && setActiveFromSSO) {
+        await setActiveFromSSO({ session: createdSessionId });
+        router.replace("/(tabs)/feed");
+        return;
+      }
+
+      Alert.alert(
+        "Sign in incomplete",
+        "We couldn't complete that social sign-in. Please try again."
+      );
+    } catch (error: any) {
+      const message =
+        error?.errors?.[0]?.longMessage ?? error?.errors?.[0]?.message ?? "Sign in failed.";
+      Alert.alert("Sign in failed", String(message));
+    } finally {
+      setOauthProvider(null);
+    }
+  };
 
   const onSubmit = async () => {
     if (!isLoaded) {
@@ -46,71 +91,149 @@ export default function SignInScreen() {
   };
 
   return (
-    <Screen style={styles.screen}>
+    <AuthScreen>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboardView}
       >
-        <View style={styles.header}>
-          <Heading style={styles.title}>Welcome back</Heading>
-          <Body>Sign in to continue tracking your backlog and reviews.</Body>
-        </View>
+        <ScrollView
+          bounces={false}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          <View style={styles.container}>
+            <View style={styles.header}>
+              <AuthTag label="Authentication Portal" />
+              <Text style={styles.title}>
+                Welcome back, <Text style={styles.titleHighlight}>archivist</Text>.
+              </Text>
+              <Text style={styles.subtitle}>
+                Your collection is waiting. Sign in to continue tracking, reviewing, and discovering.
+              </Text>
+            </View>
 
-        <View style={styles.form}>
-          <Input
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            label="Email or username"
-            value={identifier}
-            onChangeText={setIdentifier}
-            placeholder="player@example.com"
-          />
-          <Input
-            secureTextEntry
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="********"
-          />
-          <Button label="Sign In" onPress={onSubmit} loading={isSubmitting} />
-        </View>
+            <View style={styles.form}>
+              <View style={styles.oauthSection}>
+                <AuthButton
+                  label="Continue with Google"
+                  variant="secondary"
+                  onPress={() => void onOAuthPress("google")}
+                  loading={oauthProvider === "google"}
+                  disabled={isSubmitting || (oauthProvider !== null && oauthProvider !== "google")}
+                />
+                <AuthButton
+                  label="Continue with Discord"
+                  variant="secondary"
+                  onPress={() => void onOAuthPress("discord")}
+                  loading={oauthProvider === "discord"}
+                  disabled={isSubmitting || (oauthProvider !== null && oauthProvider !== "discord")}
+                />
+              </View>
 
-        <View style={styles.footer}>
-          <Body>Need an account?</Body>
-          <Link href="/(auth)/sign-up" style={styles.link}>
-            Create one
-          </Link>
-        </View>
+              <AuthDivider />
+
+              <AuthInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                label="Email or username"
+                value={identifier}
+                onChangeText={setIdentifier}
+                placeholder="you@example.com"
+              />
+              <AuthInput
+                secureTextEntry
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="********"
+                rightLabel={
+                  <Pressable onPress={() => {}}>
+                    <Text style={styles.forgotText}>Forgot?</Text>
+                  </Pressable>
+                }
+              />
+              
+              <View style={styles.submitWrap}>
+                <AuthButton
+                  label="Sign In"
+                  onPress={onSubmit}
+                  loading={isSubmitting}
+                  disabled={oauthProvider !== null}
+                />
+              </View>
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Don't have an account?</Text>
+              <Pressable onPress={() => router.push("/(auth)/sign-up")}>
+                <Text style={styles.link}>Create one</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </Screen>
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    justifyContent: "center",
-  },
   keyboardView: {
-    gap: spacing.lg,
+    flex: 1,
+  },
+  content: {
+    paddingBottom: 40,
+  },
+  container: {
+    paddingHorizontal: 24,
+    paddingTop: 48,
   },
   header: {
-    gap: spacing.sm,
+    marginBottom: 32,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
+    fontWeight: "300",
+    color: authTheme.textPrimary,
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  titleHighlight: {
+    color: authTheme.accent,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: authTheme.textSecondary,
+    lineHeight: 22,
   },
   form: {
-    gap: spacing.md,
+    gap: 16,
+  },
+  oauthSection: {
+    gap: 12,
+  },
+  submitWrap: {
+    marginTop: 8,
+  },
+  forgotText: {
+    color: authTheme.accent,
+    fontSize: 11,
   },
   footer: {
     flexDirection: "row",
-    gap: spacing.xs,
+    gap: 6,
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: 32,
+  },
+  footerText: {
+    color: authTheme.textSecondary,
+    fontSize: 12,
   },
   link: {
-    color: colors.accent,
-    fontSize: 14,
-    fontWeight: "700",
+    color: authTheme.accent,
+    fontSize: 12,
+    fontWeight: "500",
   },
 });

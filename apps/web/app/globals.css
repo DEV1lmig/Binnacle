@@ -1,42 +1,45 @@
 @layer theme, base, clerk, components, utilities;
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+@import "@binnacle/design-tokens/theme.css";
 
 /* Modern global styles for the web app
-   - Tailwind v4 single import
-   - CSS variables feeding Tailwind theme tokens
-   - Color-scheme aware defaults and lightweight reset
-   - Small utility classes used by the app
-*/
+ * - Tailwind v4 single import
+ * - CSS variables feeding Tailwind theme tokens
+ * - Color-scheme aware defaults and lightweight reset
+ * - Small utility classes used by the app
+ */
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    /* Binnacle Color Tokens - Steam-Inspired */
+    /* Legacy `--bkl-*` tokens remapped to the canonical HUD palette.
+     * These keep existing inline styles/classNames working while the
+     * canonical tokens live in @binnacle/design-tokens/theme.css. */
 
     /* Primary Palette (Brand & UI) */
-    --bkl-color-bg-primary: #1a181b;
-    --bkl-color-bg-secondary: #252e32;
-    --bkl-color-bg-tertiary: #38454c;
-    --bkl-color-accent-primary: #66c0f4;
-    --bkl-color-accent-hover: #80cfff;
-    --bkl-color-accent-secondary: #e1b168;
+    --bkl-color-bg-primary: #0b0e14;
+    --bkl-color-bg-secondary: #111620;
+    --bkl-color-bg-tertiary: #161b26;
+    --bkl-color-accent-primary: #60a5fa;
+    --bkl-color-accent-hover: #3b82f6;
+    --bkl-color-accent-secondary: #fbbf24;
 
     /* Neutral Palette (UI & Text) */
-    --bkl-color-text-primary: #bcc8ce;
-    --bkl-color-text-secondary: #9bacb5;
-    --bkl-color-text-disabled: #5d737e;
-    --bkl-color-border: #38454c;
+    --bkl-color-text-primary: #e2e8f0;
+    --bkl-color-text-secondary: #8494a7;
+    --bkl-color-text-disabled: #4a5568;
+    --bkl-color-border: #1e2636;
     --bkl-color-white: #f8fefb;
 
     /* Semantic Palette (Game Status) */
-    --bkl-color-status-playing: #229a5c;
-    --bkl-color-status-completed: #ffd700;
-    --bkl-color-status-backlog: #66c0f4;
-    --bkl-color-status-onhold: #f0e68c;
-    --bkl-color-status-dropped: #d7225e;
-    --bkl-color-feedback-error: #d7225e;
-    --bkl-color-feedback-success: #229a5c;
+    --bkl-color-status-playing: #34d399;
+    --bkl-color-status-completed: #fbbf24;
+    --bkl-color-status-backlog: #60a5fa;
+    --bkl-color-status-onhold: #fbbf24;
+    --bkl-color-status-dropped: #ef4444;
+    --bkl-color-feedback-error: #ef4444;
+    --bkl-color-feedback-success: #34d399;
 
     /* Font Stacks */
     --bkl-font-sans:
@@ -96,7 +99,7 @@
         0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
     --bkl-shadow-glow: 0 0 12px 0 var(--bkl-color-accent-primary);
 
-    /* Mapping to Shadcn tokens */
+    /* Shadcn token aliases */
     --background: var(--bkl-color-bg-primary);
     --foreground: var(--bkl-color-text-primary);
     --card: var(--bkl-color-bg-secondary);
@@ -119,115 +122,6 @@
     --radius: var(--bkl-radius-md);
 
     --font-size: 16px;
-}
-
-@theme {
-    --color-bg: {
-        primary: var(--bkl-color-bg-primary);
-        secondary: var(--bkl-color-bg-secondary);
-        tertiary: var(--bkl-color-bg-tertiary);
-    }
-    --color-text: {
-        primary: var(--bkl-color-text-primary);
-        secondary: var(--bkl-color-text-secondary);
-        disabled: var(--bkl-color-text-disabled);
-    }
-    --color-accent: {
-        primary: var(--bkl-color-accent-primary);
-        hover: var(--bkl-color-accent-hover);
-        secondary: var(--bkl-color-accent-secondary);
-    }
-    --color-status: {
-        playing: var(--bkl-color-status-playing);
-        completed: var(--bkl-color-status-completed);
-        backlog: var(--bkl-color-status-backlog);
-        onhold: var(--bkl-color-status-onhold);
-        dropped: var(--bkl-color-status-dropped);
-    }
-    --color-feedback: {
-        error: var(--bkl-color-feedback-error);
-        success: var(--bkl-color-feedback-success);
-    }
-    --color-border: var(--bkl-color-border);
-    --color-white: var(--bkl-color-white);
-    
-    /* Shadcn compatibility */
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-    --color-card: var(--card);
-    --color-card-foreground: var(--card-foreground);
-    --color-popover: var(--popover);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-primary: var(--primary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-secondary: var(--secondary);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-accent: var(--accent);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-muted: var(--muted);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-destructive: var(--destructive);
-    --color-destructive-foreground: var(--destructive-foreground);
-    --color-border: var(--border);
-    --color-input: var(--input);
-    --color-ring: var(--ring);
-    
-    /* Font Sizes */
-    --font-size-xs: var(--bkl-font-size-xs);
-    --font-size-sm: var(--bkl-font-size-sm);
-    --font-size-base: var(--bkl-font-size-base);
-    --font-size-lg: var(--bkl-font-size-lg);
-    --font-size-xl: var(--bkl-font-size-xl);
-    --font-size-2xl: var(--bkl-font-size-2xl);
-    --font-size-3xl: var(--bkl-font-size-3xl);
-    --font-size-4xl: var(--bkl-font-size-4xl);
-    --font-size-5xl: var(--bkl-font-size-5xl);
-    
-    /* Font Weights */
-    --font-weight-regular: var(--bkl-font-weight-regular);
-    --font-weight-medium: var(--bkl-font-weight-medium);
-    --font-weight-semibold: var(--bkl-font-weight-semibold);
-    --font-weight-bold: var(--bkl-font-weight-bold);
-    
-    /* Line Heights */
-    --line-height-none: var(--bkl-leading-none);
-    --line-height-tight: var(--bkl-leading-tight);
-    --line-height-snug: var(--bkl-leading-snug);
-    --line-height-normal: var(--bkl-leading-normal);
-    --line-height-relaxed: var(--bkl-leading-relaxed);
-    
-    /* Spacing */
-    --spacing-0: var(--bkl-space-0);
-    --spacing-1: var(--bkl-space-1);
-    --spacing-2: var(--bkl-space-2);
-    --spacing-3: var(--bkl-space-3);
-    --spacing-4: var(--bkl-space-4);
-    --spacing-5: var(--bkl-space-5);
-    --spacing-6: var(--bkl-space-6);
-    --spacing-8: var(--bkl-space-8);
-    --spacing-10: var(--bkl-space-10);
-    --spacing-12: var(--bkl-space-12);
-    --spacing-16: var(--bkl-space-16);
-    --spacing-24: var(--bkl-space-24);
-    
-    /* Border Radius */
-    --radius-none: var(--bkl-radius-none);
-    --radius-sm: var(--bkl-radius-sm);
-    --radius-md: var(--bkl-radius-md);
-    --radius-lg: var(--bkl-radius-lg);
-    --radius-full: var(--bkl-radius-full);
-    
-    /* Shadows */
-    --shadow-sm: var(--bkl-shadow-sm);
-    --shadow-md: var(--bkl-shadow-md);
-    --shadow-lg: var(--bkl-shadow-lg);
-    --shadow-glow: var(--bkl-shadow-glow);
-    
-    /* Computed radius values */
-    --radius-sm-calc: calc(var(--radius) - 4px);
-    --radius-md-calc: var(--radius);
-    --radius-lg-calc: calc(var(--radius) + 8px);
-    --radius-xl-calc: calc(var(--radius) + 12px);
 }
 
 @layer base {

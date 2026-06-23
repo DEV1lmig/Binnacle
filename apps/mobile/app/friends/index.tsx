@@ -1,10 +1,11 @@
+import { Inbox, Send, Users } from "lucide-react-native";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@binnacle/convex-generated/api";
-import { Body, Button, EmptyState, Heading, Screen } from "@/src/ui/primitives";
+import { Body, Button, EmptyState, Heading, Screen, SectionTag } from "@/src/ui/primitives";
 import { LoadingState } from "@/src/ui/LoadingState";
 import { UserRow } from "@/src/ui/UserRow";
-import { spacing } from "@/src/ui/theme";
+import { colors, spacing } from "@/src/ui/theme";
 
 export default function FriendsPage() {
   const friends = useQuery(api.friends.listFriends, { limit: 50 });
@@ -25,9 +26,9 @@ export default function FriendsPage() {
         <Heading>Friends</Heading>
 
         <View style={styles.section}>
-          <Body style={styles.sectionTitle}>Incoming Requests</Body>
+          <SectionTag label="Incoming Requests" color={colors.warning} />
           {incoming.length === 0 ? (
-            <EmptyState title="No incoming requests" />
+            <EmptyState icon={Inbox} title="No incoming requests" />
           ) : (
             incoming.map((request) => (
               <View key={`${request.requestId}`} style={styles.requestCard}>
@@ -53,9 +54,9 @@ export default function FriendsPage() {
         </View>
 
         <View style={styles.section}>
-          <Body style={styles.sectionTitle}>Outgoing Requests</Body>
+          <SectionTag label="Outgoing Requests" color={colors.accent} />
           {outgoing.length === 0 ? (
-            <EmptyState title="No outgoing requests" />
+            <EmptyState icon={Send} title="No outgoing requests" />
           ) : (
             outgoing.map((request) => (
               <View key={`${request.requestId}`} style={styles.requestCard}>
@@ -73,9 +74,9 @@ export default function FriendsPage() {
         </View>
 
         <View style={styles.section}>
-          <Body style={styles.sectionTitle}>Your Friends</Body>
+          <SectionTag label="Your Friends" color={colors.success} />
           {friends.length === 0 ? (
-            <EmptyState title="No friends yet" description="Find people from Discover and send requests." />
+            <EmptyState icon={Users} title="No friends yet" description="Find people from Discover and send requests." />
           ) : (
             friends.map((friend) => (
               <View key={`${friend._id}`} style={styles.requestCard}>
@@ -103,14 +104,12 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+    marginTop: spacing.md,
   },
   requestCard: {
     borderWidth: 1,
-    borderColor: "#2d3b66",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: spacing.sm,
     gap: spacing.sm,
