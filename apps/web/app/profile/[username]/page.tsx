@@ -14,7 +14,6 @@ import {
   MoreHorizontal,
   UserPlus,
   UserCheck,
-  UserX,
   Shield,
   ShieldOff,
   Clock,
@@ -30,12 +29,10 @@ import {
 } from "../components/ProfileDashboardContent";
 import {
   C,
-  FONT_HEADING,
   FONT_MONO,
   FONT_BODY,
-  FONT_IMPORT_URL,
 } from "@/app/lib/design-system";
-import { CornerMarkers, GrainOverlay } from "@/app/lib/design-primitives";
+import { CornerMarkers } from "@/app/lib/design-primitives";
 
 export default function UserProfilePage() {
   const router = useRouter();

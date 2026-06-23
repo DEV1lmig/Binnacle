@@ -17,7 +17,6 @@ import {
   AvatarImage,
 } from "@/app/components/ui/avatar";
 import {
-  TrendingUp,
   Users,
   Compass,
   PenLine,
@@ -44,6 +43,7 @@ import {
   HudBadge,
   HudDivider,
 } from "@/app/lib/design-primitives";
+import { useScrollReveal } from "@/app/lib/useScrollReveal";
 
 type ActivityTab = "community" | "friends";
 
@@ -59,55 +59,9 @@ const PLACEHOLDER_GAMES = [
 ];
 
 // ---------------------------------------------------------------------------
-// Scroll-reveal hook
-// ---------------------------------------------------------------------------
-function useReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) {
-      setVisible(true);
-      setReady(true);
-      return;
-    }
-
-    // Mark as ready so CSS can apply opacity: 0
-    setReady(true);
-
-    // If already in viewport, reveal immediately
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) {
-      // Small delay so the transition actually plays
-      requestAnimationFrame(() => setVisible(true));
-      return;
-    }
-
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.08 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return { ref, className: ready ? `feed-reveal ${visible ? "visible" : ""}` : "" };
-}
-
-// ---------------------------------------------------------------------------
 // Horizontal carousel controls
 // ---------------------------------------------------------------------------
-function useCarousel() {
-  const scrollRef = useRef<HTMLDivElement>(null);
+function useCarousel(scrollRef: React.RefObject<HTMLDivElement | null>) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -116,7 +70,7 @@ function useCarousel() {
     if (!el) return;
     setCanScrollLeft(el.scrollLeft > 2);
     setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
-  }, []);
+  }, [scrollRef]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -129,7 +83,7 @@ function useCarousel() {
       el.removeEventListener("scroll", checkScroll);
       ro.disconnect();
     };
-  }, [checkScroll]);
+  }, [checkScroll, scrollRef]);
 
   const scroll = (dir: "left" | "right") => {
     const el = scrollRef.current;
@@ -140,7 +94,7 @@ function useCarousel() {
     });
   };
 
-  return { scrollRef, canScrollLeft, canScrollRight, scroll };
+  return { canScrollLeft, canScrollRight, scroll };
 }
 
 // ---------------------------------------------------------------------------
@@ -382,11 +336,16 @@ export default function FeedPage() {
         self.findIndex((g) => g._id === game._id) === index
     );
 
-  const heroReveal = useReveal();
-  const trendingReveal = useReveal();
-  const activityReveal = useReveal();
-  const recommendReveal = useReveal();
-  const carousel = useCarousel();
+  const heroRef = useRef<HTMLDivElement>(null);
+  const heroReveal = useScrollReveal(heroRef, "feed-reveal");
+  const trendingRef = useRef<HTMLDivElement>(null);
+  const trendingReveal = useScrollReveal(trendingRef, "feed-reveal");
+  const activityRef = useRef<HTMLDivElement>(null);
+  const activityReveal = useScrollReveal(activityRef, "feed-reveal");
+  const recommendRef = useRef<HTMLDivElement>(null);
+  const recommendReveal = useScrollReveal(recommendRef, "feed-reveal");
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const carousel = useCarousel(carouselRef);
 
   if (isUserLoading || !currentUser) {
     return <FeedPageSkeleton />;
@@ -473,8 +432,8 @@ export default function FeedPage() {
       <div className="relative z-10">
         {/* ─── Hero / Greeting Bar ─── */}
         <div
-          ref={heroReveal.ref}
-          className={heroReveal.className}
+          ref={heroRef}
+          className={heroReveal}
         >
           <div
             style={{
@@ -598,8 +557,8 @@ export default function FeedPage() {
         <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-8">
           {/* ─── Trending Carousel ─── */}
           <div
-            ref={trendingReveal.ref}
-            className={`${trendingReveal.className} mb-8 md:mb-10`}
+            ref={trendingRef}
+            className={`${trendingReveal} mb-8 md:mb-10`}
           >
             <SectionHeader
               title="Trending on Binnacle"
@@ -670,7 +629,7 @@ export default function FeedPage() {
               )}
 
               <div
-                ref={carousel.scrollRef}
+                ref={carouselRef}
                 className="feed-carousel flex gap-3 overflow-x-auto pb-2"
               >
                 {isLoading
@@ -783,8 +742,8 @@ export default function FeedPage() {
             <div className="space-y-8 md:space-y-10 min-w-0">
               {/* Activity Feed */}
               <div
-                ref={activityReveal.ref}
-                className={activityReveal.className}
+                ref={activityRef}
+                className={activityReveal}
               >
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
@@ -874,8 +833,8 @@ export default function FeedPage() {
 
               {/* Recommendations */}
               <div
-                ref={recommendReveal.ref}
-                className={recommendReveal.className}
+                ref={recommendRef}
+                className={recommendReveal}
               >
                 <SectionHeader
                   title="Based on Your History"

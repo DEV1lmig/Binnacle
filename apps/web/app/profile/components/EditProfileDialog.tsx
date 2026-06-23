@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/app/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from '@/app/lib/design-system';
-import { CornerMarkers } from '@/app/lib/design-primitives';
 
 export interface ProfileFormValues {
   name: string;
@@ -29,12 +28,15 @@ export function EditProfileDialog({
   errorMessage,
 }: EditProfileDialogProps) {
   const [formValues, setFormValues] = useState<ProfileFormValues>(initialValues);
-
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitialValues, setPrevInitialValues] = useState(initialValues);
+  if (open !== prevOpen || initialValues !== prevInitialValues) {
+    setPrevOpen(open);
+    setPrevInitialValues(initialValues);
     if (open) {
       setFormValues(initialValues);
     }
-  }, [open, initialValues]);
+  }
 
   const handleChange = (field: keyof ProfileFormValues) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormValues((previous) => ({ ...previous, [field]: event.target.value }));

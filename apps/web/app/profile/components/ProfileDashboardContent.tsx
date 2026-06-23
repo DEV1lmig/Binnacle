@@ -1,15 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
-import { GameCard } from "@/app/components/GameCard";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import {
   Gamepad2,
   Trophy,
-  Users,
   Star,
   CalendarClock,
   ChevronRight,
@@ -33,6 +30,7 @@ import {
   HudBadge,
   HudDivider,
 } from "@/app/lib/design-primitives";
+import { useScrollReveal } from "@/app/lib/useScrollReveal";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { ReactNode } from "react";
 
@@ -100,47 +98,6 @@ interface ProfileDashboardContentProps {
   errorBanner?: ReactNode;
 }
 
-// ---------------------------------------------------------------------------
-// Scroll-reveal hook
-// ---------------------------------------------------------------------------
-function useReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) {
-      setVisible(true);
-      setReady(true);
-      return;
-    }
-    setReady(true);
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) {
-      requestAnimationFrame(() => setVisible(true));
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.08 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return {
-    ref,
-    className: ready ? `profile-reveal ${visible ? "visible" : ""}` : "",
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Stat pill
@@ -241,10 +198,14 @@ export function ProfileDashboardContent({
   errorBanner,
 }: ProfileDashboardContentProps) {
   const router = useRouter();
-  const heroReveal = useReveal();
-  const topGamesReveal = useReveal();
-  const backlogReveal = useReveal();
-  const activityReveal = useReveal();
+  const heroRef = useRef<HTMLDivElement>(null);
+  const heroReveal = useScrollReveal(heroRef, "profile-reveal");
+  const topGamesRef = useRef<HTMLDivElement>(null);
+  const topGamesReveal = useScrollReveal(topGamesRef, "profile-reveal");
+  const backlogRef = useRef<HTMLDivElement>(null);
+  const backlogReveal = useScrollReveal(backlogRef, "profile-reveal");
+  const activityRef = useRef<HTMLDivElement>(null);
+  const activityReveal = useScrollReveal(activityRef, "profile-reveal");
 
   const averageRating = data.reviewStats.averageRating
     ? (data.reviewStats.averageRating / 10).toFixed(1)
@@ -324,8 +285,8 @@ export function ProfileDashboardContent({
           {/* HERO SECTION                                                     */}
           {/* ================================================================ */}
           <div
-            ref={heroReveal.ref}
-            className={heroReveal.className}
+            ref={heroRef}
+            className={heroReveal}
             style={{ paddingTop: 32, paddingBottom: 24 }}
           >
             {/* Top row: badge + actions */}
@@ -482,7 +443,7 @@ export function ProfileDashboardContent({
           {/* ================================================================ */}
           {/* TOP GAMES SHOWCASE                                               */}
           {/* ================================================================ */}
-          <div ref={topGamesReveal.ref} className={topGamesReveal.className}>
+          <div ref={topGamesRef} className={topGamesReveal}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 <HudBadge color={C.gold}>Hall of Fame</HudBadge>
@@ -641,8 +602,8 @@ export function ProfileDashboardContent({
           {/* BACKLOG + REVIEW HIGHLIGHTS -- 2 col                             */}
           {/* ================================================================ */}
           <div
-            ref={backlogReveal.ref}
-            className={`grid gap-6 lg:grid-cols-12 mt-8 ${backlogReveal.className}`}
+            ref={backlogRef}
+            className={`grid gap-6 lg:grid-cols-12 mt-8 ${backlogReveal}`}
           >
             {/* Backlog breakdown */}
             <div className="lg:col-span-5">
@@ -951,8 +912,8 @@ export function ProfileDashboardContent({
           {/* RECENT ACTIVITY (Timeline)                                       */}
           {/* ================================================================ */}
           <div
-            ref={activityReveal.ref}
-            className={`mt-8 mb-8 ${activityReveal.className}`}
+            ref={activityRef}
+            className={`mt-8 mb-8 ${activityReveal}`}
           >
             <div className="flex items-center gap-4 mb-5">
               <HudBadge color={C.green}>Mission Log</HudBadge>

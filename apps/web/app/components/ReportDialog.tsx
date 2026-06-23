@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
@@ -48,14 +48,14 @@ export function ReportDialog({ open, onOpenChange, targetType, targetId }: Repor
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!open) {
-      setReason("");
-      setDescription("");
-      setError(null);
-      setIsSubmitting(false);
-    }
-  }, [open]);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (!open && prevOpen) {
+    setPrevOpen(false);
+    setReason("");
+    setDescription("");
+    setError(null);
+    setIsSubmitting(false);
+  }
 
   const canSubmit = useMemo(() => {
     return Boolean(reason) && !isSubmitting;

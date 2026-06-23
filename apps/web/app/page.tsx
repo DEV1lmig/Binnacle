@@ -7,6 +7,7 @@ import { ArrowRight, ChevronDown, Star } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getStandardCoverUrl } from "@/lib/igdb-images";
+import { useRevealVisible } from "@/app/lib/useScrollReveal";
 
 // ─── Palette ───────────────────────────────────────────────
 const C = {
@@ -216,37 +217,6 @@ function HudDivider({ className = "" }: { className?: string }) {
       <div className="h-px flex-1" style={{ background: `linear-gradient(90deg, transparent, ${C.border}, transparent)` }} />
     </div>
   );
-}
-
-// ─── Scroll reveal hook ────────────────────────────────────
-function useReveal(threshold = 0.15) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) {
-      setVisible(true);
-      return;
-    }
-
-    const el = ref.current;
-    if (!el) return;
-
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          obs.disconnect();
-        }
-      },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-
-  return { ref, visible };
 }
 
 // ─── Mouse spotlight hook ──────────────────────────────────
@@ -671,12 +641,18 @@ function OrbitalCarousel({ coverUrls }: { coverUrls?: Record<string, string> }) 
 
 // ─── Main Page ─────────────────────────────────────────────
 export default function LandingPage() {
-  const heroReveal = useReveal(0.1);
-  const featuresReveal = useReveal(0.1);
-  const howItWorksReveal = useReveal(0.1);
-  const statsReveal = useReveal(0.2);
-  const reviewsReveal = useReveal(0.1);
-  const ctaReveal = useReveal(0.2);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const heroReveal = useRevealVisible(heroRef, 0.1);
+  const featuresRef = useRef<HTMLDivElement>(null);
+  const featuresReveal = useRevealVisible(featuresRef, 0.1);
+  const howItWorksRef = useRef<HTMLDivElement>(null);
+  const howItWorksReveal = useRevealVisible(howItWorksRef, 0.1);
+  const statsRef = useRef<HTMLDivElement>(null);
+  const statsReveal = useRevealVisible(statsRef, 0.2);
+  const reviewsRef = useRef<HTMLDivElement>(null);
+  const reviewsReveal = useRevealVisible(reviewsRef, 0.1);
+  const ctaRef = useRef<HTMLDivElement>(null);
+  const ctaReveal = useRevealVisible(ctaRef, 0.2);
 
   const titles = useMemo(() => {
     const set = new Set(ARCHIVE_ITEMS.map((g) => g.title));
@@ -822,8 +798,8 @@ export default function LandingPage() {
           {/* ===== HERO ===== */}
           <section className="flex-1 flex items-center px-6 md:px-12">
             <div
-              ref={heroReveal.ref}
-              className={`archive-reveal ${heroReveal.visible ? "visible" : ""} mx-auto grid w-full max-w-7xl items-center gap-8 lg:grid-cols-2 lg:gap-4`}
+              ref={heroRef}
+              className={`archive-reveal ${heroReveal ? "visible" : ""} mx-auto grid w-full max-w-7xl items-center gap-8 lg:grid-cols-2 lg:gap-4`}
             >
               {/* Left column -- text */}
               <div className="flex flex-col items-start text-left">
@@ -961,8 +937,8 @@ export default function LandingPage() {
         <section className="relative z-10 px-6 py-24 md:px-12 md:py-32">
           <DotGrid />
           <div
-            ref={featuresReveal.ref}
-            className={`archive-reveal ${featuresReveal.visible ? "visible" : ""} relative z-10 mx-auto max-w-6xl`}
+            ref={featuresRef}
+            className={`archive-reveal ${featuresReveal ? "visible" : ""} relative z-10 mx-auto max-w-6xl`}
           >
             <div className="mb-20 text-center">
               <div
@@ -1095,8 +1071,8 @@ export default function LandingPage() {
         {/* ===== HOW IT WORKS ===== */}
         <section className="relative z-10 px-6 py-24 md:px-12 md:py-32">
           <div
-            ref={howItWorksReveal.ref}
-            className={`archive-reveal ${howItWorksReveal.visible ? "visible" : ""} mx-auto max-w-5xl`}
+            ref={howItWorksRef}
+            className={`archive-reveal ${howItWorksReveal ? "visible" : ""} mx-auto max-w-5xl`}
           >
             <div className="mb-20 text-center">
               <div
@@ -1210,8 +1186,8 @@ export default function LandingPage() {
         {/* ===== STATS READOUT ===== */}
         <section className="relative z-10 px-6 py-16 md:py-24">
           <div
-            ref={statsReveal.ref}
-            className={`archive-reveal ${statsReveal.visible ? "visible" : ""} mx-auto max-w-5xl`}
+            ref={statsRef}
+            className={`archive-reveal ${statsReveal ? "visible" : ""} mx-auto max-w-5xl`}
           >
             {/* Section label */}
             <div className="mb-12 text-center">
@@ -1284,7 +1260,7 @@ export default function LandingPage() {
                           fontVariantNumeric: "tabular-nums",
                         }}
                       >
-                        <AnimatedCounter value={stat.value} visible={statsReveal.visible} />
+                        <AnimatedCounter value={stat.value} visible={statsReveal} />
                       </span>
                       <span
                         className="mt-3"
@@ -1320,8 +1296,8 @@ export default function LandingPage() {
         <section className="relative z-10 px-6 py-24 md:px-12 md:py-32">
           <DotGrid />
           <div
-            ref={reviewsReveal.ref}
-            className={`archive-reveal ${reviewsReveal.visible ? "visible" : ""} relative z-10 mx-auto max-w-5xl`}
+            ref={reviewsRef}
+            className={`archive-reveal ${reviewsReveal ? "visible" : ""} relative z-10 mx-auto max-w-5xl`}
           >
             <div className="mb-16 text-center">
               <div
@@ -1612,8 +1588,8 @@ export default function LandingPage() {
         <section className="relative z-10 px-6 py-24 md:py-36">
           <DotGrid />
           <div
-            ref={ctaReveal.ref}
-            className={`archive-reveal ${ctaReveal.visible ? "visible" : ""} relative z-10 mx-auto max-w-2xl text-center`}
+            ref={ctaRef}
+            className={`archive-reveal ${ctaReveal ? "visible" : ""} relative z-10 mx-auto max-w-2xl text-center`}
           >
             <HudDivider className="mb-12" />
 

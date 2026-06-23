@@ -11,7 +11,6 @@ import {
   Layers,
   MessageSquare,
   Compass,
-  TrendingUp,
   ArrowRight,
   Sparkles,
   ChevronRight,

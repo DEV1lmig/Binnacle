@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useCurrentUser } from "@/app/context/CurrentUserContext";
@@ -27,56 +27,16 @@ import {
   FONT_MONO,
   FONT_BODY,
   FONT_IMPORT_URL,
-  STATUS_COLORS,
 } from "@/app/lib/design-system";
 import {
   CornerMarkers,
   GrainOverlay,
   HudBadge,
-  HudDivider,
 } from "@/app/lib/design-primitives";
+import { useScrollReveal } from "@/app/lib/useScrollReveal";
 
 type GameStatus = "all" | "want_to_play" | "playing" | "completed" | "on_hold" | "dropped";
 type ViewMode = "grid" | "list";
-
-// ---------------------------------------------------------------------------
-// Scroll-reveal hook (same pattern as feed page)
-// ---------------------------------------------------------------------------
-function useReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) {
-      setVisible(true);
-      setReady(true);
-      return;
-    }
-    setReady(true);
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) {
-      requestAnimationFrame(() => setVisible(true));
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.08 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return { ref, className: ready ? `backlog-reveal ${visible ? "visible" : ""}` : "" };
-}
 
 // ---------------------------------------------------------------------------
 // Status config
@@ -102,9 +62,12 @@ export default function BacklogPage() {
   const [sortBy, setSortBy] = useState("recent");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
-  const headerReveal = useReveal();
-  const sidebarReveal = useReveal();
-  const gridReveal = useReveal();
+  const headerRef = useRef<HTMLDivElement>(null);
+  const headerReveal = useScrollReveal(headerRef, "backlog-reveal");
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const sidebarReveal = useScrollReveal(sidebarRef, "backlog-reveal");
+  const gridRef = useRef<HTMLDivElement>(null);
+  const gridReveal = useScrollReveal(gridRef, "backlog-reveal");
 
   const backlogItems = useQuery(
     api.backlog.listForUser,
@@ -211,8 +174,8 @@ export default function BacklogPage() {
         <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8">
           {/* Header bar */}
           <div
-            ref={headerReveal.ref}
-            className={headerReveal.className}
+            ref={headerRef}
+            className={headerReveal}
             style={{
               borderBottom: `1px solid ${C.border}`,
               padding: "24px 0 20px",
@@ -337,8 +300,8 @@ export default function BacklogPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 py-6">
             {/* Sidebar */}
             <aside
-              ref={sidebarReveal.ref}
-              className={`lg:col-span-3 ${sidebarReveal.className}`}
+              ref={sidebarRef}
+              className={`lg:col-span-3 ${sidebarReveal}`}
             >
               <div
                 className="relative lg:sticky lg:top-24"
@@ -510,8 +473,8 @@ export default function BacklogPage() {
 
             {/* Main game grid */}
             <main
-              ref={gridReveal.ref}
-              className={`lg:col-span-9 ${gridReveal.className}`}
+              ref={gridRef}
+              className={`lg:col-span-9 ${gridReveal}`}
             >
               {filteredAndSortedGames.length > 0 ? (
                 viewMode === "grid" ? (

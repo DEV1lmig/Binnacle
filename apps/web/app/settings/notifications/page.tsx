@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useCurrentUser } from "@/app/context/CurrentUserContext";
@@ -35,24 +35,27 @@ export default function SettingsNotificationsPage() {
     },
   });
 
-  useEffect(() => {
-    if (currentUser?.notificationPreferences) {
+  const prefs = currentUser?.notificationPreferences;
+  const [prevPrefs, setPrevPrefs] = useState(prefs);
+  if (prefs !== prevPrefs) {
+    setPrevPrefs(prefs);
+    if (prefs) {
       setPreferences({
         email: {
-          newFollower: currentUser.notificationPreferences.email?.newFollower ?? true,
-          friendRequest: currentUser.notificationPreferences.email?.friendRequest ?? true,
-          likes: currentUser.notificationPreferences.email?.likes ?? true,
-          comments: currentUser.notificationPreferences.email?.comments ?? true,
+          newFollower: prefs.email?.newFollower ?? true,
+          friendRequest: prefs.email?.friendRequest ?? true,
+          likes: prefs.email?.likes ?? true,
+          comments: prefs.email?.comments ?? true,
         },
         push: {
-          newFollower: currentUser.notificationPreferences.push?.newFollower ?? true,
-          friendRequest: currentUser.notificationPreferences.push?.friendRequest ?? true,
-          likes: currentUser.notificationPreferences.push?.likes ?? true,
-          comments: currentUser.notificationPreferences.push?.comments ?? true,
+          newFollower: prefs.push?.newFollower ?? true,
+          friendRequest: prefs.push?.friendRequest ?? true,
+          likes: prefs.push?.likes ?? true,
+          comments: prefs.push?.comments ?? true,
         },
       });
     }
-  }, [currentUser]);
+  }
 
   const handleToggle = async (
     channel: "email" | "push",

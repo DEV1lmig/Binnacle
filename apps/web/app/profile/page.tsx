@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Settings, Sparkles, Loader2, Shield } from "lucide-react";
+import { Settings, Sparkles, Shield } from "lucide-react";
 import Link from "next/link";
 
 import { api } from "@/convex/_generated/api";

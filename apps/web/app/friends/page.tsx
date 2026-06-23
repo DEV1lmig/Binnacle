@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -27,51 +27,8 @@ import {
   CornerMarkers,
   GrainOverlay,
   HudBadge,
-  HudDivider,
 } from "@/app/lib/design-primitives";
-
-// ---------------------------------------------------------------------------
-// Scroll-reveal hook
-// ---------------------------------------------------------------------------
-function useReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) {
-      setVisible(true);
-      setReady(true);
-      return;
-    }
-    setReady(true);
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) {
-      requestAnimationFrame(() => setVisible(true));
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.08 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return { ref, className: ready ? `friends-reveal ${visible ? "visible" : ""}` : "" };
-}
-
-function formatUserLabel(user: { name: string; username: string }) {
-  return `${user.name} (@${user.username})`;
-}
+import { useScrollReveal } from "@/app/lib/useScrollReveal";
 
 // ---------------------------------------------------------------------------
 // User card component
@@ -235,8 +192,10 @@ export default function FriendsPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [workingIds, setWorkingIds] = useState<Set<string>>(new Set());
 
-  const headerReveal = useReveal();
-  const contentReveal = useReveal();
+  const headerRef = useRef<HTMLDivElement>(null);
+  const headerReveal = useScrollReveal(headerRef, "friends-reveal");
+  const contentRef = useRef<HTMLDivElement>(null);
+  const contentReveal = useScrollReveal(contentRef, "friends-reveal");
 
   const searchResults = useQuery(
     api.users.search,
@@ -361,8 +320,8 @@ export default function FriendsPage() {
         <div className="relative z-10 max-w-4xl mx-auto px-4 md:px-8">
           {/* Header */}
           <div
-            ref={headerReveal.ref}
-            className={headerReveal.className}
+            ref={headerRef}
+            className={headerReveal}
             style={{
               borderBottom: `1px solid ${C.border}`,
               padding: "24px 0 20px",
@@ -424,8 +383,8 @@ export default function FriendsPage() {
 
           {/* Tabs */}
           <div
-            ref={contentReveal.ref}
-            className={`mt-6 ${contentReveal.className}`}
+            ref={contentRef}
+            className={`mt-6 ${contentReveal}`}
           >
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList

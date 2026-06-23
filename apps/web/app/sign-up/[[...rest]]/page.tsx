@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import * as Clerk from "@clerk/elements/common";
 import * as SignUp from "@clerk/elements/sign-up";
 import { AuthLayout } from "../../components/auth/AuthLayout";

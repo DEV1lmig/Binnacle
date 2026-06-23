@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { NotificationItem } from "./components/NotificationItem";
@@ -22,45 +22,8 @@ import {
   HudBadge,
   HudDivider,
 } from "@/app/lib/design-primitives";
+import { useScrollReveal } from "@/app/lib/useScrollReveal";
 
-// ---------------------------------------------------------------------------
-// Scroll-reveal hook
-// ---------------------------------------------------------------------------
-function useReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) {
-      setVisible(true);
-      setReady(true);
-      return;
-    }
-    setReady(true);
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) {
-      requestAnimationFrame(() => setVisible(true));
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.08 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return { ref, className: ready ? `notif-reveal ${visible ? "visible" : ""}` : "" };
-}
 
 // ---------------------------------------------------------------------------
 // Notification item container (fetches actor)
@@ -151,7 +114,7 @@ function EmptyNotifications() {
           lineHeight: 1.5,
         }}
       >
-        When you get likes, comments, or new followers, they'll show up here.
+        When you get likes, comments, or new followers, they&apos;ll show up here.
       </p>
     </div>
   );
@@ -168,8 +131,10 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [markingAll, setMarkingAll] = useState(false);
 
-  const headerReveal = useReveal();
-  const contentReveal = useReveal();
+  const headerRef = useRef<HTMLDivElement>(null);
+  const headerReveal = useScrollReveal(headerRef, "notif-reveal");
+  const contentRef = useRef<HTMLDivElement>(null);
+  const contentReveal = useScrollReveal(contentRef, "notif-reveal");
 
   const handleMarkAllRead = async () => {
     setMarkingAll(true);
@@ -188,8 +153,6 @@ export default function NotificationsPage() {
   const allNotifs = notifications ?? [];
   const unreadNotifs = allNotifs.filter((n) => !n.read);
   const unreadCount = unreadNotifs.length;
-
-  const displayed = activeTab === "unread" ? unreadNotifs : allNotifs;
 
   return (
     <>
@@ -241,8 +204,8 @@ export default function NotificationsPage() {
         <div className="relative z-10 max-w-2xl mx-auto px-4 md:px-8">
           {/* Header */}
           <div
-            ref={headerReveal.ref}
-            className={headerReveal.className}
+            ref={headerRef}
+            className={headerReveal}
             style={{
               borderBottom: `1px solid ${C.border}`,
               padding: "24px 0 20px",
@@ -319,8 +282,8 @@ export default function NotificationsPage() {
 
           {/* Tabs + Content */}
           <div
-            ref={contentReveal.ref}
-            className={`mt-6 ${contentReveal.className}`}
+            ref={contentRef}
+            className={`mt-6 ${contentReveal}`}
           >
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList

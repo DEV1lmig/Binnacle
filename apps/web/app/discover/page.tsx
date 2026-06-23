@@ -14,7 +14,6 @@ import {
   TrendingUp,
   Star,
   Calendar,
-  Users,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
@@ -34,6 +33,7 @@ import {
   HudBadge,
   HudDivider,
 } from "@/app/lib/design-primitives";
+import { useScrollReveal } from "@/app/lib/useScrollReveal";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,49 +52,9 @@ type DiscoverGame = {
 };
 
 // ---------------------------------------------------------------------------
-// Scroll-reveal hook
-// ---------------------------------------------------------------------------
-function useReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) {
-      setVisible(true);
-      setReady(true);
-      return;
-    }
-    setReady(true);
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) {
-      requestAnimationFrame(() => setVisible(true));
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.08 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return { ref, className: ready ? `discover-reveal ${visible ? "visible" : ""}` : "" };
-}
-
-// ---------------------------------------------------------------------------
 // Horizontal carousel hook
 // ---------------------------------------------------------------------------
-function useCarousel() {
-  const scrollRef = useRef<HTMLDivElement>(null);
+function useCarousel(scrollRef: React.RefObject<HTMLDivElement | null>) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -103,7 +63,7 @@ function useCarousel() {
     if (!el) return;
     setCanScrollLeft(el.scrollLeft > 2);
     setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
-  }, []);
+  }, [scrollRef]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -116,7 +76,7 @@ function useCarousel() {
       el.removeEventListener("scroll", checkScroll);
       ro.disconnect();
     };
-  }, [checkScroll]);
+  }, [checkScroll, scrollRef]);
 
   const scroll = (dir: "left" | "right") => {
     const el = scrollRef.current;
@@ -124,7 +84,7 @@ function useCarousel() {
     el.scrollBy({ left: dir === "left" ? -400 : 400, behavior: "smooth" });
   };
 
-  return { scrollRef, canScrollLeft, canScrollRight, scroll };
+  return { canScrollLeft, canScrollRight, scroll };
 }
 
 // ---------------------------------------------------------------------------
@@ -175,7 +135,6 @@ function GameCarouselSection({
   badge,
   badgeColor,
   title,
-  icon: Icon,
   games,
   isLoading,
   router,
@@ -190,11 +149,13 @@ function GameCarouselSection({
   router: ReturnType<typeof useRouter>;
   prefix: string;
 }) {
-  const carousel = useCarousel();
-  const reveal = useReveal();
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const carousel = useCarousel(carouselRef);
+  const revealRef = useRef<HTMLDivElement>(null);
+  const reveal = useScrollReveal(revealRef, "discover-reveal");
 
   return (
-    <section ref={reveal.ref} className={reveal.className}>
+    <section ref={revealRef} className={reveal}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <HudBadge color={badgeColor}>{badge}</HudBadge>
@@ -261,7 +222,7 @@ function GameCarouselSection({
         </div>
       ) : games.length > 0 ? (
         <div
-          ref={carousel.scrollRef}
+          ref={carouselRef}
           className="flex gap-3 overflow-x-auto pb-2"
           style={{
             scrollbarWidth: "none",
@@ -308,10 +269,13 @@ export default function DiscoverPage() {
   const [searchResults, setSearchResults] = useState<DiscoverGame[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const heroReveal = useReveal();
-  const peopleReveal = useReveal();
-  const genreReveal = useReveal();
-  const peopleCarousel = useCarousel();
+  const heroRef = useRef<HTMLDivElement>(null);
+  const heroReveal = useScrollReveal(heroRef, "discover-reveal");
+  const peopleRef = useRef<HTMLDivElement>(null);
+  const peopleReveal = useScrollReveal(peopleRef, "discover-reveal");
+  const genreRef = useRef<HTMLDivElement>(null);
+  const genreReveal = useScrollReveal(genreRef, "discover-reveal");
+  const peopleCarouselRef = useRef<HTMLDivElement>(null);
 
   const searchAction = useAction(api.igdb.searchOptimizedWithFallback);
 
@@ -422,8 +386,8 @@ export default function DiscoverPage() {
         <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8">
           {/* Hero search section */}
           <div
-            ref={heroReveal.ref}
-            className={heroReveal.className}
+            ref={heroRef}
+            className={heroReveal}
             style={{ padding: "32px 0 24px", borderBottom: `1px solid ${C.border}` }}
           >
             <HudBadge color={C.cyan}>Discover</HudBadge>
@@ -563,7 +527,7 @@ export default function DiscoverPage() {
               /* ===== CURATED BROWSE ===== */
               <>
                 {/* Discover People */}
-                <section ref={peopleReveal.ref} className={peopleReveal.className}>
+                <section ref={peopleRef} className={peopleReveal}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <HudBadge color={C.accent}>Network</HudBadge>
@@ -629,7 +593,7 @@ export default function DiscoverPage() {
                   ) : users.length > 0 ? (
                     <div className="relative">
                       <div
-                        ref={peopleCarousel.scrollRef}
+                        ref={peopleCarouselRef}
                         className="flex gap-3 overflow-x-auto pb-2 discover-carousel"
                         style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
                       >
@@ -754,7 +718,7 @@ export default function DiscoverPage() {
                 <HudDivider />
 
                 {/* Browse by Genre */}
-                <section ref={genreReveal.ref} className={genreReveal.className}>
+                <section ref={genreRef} className={genreReveal}>
                   <div className="flex items-center gap-3 mb-5">
                     <HudBadge color={C.gold}>Genres</HudBadge>
                     <h2

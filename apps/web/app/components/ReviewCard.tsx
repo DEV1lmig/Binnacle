@@ -19,7 +19,7 @@ import {
 } from "@/app/components/ui/dropdown-menu";
 import { Button } from "@/app/components/ui/button";
 import { ReportDialog } from "@/app/components/ReportDialog";
-import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
+import { C, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
 
 type ReviewAuthor = {
   _id: Id<"users">;

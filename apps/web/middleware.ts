@@ -47,7 +47,7 @@ export default clerkMiddleware(async (auth, request) => {
         return NextResponse.redirect(url);
       }
 
-      const token = await (auth as any).getToken?.({ template: 'convex' });
+      const token = await (auth as { getToken?: (opts: { template: string }) => Promise<string | null> }).getToken?.({ template: 'convex' });
       const convex = new ConvexHttpClient(convexUrl);
       if (token) convex.setAuth(token);
 

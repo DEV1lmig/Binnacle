@@ -13,7 +13,7 @@ import {
   ratingToFiveStar,
   type ShareCardOptions,
 } from "@binnacle/shared-types";
-import { colors, FONT_HEADING, FONT_BODY, FONT_MONO } from "@binnacle/design-tokens";
+import { colors } from "@binnacle/design-tokens";
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 
