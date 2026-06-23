@@ -55,12 +55,15 @@ export function EditTopGamesDialog({
   const searchAction = useAction(api.igdb.searchOptimizedWithFallback);
 
   const prevOpenRef = useRef(open);
-  if (prevOpenRef.current !== open && open) {
-    prevOpenRef.current = open;
-    setSelected(initialGames.map((entry) => ({ ...entry, note: entry.note ?? '' })));
-    setSearchTerm('');
-    setSearchResults([]);
-  }
+
+  useEffect(() => {
+    if (prevOpenRef.current !== open && open) {
+      prevOpenRef.current = open;
+      setSelected(initialGames.map((entry) => ({ ...entry, note: entry.note ?? '' })));
+      setSearchTerm('');
+      setSearchResults([]);
+    }
+  }, [open, initialGames]);
 
   useEffect(() => {
     const performSearch = async () => {

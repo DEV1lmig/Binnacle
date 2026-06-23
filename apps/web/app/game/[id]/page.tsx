@@ -132,10 +132,13 @@ export default function GameDetailPage() {
   
   // Initialize status from backlog data
   const prevBacklogItemRef = useRef(backlogItem);
-  if (prevBacklogItemRef.current !== backlogItem && !isUpdatingBacklog) {
-    prevBacklogItemRef.current = backlogItem;
-    setStatus(backlogItem?.status ?? null);
-  }
+
+  useEffect(() => {
+    if (prevBacklogItemRef.current !== backlogItem && !isUpdatingBacklog) {
+      prevBacklogItemRef.current = backlogItem;
+      setStatus(backlogItem?.status ?? null);
+    }
+  }, [backlogItem, isUpdatingBacklog]);
 
   const cachedRelatedContent = useMemo<RelatedContentItem[]>(() => {
     // dlcsAndExpansions field was removed from schema in Phase 2B optimization
