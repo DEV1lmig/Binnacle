@@ -1,0 +1,13 @@
+diff --git a/dist/commonjs/compiler/declarations.js b/dist/commonjs/compiler/declarations.js
+index 12ebd5f4e3ecba0a31c38b28e1c41513bf1b29a3..98459a46c88cb1bc5534b5dfec60197e6184f142 100644
+--- a/dist/commonjs/compiler/declarations.js
++++ b/dist/commonjs/compiler/declarations.js
+@@ -1598,7 +1598,7 @@
+   return value[0];
+ }
+ function parseLineHeightDeclaration(declaration, builder) {
+-  builder.addDescriptor("line-height", [{}, "lineHeight", [parseLineHeight(declaration.value, builder)], 1]);
++  builder.addDescriptor("line-height", parseLineHeight(declaration.value, builder));
+ }
+ function parseLineHeight(value, builder) {
+   switch (value.type) {
