@@ -44,13 +44,13 @@ export default function ReviewDetailPage() {
   return (
     <Screen edges={["top", "left", "right"]}>
       {/* Header */}
-      <View className="px-4 py-3 flex-row items-center">
+      <View className="px-4 py-2 flex-row items-center">
         <Pressable onPress={() => { if (router.canGoBack()) router.back(); else router.replace("/"); }} className="flex-row items-center gap-2">
           <Text style={{ fontFamily: FONT_MONO }} className="text-textMuted uppercase text-xs tracking-widest">&lt; Back</Text>
         </Pressable>
       </View>
 
-      <ScrollView contentContainerClassName="p-4 gap-6 pb-32">
+      <ScrollView contentContainerClassName="p-4 gap-4 pb-24">
         
         {/* REVIEW CARD */}
         <View className="p-4 rounded-xl border border-borderLight bg-surface">
@@ -63,12 +63,12 @@ export default function ReviewDetailPage() {
                 </Text>
               </View>
               <View>
-                <Text style={{ fontFamily: FONT_HEADING }} className="text-lg text-text leading-tight">{review.author.name}</Text>
+                <Text style={{ fontFamily: FONT_HEADING }} className="text-base text-text leading-tight">{review.author.name}</Text>
                 <Text style={{ fontFamily: FONT_MONO }} className="text-[10px] text-textMuted uppercase tracking-wider mt-1">{formatDate(review._creationTime)}</Text>
               </View>
             </View>
             <View className="flex-row items-baseline gap-1">
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-gold leading-none">{review.rating.toFixed(1)}</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-gold leading-none">{review.rating.toFixed(1)}</Text>
               <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textDim leading-none">/10</Text>
             </View>
           </View>
@@ -81,9 +81,9 @@ export default function ReviewDetailPage() {
               )}
             </View>
             <View className="flex-1">
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">{review.game.title}</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-lg text-text">{review.game.title}</Text>
               <Pressable onPress={() => router.push(`/game/${review.game._id}`)} className="mt-1">
-                <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-gold">View Game Details →</Text>
+                <Text style={{ fontFamily: FONT_BODY }} className="text-xs text-gold">View Game Details →</Text>
               </Pressable>
             </View>
           </View>
@@ -91,7 +91,7 @@ export default function ReviewDetailPage() {
           <View className="h-px bg-borderLight mb-4" />
 
           {/* Text */}
-          <Text style={{ fontFamily: FONT_BODY }} className="text-base text-text leading-relaxed mb-6">
+          <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-text leading-relaxed mb-4">
             {review.text}
           </Text>
 
@@ -118,15 +118,15 @@ export default function ReviewDetailPage() {
               onPress={() => setShareOpen(true)}
               className="flex-row items-center gap-2"
             >
-              <Share2 size={18} color={C.textMuted} />
-              <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-textMuted">Share</Text>
+              <Share2 size={16} color={C.textMuted} />
+              <Text style={{ fontFamily: FONT_BODY }} className="text-xs text-textMuted">Share</Text>
             </Pressable>
           </View>
         </View>
 
         {/* COMMENTS */}
         <View className="p-4 rounded-xl border border-borderLight bg-surface gap-4">
-          <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Comments ({comments.length})</Text>
+          <Text style={{ fontFamily: FONT_HEADING }} className="text-lg text-text">Comments ({comments.length})</Text>
           
           {/* Composer */}
           <View className="flex-row gap-3 items-start">

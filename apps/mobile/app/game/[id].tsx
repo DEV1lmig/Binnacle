@@ -1,6 +1,6 @@
 import { Gamepad2, Calendar, LayoutGrid, Heart, Bookmark, ChevronDown, PenLine, BookmarkCheck } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, useWindowDimensions } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@binnacle/convex-generated/api";
@@ -51,6 +51,7 @@ const BACKLOG_STATUSES = [
 export default function GameDetailPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const params = useLocalSearchParams<{ id?: string }>();
   const gameId = params.id as Id<"games"> | undefined;
 
@@ -126,9 +127,9 @@ export default function GameDetailPage() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScrollView contentContainerClassName="pb-32" bounces={false}>
+      <ScrollView contentContainerClassName="pb-24" bounces={false}>
         {/* HERO POSTER */}
-        <View className="w-full relative" style={{ height: 500 }}>
+        <View className="w-full relative" style={{ height: Math.min(windowWidth * 0.7, 380) }}>
           {formattedCoverUrl ? (
             <Image source={{ uri: formattedCoverUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
           ) : (
@@ -175,7 +176,7 @@ export default function GameDetailPage() {
           </View>
         </View>
 
-        <View className="p-4 gap-6">
+        <View className="gap-4">
           {/* ACTION ROW */}
           <View className="gap-2">
             <Pressable 

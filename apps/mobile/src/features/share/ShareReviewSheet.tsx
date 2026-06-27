@@ -74,6 +74,7 @@ export function ShareReviewSheet({
             borderRightWidth: 1,
             borderColor: C.borderLight,
             paddingBottom: insets.bottom > 0 ? insets.bottom : 24,
+            marginHorizontal: 12,
           }}
         >
           {/* Drag handle */}

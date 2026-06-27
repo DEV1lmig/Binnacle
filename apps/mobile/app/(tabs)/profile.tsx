@@ -124,7 +124,7 @@ export default function ProfileTab() {
 
   return (
     <Screen edges={["top", "left", "right"]}>
-      <ScrollView contentContainerClassName="p-4 gap-8 pb-32">
+      <ScrollView contentContainerClassName="p-4 gap-6 pb-24">
         
         {/* TOP ACTIONS */}
         <View className="gap-2">
@@ -185,19 +185,19 @@ export default function ProfileTab() {
             </View>
           </View>
         ) : (
-          <View className="gap-8">
+          <View className="gap-6">
             {/* PROFILE HEADER */}
-            <View className="p-6 border rounded-xl items-center relative overflow-hidden" style={{ borderColor: C.borderLight, backgroundColor: C.surface }}>
+            <View className="p-4 border rounded-xl items-center relative overflow-hidden" style={{ borderColor: C.borderLight, backgroundColor: C.surface }}>
               <CornerMarkers size={16} color={C.borderLight} />
               
-              <View className="items-center justify-center w-24 h-24 rounded-full border-2 border-borderLight bg-surface z-10 relative">
-                <Text style={{ fontFamily: FONT_HEADING }} className="text-3xl text-gold">
+              <View className="items-center justify-center w-20 h-20 rounded-full border-2 border-borderLight bg-surface z-10 relative">
+                <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-gold">
                   {dashboard.user.name[0]?.toUpperCase()}
                 </Text>
                 <View className="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-surface bg-green" />
               </View>
 
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-3xl text-text mt-4 text-center">
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-text mt-3 text-center">
                 {dashboard.user.name}
               </Text>
                <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textMuted uppercase tracking-wider mt-1 text-center">
@@ -211,7 +211,7 @@ export default function ProfileTab() {
               )}
 
               {/* STATS — two explicit rows to avoid flex-wrap clipping inside overflow-hidden */}
-              <View className="mt-6 gap-2 w-full">
+              <View className="mt-4 gap-2 w-full">
                 <View className="flex-row gap-2">
                   {[
                     { label: "Followers", value: dashboard.followerCount },
@@ -241,7 +241,7 @@ export default function ProfileTab() {
             {/* HALL OF FAME */}
             <View className="gap-4">
               <HudBadge color={C.cyan}>Hall of Fame</HudBadge>
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-text">Top Games</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Top Games</Text>
               
               <View className="flex-row flex-wrap gap-2">
                 {dashboard.topGames.map((entry, idx) => (
@@ -271,7 +271,7 @@ export default function ProfileTab() {
             {/* BACKLOG INVENTORY */}
             <View className="gap-4">
               <HudBadge color={C.cyan}>Inventory</HudBadge>
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-text">Backlog</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Backlog</Text>
 
               <View className="p-4 border rounded-xl bg-surface gap-4" style={{ borderColor: C.borderLight }}>
                 {/* Progress bar */}
@@ -310,7 +310,7 @@ export default function ProfileTab() {
             {/* ANALYTICS */}
             <View className="gap-4">
               <HudBadge color={C.gold}>Analytics</HudBadge>
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-text">Review Highlights</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Review Highlights</Text>
               
               <View className="p-4 border rounded-xl bg-surface relative overflow-hidden" style={{ borderColor: C.borderLight }}>
                 <CornerMarkers size={12} color={C.borderLight} />
@@ -345,7 +345,7 @@ export default function ProfileTab() {
             {/* MISSION LOG (Recent Reviews) */}
             <View className="gap-4">
               <HudBadge color={C.green}>Mission Log</HudBadge>
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-text">Recent Activity</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Recent Activity</Text>
               
               <View className="gap-2">
                 {dashboard.recentReviews.map((review) => (

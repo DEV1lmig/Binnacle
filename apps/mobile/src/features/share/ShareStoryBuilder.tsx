@@ -2,8 +2,8 @@ import { useMemo, useState, useCallback } from "react";
 import { Alert, ActivityIndicator, useWindowDimensions } from "react-native";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system/legacy";
-import * as MediaLibrary from "expo-media-library";
 import * as Clipboard from "expo-clipboard";
+import { saveImageToGallery } from "./saveToGallery";
 import {
   buildShareImagePath,
   SHARE_CARD_FORMATS,
@@ -181,18 +181,17 @@ export function ShareStoryBuilder({
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
+      const fileUri = await downloadToCache();
+      await saveImageToGallery(fileUri);
+      Alert.alert("Saved", "Story image saved to your gallery.");
+    } catch (error: any) {
+      if (error?.message === "Permission denied") {
         Alert.alert(
           "Permission needed",
           "Allow access to your photo library to save review cards."
         );
         return;
       }
-      const fileUri = await downloadToCache();
-      await MediaLibrary.saveToLibraryAsync(fileUri);
-      Alert.alert("Saved", "Story image saved to your gallery.");
-    } catch (error) {
       console.error("Failed to save image:", error);
       Alert.alert("Could not save image", "Please try again.");
     } finally {

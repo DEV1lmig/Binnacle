@@ -23,20 +23,44 @@
  * (--__rn-css-em), preserving the multiplier semantics of `leading-*`.
  */
 @theme {
-  /* Per-size defaults — absolute rem (the pre-v4 Tailwind line-heights). */
-  --text-xs--line-height: 1rem;
-  --text-sm--line-height: 1.25rem;
-  --text-base--line-height: 1.5rem;
-  --text-lg--line-height: 1.75rem;
-  --text-xl--line-height: 1.75rem;
-  --text-2xl--line-height: 2rem;
-  --text-3xl--line-height: 2.25rem;
-  --text-4xl--line-height: 2.5rem;
-  --text-5xl--line-height: 1em;
-  --text-6xl--line-height: 1em;
-  --text-7xl--line-height: 1em;
-  --text-8xl--line-height: 1em;
-  --text-9xl--line-height: 1em;
+  /*
+   * Mobile-first type scale. The design-token defaults use rem, which the
+   * react-native-css compiler resolves against a 14pt root rem. That makes
+   * text-4xl ≈ 31.5pt / leading-tight ≈ 35pt — far too large on a phone and
+   * the main reason the Game, Profile and Review pages look blown out in
+   * native (non-Expo-Go) builds. Override the scale with explicit point sizes
+   * so Tailwind text-* utilities render at mobile-appropriate sizes.
+   *
+   * The web app imports its own globals.css and is unaffected by this file.
+   */
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 22px;
+  --text-4xl: 24px;
+  --text-5xl: 30px;
+  --text-6xl: 36px;
+  --text-7xl: 42px;
+  --text-8xl: 48px;
+  --text-9xl: 54px;
+
+  /* Per-size line-heights — `em` so they scale with the element's font-size. */
+  --text-xs--line-height: 1.25em;
+  --text-sm--line-height: 1.25em;
+  --text-base--line-height: 1.5em;
+  --text-lg--line-height: 1.5em;
+  --text-xl--line-height: 1.4em;
+  --text-2xl--line-height: 1.35em;
+  --text-3xl--line-height: 1.3em;
+  --text-4xl--line-height: 1.25em;
+  --text-5xl--line-height: 1.1em;
+  --text-6xl--line-height: 1.1em;
+  --text-7xl--line-height: 1.1em;
+  --text-8xl--line-height: 1.1em;
+  --text-9xl--line-height: 1.1em;
 
   /* leading-* multipliers — `em` so they scale with the element's font-size. */
   --leading-none: 1em;
