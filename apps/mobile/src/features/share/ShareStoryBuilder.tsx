@@ -226,9 +226,9 @@ export function ShareStoryBuilder({
         className="flex-row items-center justify-between"
         style={{ paddingHorizontal: 4, paddingBottom: 12, borderBottomWidth: 1, borderColor: C.borderLight }}
       >
-        <View className="flex-row items-center gap-2">
+        <View className="flex-row items-center" style={{ gap: 8 }}>
           <ImageIcon size={18} color={C.gold} />
-          <Text style={{ fontFamily: FONT_HEADING, color: C.text }} className="text-base">
+          <Text style={{ fontFamily: FONT_HEADING, color: C.text, fontSize: 16 }}>
             Share as image
           </Text>
         </View>
@@ -238,14 +238,14 @@ export function ShareStoryBuilder({
       </View>
 
       <ScrollView
-        contentContainerClassName="gap-6 pt-4 pb-8"
+        contentContainerStyle={{ gap: 24, paddingTop: 16, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Preview */}
         <View className="items-center">
           <View
-            className="rounded-lg overflow-hidden border items-center justify-center"
-            style={{ width: previewWidth, height: previewHeight, borderColor: C.borderLight, backgroundColor: C.bgAlt }}
+            className="overflow-hidden border items-center justify-center"
+            style={{ width: previewWidth, height: previewHeight, borderRadius: 8, borderColor: C.borderLight, backgroundColor: C.bgAlt }}
           >
             <Image
               key={imageUrl}
@@ -264,26 +264,28 @@ export function ShareStoryBuilder({
         </View>
 
         {/* Format */}
-        <View className="gap-2">
-          <Text style={{ fontFamily: FONT_MONO, color: C.textMuted }} className="text-[10px] uppercase tracking-widest">
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontFamily: FONT_MONO, color: C.textMuted, fontSize: 10 }} className="uppercase tracking-widest">
             Format
           </Text>
-          <View className="flex-row gap-2">
+          <View className="flex-row" style={{ gap: 8 }}>
             {SHARE_CARD_FORMATS.map((format) => {
               const active = options.format === format;
               return (
                 <Pressable
                   key={format}
                   onPress={() => setOptions((prev) => ({ ...prev, format }))}
-                  className="flex-1 items-center justify-center py-2.5 rounded border"
+                  className="flex-1 items-center justify-center border"
                   style={{
+                    paddingVertical: 10,
+                    borderRadius: 4,
                     backgroundColor: active ? C.gold : C.bgAlt,
                     borderColor: active ? C.gold : C.borderLight,
                   }}
                 >
                   <Text
-                    style={{ fontFamily: FONT_MONO, color: active ? C.bg : C.textMuted }}
-                    className="text-[10px] uppercase tracking-wider"
+                    style={{ fontFamily: FONT_MONO, color: active ? C.bg : C.textMuted, fontSize: 10 }}
+                    className="uppercase tracking-wider"
                   >
                     {FORMAT_LABELS[format]}
                   </Text>
@@ -294,19 +296,21 @@ export function ShareStoryBuilder({
         </View>
 
         {/* Accent */}
-        <View className="gap-2">
-          <Text style={{ fontFamily: FONT_MONO, color: C.textMuted }} className="text-[10px] uppercase tracking-widest">
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontFamily: FONT_MONO, color: C.textMuted, fontSize: 10 }} className="uppercase tracking-widest">
             Accent
           </Text>
-          <View className="flex-row gap-3">
+          <View className="flex-row" style={{ gap: 12 }}>
             {SHARE_CARD_ACCENTS.map((accent) => {
               const active = options.accent === accent;
               return (
                 <Pressable
                   key={accent}
                   onPress={() => setOptions((prev) => ({ ...prev, accent }))}
-                  className="w-10 h-10 rounded-full items-center justify-center"
+                  className="rounded-full items-center justify-center"
                   style={{
+                    width: 40,
+                    height: 40,
                     backgroundColor: SHARE_ACCENT_COLORS[accent],
                     borderWidth: active ? 3 : 0,
                     borderColor: C.text,
@@ -318,7 +322,7 @@ export function ShareStoryBuilder({
         </View>
 
         {/* Toggles */}
-        <View className="gap-1">
+        <View style={{ gap: 4 }}>
           <ToggleRow
             label="Show review text"
             value={options.showText}
@@ -332,18 +336,18 @@ export function ShareStoryBuilder({
         </View>
 
         {/* Actions */}
-        <View className="gap-2 mt-2">
+        <View style={{ gap: 8, marginTop: 8 }}>
           {/* Primary: open Instagram Stories directly */}
           <Pressable
             onPress={handleShareToInstagram}
             disabled={loading}
-            className="min-h-12 rounded-sm items-center justify-center px-4 flex-row gap-2 active:opacity-80"
-            style={{ backgroundColor: C.gold, opacity: loading ? 0.5 : 1 }}
+            className="rounded-sm items-center justify-center flex-row active:opacity-80"
+            style={{ minHeight: 48, paddingHorizontal: 16, gap: 8, backgroundColor: C.gold, opacity: loading ? 0.5 : 1 }}
           >
             <Camera size={18} color={C.bg} />
             <Text
-              style={{ fontFamily: FONT_MONO, color: C.bg }}
-              className="text-sm uppercase tracking-wider"
+              style={{ fontFamily: FONT_MONO, color: C.bg, fontSize: 12 }}
+              className="uppercase tracking-wider"
             >
               {loading ? "Opening..." : "Share to Instagram Story"}
             </Text>
@@ -356,7 +360,7 @@ export function ShareStoryBuilder({
             disabled={loading}
           />
 
-          <View className="flex-row gap-2">
+          <View className="flex-row" style={{ gap: 8 }}>
             <Button
               label={saving ? "Saving..." : "Save to gallery"}
               variant="secondary"
@@ -389,14 +393,15 @@ function ToggleRow({
   return (
     <Pressable
       onPress={() => onValueChange(!value)}
-      className="flex-row items-center justify-between py-2.5"
+      className="flex-row items-center justify-between"
+      style={{ paddingVertical: 10 }}
     >
-      <Text style={{ fontFamily: FONT_BODY, color: C.text }} className="text-sm">
+      <Text style={{ fontFamily: FONT_BODY, color: C.text, fontSize: 12 }}>
         {label}
       </Text>
       <View
-        className="rounded-full p-0.5"
-        style={{ width: 48, height: 28, backgroundColor: value ? C.gold : C.border }}
+        className="rounded-full"
+        style={{ width: 48, height: 28, padding: 2, backgroundColor: value ? C.gold : C.border }}
       >
         <View
           className="rounded-full"

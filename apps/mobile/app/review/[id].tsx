@@ -44,98 +44,100 @@ export default function ReviewDetailPage() {
   return (
     <Screen edges={["top", "left", "right"]}>
       {/* Header */}
-      <View className="px-4 py-2 flex-row items-center">
-        <Pressable onPress={() => { if (router.canGoBack()) router.back(); else router.replace("/"); }} className="flex-row items-center gap-2">
-          <Text style={{ fontFamily: FONT_MONO }} className="text-textMuted uppercase text-xs tracking-widest">&lt; Back</Text>
+      <View className="flex-row items-center" style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+        <Pressable onPress={() => { if (router.canGoBack()) router.back(); else router.replace("/"); }} className="flex-row items-center" style={{ gap: 8 }}>
+          <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase tracking-widest">&lt; Back</Text>
         </Pressable>
       </View>
 
-      <ScrollView contentContainerClassName="p-4 gap-4 pb-24">
-        
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 96 }}>
+
         {/* REVIEW CARD */}
-        <View className="p-4 rounded-xl border border-borderLight bg-surface">
+        <View className="border border-borderLight bg-surface" style={{ padding: 16, borderRadius: 12 }}>
           {/* Author & Rating */}
-          <View className="flex-row justify-between items-start mb-6">
-            <View className="flex-row items-center gap-3">
-              <View className="w-12 h-12 rounded-full bg-surface border border-borderLight items-center justify-center">
-                <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-white">
+          <View className="flex-row justify-between items-start" style={{ marginBottom: 24 }}>
+            <View className="flex-row items-center" style={{ gap: 12 }}>
+              <View className="rounded-full bg-surface border border-borderLight items-center justify-center" style={{ width: 48, height: 48 }}>
+                <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-white">
                   {review.author.name[0]?.toUpperCase()}
                 </Text>
               </View>
               <View>
-                <Text style={{ fontFamily: FONT_HEADING }} className="text-base text-text leading-tight">{review.author.name}</Text>
-                <Text style={{ fontFamily: FONT_MONO }} className="text-[10px] text-textMuted uppercase tracking-wider mt-1">{formatDate(review._creationTime)}</Text>
+                <Text style={{ fontFamily: FONT_HEADING, fontSize: 14, lineHeight: 18 }} className="text-text">{review.author.name}</Text>
+                <Text style={{ fontFamily: FONT_MONO, fontSize: 10, marginTop: 4 }} className="text-textMuted uppercase tracking-wider">{formatDate(review._creationTime)}</Text>
               </View>
             </View>
-            <View className="flex-row items-baseline gap-1">
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-gold leading-none">{review.rating.toFixed(1)}</Text>
-              <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textDim leading-none">/10</Text>
+            <View className="flex-row items-baseline" style={{ gap: 4 }}>
+              <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-gold">{review.rating.toFixed(1)}</Text>
+              <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textDim">/10</Text>
             </View>
           </View>
 
           {/* Game Info inline */}
-          <View className="flex-row items-center gap-4 mb-6">
-            <View className="w-16 h-24 rounded border border-borderLight overflow-hidden bg-bgAlt">
+          <View className="flex-row items-center" style={{ gap: 16, marginBottom: 24 }}>
+            <View className="border border-borderLight overflow-hidden bg-bgAlt" style={{ width: 64, height: 96, borderRadius: 4 }}>
               {review.game.coverUrl && (
                 <Image source={{ uri: review.game.coverUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
               )}
             </View>
             <View className="flex-1">
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-lg text-text">{review.game.title}</Text>
-              <Pressable onPress={() => router.push(`/game/${review.game._id}`)} className="mt-1">
-                <Text style={{ fontFamily: FONT_BODY }} className="text-xs text-gold">View Game Details →</Text>
+              <Text style={{ fontFamily: FONT_HEADING, fontSize: 16 }} className="text-text">{review.game.title}</Text>
+              <Pressable onPress={() => router.push(`/game/${review.game._id}`)} style={{ marginTop: 4 }}>
+                <Text style={{ fontFamily: FONT_BODY, fontSize: 11 }} className="text-gold">View Game Details →</Text>
               </Pressable>
             </View>
           </View>
 
-          <View className="h-px bg-borderLight mb-4" />
+          <View className="bg-borderLight" style={{ height: 1, marginBottom: 16 }} />
 
           {/* Text */}
-          <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-text leading-relaxed mb-4">
+          <Text style={{ fontFamily: FONT_BODY, fontSize: 12, lineHeight: 19, marginBottom: 16 }} className="text-text">
             {review.text}
           </Text>
 
-          <View className="h-px bg-borderLight mb-4" />
+          <View className="bg-borderLight" style={{ height: 1, marginBottom: 16 }} />
 
           {/* Actions */}
           <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center gap-6">
-              <Pressable 
+            <View className="flex-row items-center" style={{ gap: 24 }}>
+              <Pressable
                 onPress={() => void toggleLike({ reviewId })}
-                className="flex-row items-center gap-2"
+                className="flex-row items-center"
+                style={{ gap: 8 }}
               >
                 <Heart size={20} color={review.viewerHasLiked ? C.red : C.textMuted} fill={review.viewerHasLiked ? C.red : "transparent"} />
-                <Text style={{ fontFamily: FONT_MONO }} className={`text-xs ${review.viewerHasLiked ? "text-red" : "text-textMuted"}`}>{review.likeCount}</Text>
+                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className={`${review.viewerHasLiked ? "text-red" : "text-textMuted"}`}>{review.likeCount}</Text>
               </Pressable>
-              
-              <View className="flex-row items-center gap-2">
+
+              <View className="flex-row items-center" style={{ gap: 8 }}>
                 <MessageSquare size={20} color={C.textMuted} />
-                <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textMuted">{review.commentCount}</Text>
+                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted">{review.commentCount}</Text>
               </View>
             </View>
 
-            <Pressable 
+            <Pressable
               onPress={() => setShareOpen(true)}
-              className="flex-row items-center gap-2"
+              className="flex-row items-center"
+              style={{ gap: 8 }}
             >
               <Share2 size={16} color={C.textMuted} />
-              <Text style={{ fontFamily: FONT_BODY }} className="text-xs text-textMuted">Share</Text>
+              <Text style={{ fontFamily: FONT_BODY, fontSize: 11 }} className="text-textMuted">Share</Text>
             </Pressable>
           </View>
         </View>
 
         {/* COMMENTS */}
-        <View className="p-4 rounded-xl border border-borderLight bg-surface gap-4">
-          <Text style={{ fontFamily: FONT_HEADING }} className="text-lg text-text">Comments ({comments.length})</Text>
-          
+        <View className="border border-borderLight bg-surface" style={{ padding: 16, borderRadius: 12, gap: 16 }}>
+          <Text style={{ fontFamily: FONT_HEADING, fontSize: 16 }} className="text-text">Comments ({comments.length})</Text>
+
           {/* Composer */}
-          <View className="flex-row gap-3 items-start">
-            <View className="w-8 h-8 rounded-full bg-surface border border-borderLight items-center justify-center mt-1">
-               <Text style={{ fontFamily: FONT_HEADING }} className="text-sm text-white">
+          <View className="flex-row items-start" style={{ gap: 12 }}>
+            <View className="rounded-full bg-surface border border-borderLight items-center justify-center" style={{ width: 32, height: 32, marginTop: 4 }}>
+               <Text style={{ fontFamily: FONT_HEADING, fontSize: 12 }} className="text-white">
                   {currentUser?.name[0]?.toUpperCase() || "?"}
                 </Text>
             </View>
-            <View className="flex-1 gap-2">
+            <View className="flex-1" style={{ gap: 8 }}>
               <Input
                 value={commentText}
                 onChangeText={setCommentText}
@@ -158,20 +160,20 @@ export default function ReviewDetailPage() {
           </View>
 
           {/* Comment List */}
-          <View className="mt-4 gap-4">
+          <View style={{ marginTop: 16, gap: 16 }}>
             {comments.map((comment) => (
-              <View key={`${comment._id}`} className="flex-row gap-3">
-                <View className="w-8 h-8 rounded-full bg-bgAlt border border-borderLight items-center justify-center">
-                  <Text style={{ fontFamily: FONT_HEADING }} className="text-xs text-text">
+              <View key={`${comment._id}`} className="flex-row" style={{ gap: 12 }}>
+                <View className="rounded-full bg-bgAlt border border-borderLight items-center justify-center" style={{ width: 32, height: 32 }}>
+                  <Text style={{ fontFamily: FONT_HEADING, fontSize: 10 }} className="text-text">
                     {comment.author.name[0]?.toUpperCase()}
                   </Text>
                 </View>
-                <View className="flex-1 bg-bg rounded p-3 border border-borderLight">
-                  <View className="flex-row justify-between items-center mb-1">
-                    <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-text font-medium">{comment.author.name}</Text>
-                    <Text style={{ fontFamily: FONT_MONO }} className="text-[9px] text-textDim uppercase">{formatDate(comment._creationTime)}</Text>
+                <View className="flex-1 bg-bg border border-borderLight" style={{ borderRadius: 4, padding: 12 }}>
+                  <View className="flex-row justify-between items-center" style={{ marginBottom: 4 }}>
+                    <Text style={{ fontFamily: FONT_BODY, fontSize: 12 }} className="text-text font-medium">{comment.author.name}</Text>
+                    <Text style={{ fontFamily: FONT_MONO, fontSize: 9 }} className="text-textDim uppercase">{formatDate(comment._creationTime)}</Text>
                   </View>
-                  <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-textMuted leading-relaxed">{comment.text}</Text>
+                  <Text style={{ fontFamily: FONT_BODY, fontSize: 12, lineHeight: 19 }} className="text-textMuted">{comment.text}</Text>
                 </View>
               </View>
             ))}

@@ -3,7 +3,14 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Text } from "react-native";
 import { AuthProviders } from "@/src/providers/AuthProviders";
+
+// Disable system font scaling so native text renders at the defined px sizes
+// and matches the web build (which does not scale with OS accessibility text
+// settings). This prevents phones with larger text enabled from blowing the
+// mobile UI past the web sizes.
+Text.defaultProps = { ...(Text.defaultProps ?? {}), allowFontScaling: false };
 
 export default function RootLayout() {
   return (

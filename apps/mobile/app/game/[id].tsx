@@ -127,7 +127,7 @@ export default function GameDetailPage() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScrollView contentContainerClassName="pb-24" bounces={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} bounces={false}>
         {/* HERO POSTER */}
         <View className="w-full relative" style={{ height: Math.min(windowWidth * 0.7, 380) }}>
           {formattedCoverUrl ? (
@@ -140,34 +140,34 @@ export default function GameDetailPage() {
           {/* Overlay for text legibility */}
           <View className="absolute inset-0 bg-black/40" />
           <View className="absolute bottom-0 left-0 right-0 h-2/5 bg-black/70" />
-          
+
           {/* Back button */}
-          <Pressable 
+          <Pressable
             onPress={() => { if (router.canGoBack()) router.back(); else router.replace("/"); }}
-            className="absolute left-4 z-10 flex-row items-center gap-1"
-            style={{ top: Math.max(insets.top, 16) }}
+            className="absolute z-10 flex-row items-center"
+            style={{ left: 16, gap: 4, top: Math.max(insets.top, 16) }}
           >
-            <Text style={{ fontFamily: FONT_MONO }} className="text-text uppercase tracking-widest text-xs">
+            <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-text uppercase tracking-widest">
               &lt; Back
             </Text>
           </Pressable>
 
           {/* Title and Meta */}
-          <View className="absolute bottom-0 left-0 right-0 p-4 gap-2">
-            <Text style={{ fontFamily: FONT_HEADING }} className="text-4xl text-text leading-tight">
+          <View className="absolute bottom-0 left-0 right-0" style={{ padding: 16, gap: 8 }}>
+            <Text style={{ fontFamily: FONT_HEADING, fontSize: 24, lineHeight: 28 }} className="text-text">
               {game.title}
             </Text>
-            <View className="flex-row flex-wrap items-center gap-4">
+            <View className="flex-row flex-wrap items-center" style={{ gap: 16 }}>
               {game.releaseYear && (
-                <View className="flex-row items-center gap-1">
+                <View className="flex-row items-center" style={{ gap: 4 }}>
                   <Calendar size={14} color={C.textMuted} />
-                  <Text style={{ fontFamily: FONT_MONO }} className="text-textMuted uppercase text-xs">{game.releaseYear}</Text>
+                  <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase">{game.releaseYear}</Text>
                 </View>
               )}
               {platformNames.length > 0 && (
-                <View className="flex-row items-center gap-1 flex-shrink">
+                <View className="flex-row items-center flex-shrink" style={{ gap: 4 }}>
                   <Gamepad2 size={14} color={C.textMuted} />
-                  <Text style={{ fontFamily: FONT_MONO }} className="text-textMuted uppercase text-xs flex-shrink" numberOfLines={1}>
+                  <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase flex-shrink" numberOfLines={1}>
                     {platformNames.join(" · ")}
                   </Text>
                 </View>
@@ -176,21 +176,22 @@ export default function GameDetailPage() {
           </View>
         </View>
 
-        <View className="gap-4">
+        <View style={{ padding: 16, gap: 16 }}>
           {/* ACTION ROW */}
-          <View className="gap-2">
-            <Pressable 
+          <View style={{ gap: 8 }}>
+            <Pressable
               onPress={() => setShowStatusPicker(!showStatusPicker)}
-              className={`flex-row items-center justify-center py-3 px-4 rounded border ${backlogItem ? 'bg-gold/15 border-gold/30' : 'bg-surface border-borderLight'}`}
+              className={`flex-row items-center justify-center border ${backlogItem ? 'bg-gold/15 border-gold/30' : 'bg-surface border-borderLight'}`}
+              style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 4 }}
             >
               <LayoutGrid size={16} color={backlogItem ? C.gold : C.textMuted} />
-              <Text style={{ fontFamily: FONT_MONO }} className={`ml-2 uppercase tracking-wider text-xs ${backlogItem ? 'text-gold' : 'text-text'}`}>
+              <Text style={{ fontFamily: FONT_MONO, fontSize: 10, marginLeft: 8 }} className={`uppercase tracking-wider ${backlogItem ? 'text-gold' : 'text-text'}`}>
                 {backlogItem ? backlogItem.status.replace(/_/g, " ") : "Add to Backlog"}
               </Text>
             </Pressable>
 
             {showStatusPicker && (
-              <View className="border border-borderLight rounded bg-surface overflow-hidden">
+              <View className="border border-borderLight bg-surface overflow-hidden" style={{ borderRadius: 4 }}>
                 {BACKLOG_STATUSES.map(s => (
                   <Pressable
                     key={s.key}
@@ -199,13 +200,14 @@ export default function GameDetailPage() {
                       if (backlogItem?.status === s.key) return;
                       await onSetStatus(s.key);
                     }}
-                    className={`px-4 py-3 flex-row items-center justify-between ${backlogItem?.status === s.key ? 'bg-gold/15' : ''}`}
+                    className={`flex-row items-center justify-between ${backlogItem?.status === s.key ? 'bg-gold/15' : ''}`}
+                    style={{ paddingHorizontal: 16, paddingVertical: 12 }}
                   >
-                    <Text style={{ fontFamily: FONT_BODY }} className={`text-sm ${backlogItem?.status === s.key ? 'text-gold' : 'text-text'}`}>
+                    <Text style={{ fontFamily: FONT_BODY, fontSize: 12 }} className={`${backlogItem?.status === s.key ? 'text-gold' : 'text-text'}`}>
                       {s.label}
                     </Text>
                     {backlogItem?.status === s.key && (
-                      <Text style={{ fontFamily: FONT_MONO }} className="text-gold text-[10px]">ACTIVE</Text>
+                      <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-gold">ACTIVE</Text>
                     )}
                   </Pressable>
                 ))}
@@ -220,16 +222,17 @@ export default function GameDetailPage() {
                         setLoadingStatus(null);
                       }
                     }}
-                    className="px-4 py-3 border-t border-borderLight"
+                    className="border-t border-borderLight"
+                    style={{ paddingHorizontal: 16, paddingVertical: 12 }}
                   >
-                    <Text style={{ fontFamily: FONT_MONO }} className="text-red text-xs uppercase text-center">Remove from Backlog</Text>
+                    <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-red uppercase text-center">Remove from Backlog</Text>
                   </Pressable>
                 )}
               </View>
             )}
 
-            <View className="flex-row gap-2">
-              <Pressable 
+            <View className="flex-row" style={{ gap: 8 }}>
+              <Pressable
                 onPress={async () => {
                   try {
                     if (isFavorite) {
@@ -241,15 +244,16 @@ export default function GameDetailPage() {
                     }
                   } catch {}
                 }}
-                className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded border gap-2 ${isFavorite ? 'bg-gold/15 border-gold/30' : 'bg-surface border-borderLight'}`}
+                className={`flex-1 flex-row items-center justify-center border ${isFavorite ? 'bg-gold/15 border-gold/30' : 'bg-surface border-borderLight'}`}
+                style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 4, gap: 8 }}
               >
                 <Heart size={18} color={isFavorite ? C.gold : C.textMuted} fill={isFavorite ? C.gold : "transparent"} />
-                <Text style={{ fontFamily: FONT_MONO }} className={`uppercase tracking-wider text-xs ${isFavorite ? 'text-gold' : 'text-textMuted'}`}>
+                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className={`uppercase tracking-wider ${isFavorite ? 'text-gold' : 'text-textMuted'}`}>
                   Favorite
                 </Text>
               </Pressable>
 
-              <Pressable 
+              <Pressable
                 onPress={async () => {
                   try {
                     if (!backlogItem) {
@@ -257,10 +261,11 @@ export default function GameDetailPage() {
                     }
                   } catch {}
                 }}
-                className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded border gap-2 ${backlogItem ? 'bg-gold/15 border-gold/30' : 'bg-surface border-borderLight'}`}
+                className={`flex-1 flex-row items-center justify-center border ${backlogItem ? 'bg-gold/15 border-gold/30' : 'bg-surface border-borderLight'}`}
+                style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 4, gap: 8 }}
               >
                 <Bookmark size={18} color={backlogItem ? C.gold : C.textMuted} />
-                <Text style={{ fontFamily: FONT_MONO }} className={`uppercase tracking-wider text-xs ${backlogItem ? 'text-gold' : 'text-textMuted'}`}>
+                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className={`uppercase tracking-wider ${backlogItem ? 'text-gold' : 'text-textMuted'}`}>
                   {backlogItem ? 'In Backlog' : 'Wishlist'}
                 </Text>
               </Pressable>
@@ -268,10 +273,10 @@ export default function GameDetailPage() {
           </View>
 
           {/* WRITE REVIEW BANNER */}
-          <View className="p-4 rounded-xl border border-borderLight bg-surface relative overflow-hidden">
+          <View className="border border-borderLight bg-surface relative overflow-hidden" style={{ padding: 16, borderRadius: 12 }}>
             <CornerMarkers size={16} color={C.borderLight} />
-            <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text mb-2">Ready to share your experience?</Text>
-            <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-textMuted leading-relaxed mb-4">
+            <Text style={{ fontFamily: FONT_HEADING, fontSize: 18, marginBottom: 8 }} className="text-text">Ready to share your experience?</Text>
+            <Text style={{ fontFamily: FONT_BODY, fontSize: 12, lineHeight: 19, marginBottom: 16 }} className="text-textMuted">
               Head over to the full review editor to capture your thoughts, rating, and playtime in one place.
             </Text>
             <Button
@@ -282,26 +287,26 @@ export default function GameDetailPage() {
 
           {/* SUMMARY */}
           {game.summary && (
-            <View className="p-4 rounded-xl border border-borderLight bg-surface relative">
+            <View className="border border-borderLight bg-surface relative" style={{ padding: 16, borderRadius: 12 }}>
               <CornerMarkers size={12} color={C.borderLight} />
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text mb-3">Summary</Text>
-              <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-textMuted leading-relaxed">
+              <Text style={{ fontFamily: FONT_HEADING, fontSize: 18, marginBottom: 12 }} className="text-text">Summary</Text>
+              <Text style={{ fontFamily: FONT_BODY, fontSize: 12, lineHeight: 19 }} className="text-textMuted">
                 {game.summary}
               </Text>
             </View>
           )}
 
           {/* ABOUT THIS GAME */}
-          <View className="p-4 rounded-xl border border-borderLight bg-surface gap-4">
-            <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">About This Game</Text>
-            
+          <View className="border border-borderLight bg-surface" style={{ padding: 16, borderRadius: 12, gap: 16 }}>
+            <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">About This Game</Text>
+
             {genreNames.length > 0 && (
-              <View className="gap-2">
-                <Text style={{ fontFamily: FONT_MONO }} className="text-[10px] text-textMuted uppercase tracking-widest">Genres</Text>
-                <View className="flex-row flex-wrap gap-2">
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase tracking-widest">Genres</Text>
+                <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                   {genreNames.map((g, i) => (
-                    <View key={`${g}-${i}`} className="px-3 py-1.5 rounded-full bg-gold/20 border border-gold/30">
-                      <Text style={{ fontFamily: FONT_BODY }} className="text-xs text-gold font-medium">{g}</Text>
+                    <View key={`${g}-${i}`} className="rounded-full bg-gold/20 border border-gold/30" style={{ paddingHorizontal: 12, paddingVertical: 6 }}>
+                      <Text style={{ fontFamily: FONT_BODY, fontSize: 11 }} className="text-gold font-medium">{g}</Text>
                     </View>
                   ))}
                 </View>
@@ -309,12 +314,12 @@ export default function GameDetailPage() {
             )}
 
             {developerNames.length > 0 && (
-              <View className="gap-2">
-                <Text style={{ fontFamily: FONT_MONO }} className="text-[10px] text-textMuted uppercase tracking-widest">Developers</Text>
-                <View className="flex-row flex-wrap gap-2">
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase tracking-widest">Developers</Text>
+                <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                   {developerNames.map((c, i) => (
-                    <View key={`${c}-${i}`} className="px-2 py-1 rounded border border-borderLight bg-bg">
-                      <Text style={{ fontFamily: FONT_BODY }} className="text-xs text-text">{c} <Text className="text-textDim">· Developer</Text></Text>
+                    <View key={`${c}-${i}`} className="border border-borderLight bg-bg" style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
+                      <Text style={{ fontFamily: FONT_BODY, fontSize: 11 }} className="text-text">{c} <Text className="text-textDim">· Developer</Text></Text>
                     </View>
                   ))}
                 </View>
@@ -322,12 +327,12 @@ export default function GameDetailPage() {
             )}
 
             {publisherNames.length > 0 && (
-              <View className="gap-2">
-                <Text style={{ fontFamily: FONT_MONO }} className="text-[10px] text-textMuted uppercase tracking-widest">Publishers</Text>
-                <View className="flex-row flex-wrap gap-2">
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase tracking-widest">Publishers</Text>
+                <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                   {publisherNames.map((c, i) => (
-                    <View key={`${c}-${i}`} className="px-2 py-1 rounded border border-borderLight bg-bg">
-                      <Text style={{ fontFamily: FONT_BODY }} className="text-xs text-text">{c} <Text className="text-textDim">· Publisher</Text></Text>
+                    <View key={`${c}-${i}`} className="border border-borderLight bg-bg" style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
+                      <Text style={{ fontFamily: FONT_BODY, fontSize: 11 }} className="text-text">{c} <Text className="text-textDim">· Publisher</Text></Text>
                     </View>
                   ))}
                 </View>
@@ -336,46 +341,47 @@ export default function GameDetailPage() {
           </View>
 
           {/* RELATED CONTENT */}
-          <Pressable 
+          <Pressable
             onPress={() => void onFetchRelated()}
-            className="flex-row items-center justify-between p-4 rounded-xl border border-borderLight bg-surface"
+            className="flex-row items-center justify-between border border-borderLight bg-surface"
+            style={{ padding: 16, borderRadius: 12 }}
           >
-            <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Related Content</Text>
-            <View className="flex-row items-center gap-3">
-              <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-textMuted">
+            <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">Related Content</Text>
+            <View className="flex-row items-center" style={{ gap: 12 }}>
+              <Text style={{ fontFamily: FONT_BODY, fontSize: 12 }} className="text-textMuted">
                 {isFetchingRelated ? "Loading..." : (relatedItems.length ? `${relatedItems.length} items` : "Load")}
               </Text>
               <ChevronDown size={20} color={C.textMuted} style={{ transform: [{ rotate: showRelated ? '180deg' : '0deg' }] }} />
             </View>
           </Pressable>
-          
+
           {showRelated && relatedItems.length > 0 && (
-            <View className="gap-2">
+            <View style={{ gap: 8 }}>
               {relatedItems.map(item => (
-                <View key={item.id} className="p-3 border-b border-borderLight bg-bgAlt flex-row justify-between items-start gap-3">
-                  <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-text flex-1" numberOfLines={2}>{item.title}</Text>
-                  <Text style={{ fontFamily: FONT_MONO }} className="text-[10px] text-textMuted uppercase flex-shrink-0 mt-0.5">{item.category.replace(/_/g, " ")}</Text>
+                <View key={item.id} className="border-b border-borderLight bg-bgAlt flex-row justify-between items-start" style={{ padding: 12, gap: 12 }}>
+                  <Text style={{ fontFamily: FONT_BODY, fontSize: 12 }} className="text-text flex-1" numberOfLines={2}>{item.title}</Text>
+                  <Text style={{ fontFamily: FONT_MONO, fontSize: 10, marginTop: 2 }} className="text-textMuted uppercase flex-shrink-0">{item.category.replace(/_/g, " ")}</Text>
                 </View>
               ))}
             </View>
           )}
 
           {/* COMMUNITY REVIEWS */}
-          <View className="p-4 rounded-xl border border-borderLight bg-surface gap-4">
+          <View className="border border-borderLight bg-surface" style={{ padding: 16, borderRadius: 12, gap: 16 }}>
             <View className="flex-row justify-between items-center">
-              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Community Reviews</Text>
+              <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">Community Reviews</Text>
               <Pressable onPress={() => router.push({ pathname: "/review/new", params: { gameId: `${game._id}` } })}>
-                <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-gold">Write a Review →</Text>
+                <Text style={{ fontFamily: FONT_BODY, fontSize: 12 }} className="text-gold">Write a Review →</Text>
               </Pressable>
             </View>
 
             {reviews.length === 0 ? (
-              <View className="py-8 items-center">
+              <View className="items-center" style={{ paddingVertical: 32 }}>
                 <PenLine size={32} color={C.textDim} />
-                <Text style={{ fontFamily: FONT_BODY }} className="text-textMuted mt-2">No reviews yet.</Text>
+                <Text style={{ fontFamily: FONT_BODY, fontSize: 12, marginTop: 8 }} className="text-textMuted">No reviews yet.</Text>
               </View>
             ) : (
-              <View className="gap-4">
+              <View style={{ gap: 16 }}>
                 {reviews.map((review) => {
                   const reviewId = toIdString(review._id);
                   return (

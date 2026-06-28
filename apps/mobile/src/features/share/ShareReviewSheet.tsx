@@ -78,7 +78,7 @@ export function ShareReviewSheet({
           }}
         >
           {/* Drag handle */}
-          <View className="items-center pt-3 pb-1">
+          <View className="items-center" style={{ paddingTop: 12, paddingBottom: 4 }}>
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: C.borderLight }} />
           </View>
 
@@ -87,7 +87,7 @@ export function ShareReviewSheet({
             className="flex-row items-center justify-between"
             style={{ paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderColor: C.borderLight }}
           >
-            <Text style={{ fontFamily: FONT_MONO, color: C.textMuted }} className="text-[10px] uppercase tracking-widest">
+            <Text style={{ fontFamily: FONT_MONO, color: C.textMuted, fontSize: 10 }} className="uppercase tracking-widest">
               Share
             </Text>
             <RNPressable onPress={onClose} hitSlop={14}>
@@ -97,7 +97,7 @@ export function ShareReviewSheet({
 
           {/* Game title */}
           <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 }}>
-            <Text style={{ fontFamily: FONT_HEADING, color: C.text }} className="text-base" numberOfLines={1}>
+            <Text style={{ fontFamily: FONT_HEADING, color: C.text, fontSize: 16 }} numberOfLines={1}>
               {gameTitle}
             </Text>
           </View>
