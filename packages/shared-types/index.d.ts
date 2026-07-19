@@ -94,6 +94,8 @@ export const SHARE_ACCENT_COLORS: Record<ShareCardAccent, string>;
 
 export function ratingToFiveStar(ratingOutOf10: number | undefined | null): number;
 
+export function normalizeRatingToTen(ratingOutOf100: number | undefined | null): number;
+
 export function buildShareImagePath(
   reviewId: string,
   options?: Partial<ShareCardOptions>

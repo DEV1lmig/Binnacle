@@ -30,6 +30,17 @@ export function ratingToFiveStar(ratingOutOf10) {
   return Math.max(0, Math.min(5, ratingOutOf10 / 2));
 }
 
+/**
+ * Normalizes an external critic score (IGDB aggregated/total rating, 0-100)
+ * to the app's 1-10 display scale.
+ */
+export function normalizeRatingToTen(ratingOutOf100) {
+  if (!ratingOutOf100 || Number.isNaN(ratingOutOf100)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(10, ratingOutOf100 / 10));
+}
+
 export function getShareImageDimensions(format) {
   return SHARE_CARD_DIMENSIONS[format] ?? SHARE_CARD_DIMENSIONS.story;
 }

@@ -5,6 +5,7 @@ import { Pressable, View, Text } from "@/src/tw";
 import { Image } from "@/src/tw/image";
 import { C, FONT_MONO, FONT_BODY } from "@binnacle/design-tokens";
 import { toIdString } from "@/src/lib/id";
+import { normalizeRatingToTen } from "@/src/lib/format";
 
 type GameCardProps = {
   gameId: unknown;
@@ -28,7 +29,7 @@ export function GameCard({
 }: GameCardProps) {
   const router = useRouter();
   const id = toIdString(gameId);
-  const rating = aggregatedRating ? Math.round(aggregatedRating) : null;
+  const rating = aggregatedRating ? normalizeRatingToTen(aggregatedRating) : null;
 
   return (
     <Pressable
@@ -82,7 +83,7 @@ export function GameCard({
                 color: C.text,
               }}
             >
-              {rating}
+              {rating.toFixed(1)}
             </Text>
           </View>
         ) : null}

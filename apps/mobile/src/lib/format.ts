@@ -1,5 +1,6 @@
 import {
   ratingToFiveStar as sharedRatingToFiveStar,
+  normalizeRatingToTen as sharedNormalizeRatingToTen,
 } from "@binnacle/shared-types";
 
 export function formatNumber(value: number | undefined | null) {
@@ -32,3 +33,5 @@ export function formatDate(timestamp: number | undefined | null) {
 }
 
 export const ratingToFiveStar = sharedRatingToFiveStar;
+
+export const normalizeRatingToTen = sharedNormalizeRatingToTen;

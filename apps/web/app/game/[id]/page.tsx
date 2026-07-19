@@ -11,6 +11,7 @@ import { Badge } from "@/app/components/ui/badge";
 import { DlcExpansionSection } from "@/app/components/game/DlcExpansionSection";
 import { Calendar, Gamepad2, Heart, Bookmark, ChevronLeft } from "lucide-react";
 import { getHighResCoverUrl } from "@/lib/igdb-images";
+import { normalizeRatingToTen } from "@binnacle/shared-types";
 import {
   Select,
   SelectContent,
@@ -299,7 +300,7 @@ export default function GameDetailPage() {
               {game.aggregatedRating && (
                 <div className="mb-6">
                   <span className="text-foreground text-lg font-semibold">
-                    {"rating by multiple sources: " + game.aggregatedRating?.toFixed(1)} / 100
+                    {"rating by multiple sources: " + normalizeRatingToTen(game.aggregatedRating).toFixed(1)} / 10
                   </span>
                 </div>
               )}

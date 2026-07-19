@@ -2,6 +2,7 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { StatusBadge } from './StatusBadge';
 import { Star, Clock } from 'lucide-react';
 import { C, FONT_BODY, FONT_MONO } from '@/app/lib/design-system';
+import { normalizeRatingToTen } from '@binnacle/shared-types';
 import type { Game } from '@/app/lib/mockData';
 
 interface GameCardProps {
@@ -85,7 +86,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
                 color: C.text,
               }}
             >
-              {rating ? (rating / 10).toFixed(1) : '0.0'}
+              {rating ? normalizeRatingToTen(rating).toFixed(1) : '0.0'}
             </span>
           </div>
         </div>

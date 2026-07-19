@@ -10,6 +10,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { ArrowDown, ArrowUp, Plus, Search, Star, Trash2, Loader2, Gamepad2 } from 'lucide-react';
 import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from '@/app/lib/design-system';
 import { CornerMarkers } from '@/app/lib/design-primitives';
+import { normalizeRatingToTen } from '@binnacle/shared-types';
 
 export interface TopGameFormEntry {
   gameId: Id<'games'>;
@@ -375,7 +376,7 @@ export function EditTopGamesDialog({
                         {result.aggregatedRating != null && (
                           <span className="flex items-center gap-1">
                             <Star style={{ width: 10, height: 10, color: C.amber }} />
-                            {(result.aggregatedRating / 10).toFixed(1)}
+                            {normalizeRatingToTen(result.aggregatedRating).toFixed(1)}
                           </span>
                         )}
                       </div>
@@ -531,7 +532,7 @@ export function EditTopGamesDialog({
                             {entry.aggregatedRating != null && (
                               <span className="flex items-center gap-1">
                                 <Star style={{ width: 10, height: 10, color: C.amber }} />
-                                {(entry.aggregatedRating / 10).toFixed(1)}
+                                {normalizeRatingToTen(entry.aggregatedRating).toFixed(1)}
                               </span>
                             )}
                           </div>
