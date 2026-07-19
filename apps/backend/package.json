@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm run dev:backend",
-    "dev:backend": "convex dev",
-    "predev": "convex dev --local && convex dashboard",
+    "dev": "convex dev",
+    "dev:local": "convex dev --local",
+    "dashboard": "convex dashboard",
+    "typecheck": "tsc --noEmit",
     "enable-development": "convex disable-local-deployments",
     "codegen": "convex codegen"
   },

@@ -10,7 +10,12 @@ import { AuthProviders } from "@/src/providers/AuthProviders";
 // and matches the web build (which does not scale with OS accessibility text
 // settings). This prevents phones with larger text enabled from blowing the
 // mobile UI past the web sizes.
-Text.defaultProps = { ...(Text.defaultProps ?? {}), allowFontScaling: false };
+// `defaultProps` was removed from RN's public types (React 19) but still
+// works at runtime on the legacy RN Text class.
+const RNText = Text as unknown as {
+  defaultProps?: { allowFontScaling?: boolean };
+};
+RNText.defaultProps = { ...(RNText.defaultProps ?? {}), allowFontScaling: false };
 
 export default function RootLayout() {
   return (

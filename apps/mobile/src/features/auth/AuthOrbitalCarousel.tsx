@@ -173,9 +173,9 @@ export function AuthOrbitalCarousel({ style }: AuthOrbitalCarouselProps) {
             ]}
           >
             {imageUrl && (
-              <Image 
-                source={{ uri: imageUrl }} 
-                style={StyleSheet.absoluteFillObject}
+              <Image
+                source={{ uri: imageUrl }}
+                style={StyleSheet.absoluteFill}
                 resizeMode="cover"
               />
             )}
@@ -256,11 +256,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
   },
   cardAccent: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     opacity: 0.18,
   },
   cardShade: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.25)",
   },
   cardFooter: {

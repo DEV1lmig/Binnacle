@@ -20,7 +20,9 @@ import {
 export const Link = (
   props: React.ComponentProps<typeof RouterLink> & { className?: string }
 ) => {
-  return useCssElement(RouterLink, props, { className: "style" });
+  // Cast: expo-router's Link props produce a TS2590 union that is too complex
+  // for useCssElement's generic to represent.
+  return useCssElement(RouterLink as any, props, { className: "style" });
 };
 
 Link.Trigger = RouterLink.Trigger;
@@ -59,7 +61,9 @@ export const ScrollView = (
     contentContainerClassName?: string;
   }
 ) => {
-  return useCssElement(RNScrollView, props, {
+  // Cast: RN's ScrollView props produce a TS2590 union that is too complex
+  // for useCssElement's generic to represent.
+  return useCssElement(RNScrollView as any, props, {
     className: "style",
     contentContainerClassName: "contentContainerStyle",
   });
@@ -70,7 +74,9 @@ ScrollView.displayName = "CSS(ScrollView)";
 export const Pressable = (
   props: React.ComponentProps<typeof RNPressable> & { className?: string }
 ) => {
-  return useCssElement(RNPressable, props, { className: "style" });
+  // Cast: RN's Pressable props produce a TS2590 union that is too complex
+  // for useCssElement's generic to represent.
+  return useCssElement(RNPressable as any, props, { className: "style" });
 };
 Pressable.displayName = "CSS(Pressable)";
 
@@ -117,6 +123,8 @@ function XXTouchableHighlight(
 export const TouchableHighlight = (
   props: React.ComponentProps<typeof RNTouchableHighlight>
 ) => {
-  return useCssElement(XXTouchableHighlight, props, { className: "style" });
+  // Cast: RN's TouchableHighlight props produce a TS2590 union that is too
+  // complex for useCssElement's generic to represent.
+  return useCssElement(XXTouchableHighlight as any, props, { className: "style" });
 };
 TouchableHighlight.displayName = "CSS(TouchableHighlight)";
