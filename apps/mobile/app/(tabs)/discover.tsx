@@ -80,10 +80,10 @@ export default function DiscoverTab() {
         <View style={{ gap: 12 }}>
           <HudBadge color={C.cyan}>Discover</HudBadge>
           <View style={{ gap: 4 }}>
-            <Text style={{ fontFamily: FONT_HEADING, fontSize: 28, fontWeight: "200", color: C.text, letterSpacing: -0.5 }}>
+            <Text className="text-5xl" style={{ fontFamily: FONT_HEADING, fontWeight: "200", color: C.text, letterSpacing: -0.5 }}>
               Explore Games
             </Text>
-            <Text style={{ fontFamily: FONT_BODY, fontSize: 14, color: C.textMuted }}>
+            <Text className="text-base" style={{ fontFamily: FONT_BODY, color: C.textMuted }}>
               Search the database or browse curated collections
             </Text>
           </View>
@@ -112,10 +112,10 @@ export default function DiscoverTab() {
             autoCapitalize="none"
             autoCorrect={false}
             onSubmitEditing={() => void onSearch()}
+            className="text-base"
             style={{
               flex: 1,
               fontFamily: FONT_BODY,
-              fontSize: 15,
               color: C.text,
             }}
           />
@@ -123,7 +123,7 @@ export default function DiscoverTab() {
             <Loader2 size={18} color={C.gold} strokeWidth={2} />
           ) : query.trim() ? (
             <Pressable onPress={() => void onSearch()} hitSlop={8}>
-              <Text style={{ fontFamily: FONT_MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: C.gold, fontWeight: "600" }}>
+              <Text className="text-sm" style={{ fontFamily: FONT_MONO, textTransform: "uppercase", letterSpacing: 1, color: C.gold, fontWeight: "600" }}>
                 Search
               </Text>
             </Pressable>
@@ -156,7 +156,7 @@ export default function DiscoverTab() {
                 })}
               </View>
             ) : (
-              <Text style={{ fontFamily: FONT_BODY, fontSize: 14, color: C.textDim, paddingVertical: 16, textAlign: "center" }}>
+              <Text className="text-base" style={{ fontFamily: FONT_BODY, color: C.textDim, paddingVertical: 16, textAlign: "center" }}>
                 Try a different search term.
               </Text>
             )}
@@ -196,14 +196,14 @@ export default function DiscoverTab() {
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ fontFamily: FONT_HEADING, fontSize: 18, color: C.gold, fontWeight: "300" }}>
+                    <Text className="text-xl" style={{ fontFamily: FONT_HEADING, color: C.gold, fontWeight: "300" }}>
                       {(user.name ?? "?")[0]?.toUpperCase()}
                     </Text>
                   </View>
-                  <Text numberOfLines={1} style={{ fontFamily: FONT_BODY, fontSize: 13, fontWeight: "500", color: C.text }}>
+                  <Text numberOfLines={1} className="text-sm" style={{ fontFamily: FONT_BODY, fontWeight: "500", color: C.text }}>
                     {user.name}
                   </Text>
-                  <Text numberOfLines={1} style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textDim }}>
+                  <Text numberOfLines={1} className="text-sm" style={{ fontFamily: FONT_MONO, color: C.textDim }}>
                     @{user.username}
                   </Text>
                 </Pressable>
@@ -303,7 +303,7 @@ export default function DiscoverTab() {
                     paddingVertical: 8,
                   }}
                 >
-                  <Text style={{ fontFamily: FONT_MONO, fontSize: 12, textTransform: "uppercase", letterSpacing: 1, color: C.textMuted, fontWeight: "400" }}>
+                  <Text className="text-sm" style={{ fontFamily: FONT_MONO, textTransform: "uppercase", letterSpacing: 1, color: C.textMuted, fontWeight: "400" }}>
                     # {genre}
                   </Text>
                 </Pressable>

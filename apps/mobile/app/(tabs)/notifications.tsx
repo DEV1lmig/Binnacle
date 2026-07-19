@@ -74,7 +74,7 @@ function NotificationRow({ notification }: { notification: any }) {
             {actor?.avatarUrl ? (
               <Image source={{ uri: actor.avatarUrl }} style={{ width: 40, height: 40 }} resizeMode="cover" />
             ) : (
-              <Text style={{ fontFamily: FONT_HEADING, fontSize: 16, color: C.gold, fontWeight: "300" }}>
+              <Text className="text-lg" style={{ fontFamily: FONT_HEADING, color: C.gold, fontWeight: "300" }}>
                 {(actor?.name ?? "?")[0]?.toUpperCase()}
               </Text>
             )}
@@ -101,14 +101,14 @@ function NotificationRow({ notification }: { notification: any }) {
         {/* Content */}
         <View style={{ flex: 1, gap: 3 }}>
           <View className="flex-row flex-wrap" style={{ gap: 4 }}>
-            <Text style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: "400", color: C.text }}>
+            <Text className="text-base" style={{ fontFamily: FONT_BODY, fontWeight: "400", color: C.text }}>
               {actor?.name ?? "Someone"}
             </Text>
-            <Text style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: "300", color: C.textMuted }}>
+            <Text className="text-base" style={{ fontFamily: FONT_BODY, fontWeight: "300", color: C.textMuted }}>
               {meta.label}
             </Text>
           </View>
-          <Text style={{ fontFamily: FONT_MONO, fontSize: 10, color: C.textDim, textTransform: "uppercase", letterSpacing: 1 }}>
+          <Text className="text-xs" style={{ fontFamily: FONT_MONO, color: C.textDim, textTransform: "uppercase", letterSpacing: 1 }}>
             {formatDate(notification.createdAt)}
           </Text>
         </View>
@@ -160,15 +160,15 @@ export default function NotificationsTab() {
         <View style={{ gap: 12 }}>
           <HudBadge color={C.accent}>Signals</HudBadge>
           <View style={{ gap: 4 }}>
-            <Text style={{ fontFamily: FONT_HEADING, fontSize: 28, fontWeight: "200", color: C.text, letterSpacing: -0.5 }}>
+            <Text className="text-5xl" style={{ fontFamily: FONT_HEADING, fontWeight: "200", color: C.text, letterSpacing: -0.5 }}>
               Notifications
             </Text>
             <View className="flex-row items-center" style={{ gap: 12 }}>
-              <Text style={{ fontFamily: FONT_MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, color: C.textMuted, fontWeight: "400" }}>
+              <Text className="text-sm" style={{ fontFamily: FONT_MONO, textTransform: "uppercase", letterSpacing: 1.5, color: C.textMuted, fontWeight: "400" }}>
                 {total} TOTAL
               </Text>
               {unread > 0 ? (
-                <Text style={{ fontFamily: FONT_MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, color: C.gold, fontWeight: "600" }}>
+                <Text className="text-sm" style={{ fontFamily: FONT_MONO, textTransform: "uppercase", letterSpacing: 1.5, color: C.gold, fontWeight: "600" }}>
                   {unread} UNREAD
                 </Text>
               ) : null}
@@ -191,7 +191,7 @@ export default function NotificationsTab() {
             }}
           >
             <CheckCheck size={14} color={C.gold} strokeWidth={2} />
-            <Text style={{ fontFamily: FONT_MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: C.gold, fontWeight: "600" }}>
+            <Text className="text-sm" style={{ fontFamily: FONT_MONO, textTransform: "uppercase", letterSpacing: 1, color: C.gold, fontWeight: "600" }}>
               Mark all read
             </Text>
           </Pressable>
@@ -237,10 +237,10 @@ export default function NotificationsTab() {
                 <BellOff size={24} color={C.textDim} strokeWidth={1.5} />
               )}
             </View>
-            <Text style={{ fontFamily: FONT_HEADING, fontSize: 18, color: C.textMuted, fontWeight: "300" }}>
+            <Text className="text-xl" style={{ fontFamily: FONT_HEADING, color: C.textMuted, fontWeight: "300" }}>
               {activeTab === "unread" && unread === 0 ? "All caught up" : "All quiet"}
             </Text>
-            <Text style={{ fontFamily: FONT_BODY, fontSize: 13, color: C.textDim, textAlign: "center" }}>
+            <Text className="text-sm" style={{ fontFamily: FONT_BODY, color: C.textDim, textAlign: "center" }}>
               {activeTab === "unread" && unread === 0
                 ? "You've read everything. Nice work."
                 : "New likes, comments, and follows will appear here."}

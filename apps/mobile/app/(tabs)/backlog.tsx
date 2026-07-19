@@ -80,10 +80,10 @@ export default function BacklogTab() {
         <View style={{ gap: 12 }}>
           <HudBadge color={C.gold}>Collection</HudBadge>
           <View style={{ gap: 4 }}>
-            <Text style={{ fontFamily: FONT_HEADING, fontSize: 28, fontWeight: "200", color: C.text, letterSpacing: -0.5 }}>
+            <Text className="text-5xl" style={{ fontFamily: FONT_HEADING, fontWeight: "200", color: C.text, letterSpacing: -0.5 }}>
               Your Backlog
             </Text>
-            <Text style={{ fontFamily: FONT_MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, color: C.gold, fontWeight: "400" }}>
+            <Text className="text-sm" style={{ fontFamily: FONT_MONO, textTransform: "uppercase", letterSpacing: 1.5, color: C.gold, fontWeight: "400" }}>
               {statusCounts.all} GAMES TRACKED
             </Text>
           </View>
@@ -111,7 +111,8 @@ export default function BacklogTab() {
             placeholderTextColor={C.textDim}
             autoCapitalize="none"
             autoCorrect={false}
-            style={{ flex: 1, fontFamily: FONT_BODY, fontSize: 14, color: C.text }}
+            className="text-base"
+            style={{ flex: 1, fontFamily: FONT_BODY, color: C.text }}
           />
         </View>
 
@@ -127,10 +128,10 @@ export default function BacklogTab() {
           }}
         >
           <View className="flex-row items-center justify-between">
-            <Text style={{ fontFamily: FONT_MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: C.textMuted }}>
+            <Text className="text-sm" style={{ fontFamily: FONT_MONO, textTransform: "uppercase", letterSpacing: 1, color: C.textMuted }}>
               Completion
             </Text>
-            <Text style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: "600", color: C.green }}>
+            <Text className="text-base" style={{ fontFamily: FONT_MONO, fontWeight: "600", color: C.green }}>
               {completionPct}%
             </Text>
           </View>
@@ -151,7 +152,7 @@ export default function BacklogTab() {
               }}
             />
           </View>
-          <Text style={{ fontFamily: FONT_BODY, fontSize: 12, color: C.textDim }}>
+          <Text className="text-sm" style={{ fontFamily: FONT_BODY, color: C.textDim }}>
             {statusCounts.completed} of {statusCounts.all} games completed
           </Text>
         </View>
@@ -187,9 +188,9 @@ export default function BacklogTab() {
                   }}
                 />
                 <Text
+                  className="text-sm"
                   style={{
                     fontFamily: FONT_MONO,
-                    fontSize: 11,
                     textTransform: "uppercase",
                     letterSpacing: 1,
                     fontWeight: isActive ? "600" : "400",
@@ -199,9 +200,9 @@ export default function BacklogTab() {
                   {status.label}
                 </Text>
                 <Text
+                  className="text-sm"
                   style={{
                     fontFamily: FONT_MONO,
-                    fontSize: 11,
                     fontWeight: "600",
                     color: isActive ? status.color : C.textDim,
                   }}
@@ -243,10 +244,10 @@ export default function BacklogTab() {
             >
               <ListTodo size={24} color={C.textDim} strokeWidth={1.5} />
             </View>
-            <Text style={{ fontFamily: FONT_HEADING, fontSize: 18, color: C.textMuted, fontWeight: "300" }}>
+            <Text className="text-xl" style={{ fontFamily: FONT_HEADING, color: C.textMuted, fontWeight: "300" }}>
               {searchQuery ? "No matching games" : "Your backlog is empty"}
             </Text>
-            <Text style={{ fontFamily: FONT_BODY, fontSize: 13, color: C.textDim, textAlign: "center" }}>
+            <Text className="text-sm" style={{ fontFamily: FONT_BODY, color: C.textDim, textAlign: "center" }}>
               {searchQuery
                 ? "Try a different search term."
                 : "Add games from Discover or from game detail pages."}
@@ -290,9 +291,9 @@ export default function BacklogTab() {
                       }}
                     />
                     <Text
+                      className="text-xs"
                       style={{
                         fontFamily: FONT_MONO,
-                        fontSize: 10,
                         textTransform: "uppercase",
                         letterSpacing: 1,
                         color: statusColor,

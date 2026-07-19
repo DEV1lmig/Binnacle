@@ -57,7 +57,7 @@ export function SectionTag({ label, color = colors.accent, style }: SectionTagPr
       style={style}
     >
       <View className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-      <Text className="text-[10px] font-semibold tracking-widest uppercase text-textMuted">
+      <Text className="text-xs font-semibold tracking-widest uppercase text-textMuted">
         {label}
       </Text>
     </View>
@@ -72,7 +72,7 @@ type HeadingProps = {
 
 export function Heading({ children, style }: HeadingProps) {
   return (
-    <Text className="text-text text-[28px] font-light tracking-tight" style={style}>
+    <Text className="text-text text-5xl font-light tracking-tight" style={style}>
       {children}
     </Text>
   );
@@ -88,7 +88,7 @@ type BodyProps = {
 export function Body({ children, style, numberOfLines }: BodyProps) {
   return (
     <Text
-      className="text-textMuted text-[15px] leading-6"
+      className="text-textMuted text-base leading-snug"
       style={style}
       numberOfLines={numberOfLines}
     >
@@ -156,7 +156,7 @@ export function Input({ label, style, ...props }: InputProps) {
   return (
     <View className="gap-1">
       {label ? (
-        <Text className="text-text text-[13px] font-semibold tracking-wide uppercase">
+        <Text className="text-text text-sm font-semibold tracking-wide uppercase">
           {label}
         </Text>
       ) : null}

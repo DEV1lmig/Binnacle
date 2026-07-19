@@ -147,27 +147,27 @@ export default function GameDetailPage() {
             className="absolute z-10 flex-row items-center"
             style={{ left: 16, gap: 4, top: Math.max(insets.top, 16) }}
           >
-            <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-text uppercase tracking-widest">
+            <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-text uppercase tracking-widest">
               &lt; Back
             </Text>
           </Pressable>
 
           {/* Title and Meta */}
           <View className="absolute bottom-0 left-0 right-0" style={{ padding: 16, gap: 8 }}>
-            <Text style={{ fontFamily: FONT_HEADING, fontSize: 24, lineHeight: 28 }} className="text-text">
+            <Text style={{ fontFamily: FONT_HEADING, lineHeight: 28 }} className="text-4xl text-text">
               {game.title}
             </Text>
             <View className="flex-row flex-wrap items-center" style={{ gap: 16 }}>
               {game.releaseYear && (
                 <View className="flex-row items-center" style={{ gap: 4 }}>
                   <Calendar size={14} color={C.textMuted} />
-                  <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase">{game.releaseYear}</Text>
+                  <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textMuted uppercase">{game.releaseYear}</Text>
                 </View>
               )}
               {platformNames.length > 0 && (
                 <View className="flex-row items-center flex-shrink" style={{ gap: 4 }}>
                   <Gamepad2 size={14} color={C.textMuted} />
-                  <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase flex-shrink" numberOfLines={1}>
+                  <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textMuted uppercase flex-shrink" numberOfLines={1}>
                     {platformNames.join(" · ")}
                   </Text>
                 </View>
@@ -185,7 +185,7 @@ export default function GameDetailPage() {
               style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 4 }}
             >
               <LayoutGrid size={16} color={backlogItem ? C.gold : C.textMuted} />
-              <Text style={{ fontFamily: FONT_MONO, fontSize: 10, marginLeft: 8 }} className={`uppercase tracking-wider ${backlogItem ? 'text-gold' : 'text-text'}`}>
+              <Text style={{ fontFamily: FONT_MONO, marginLeft: 8 }} className={`text-xs uppercase tracking-wider ${backlogItem ? 'text-gold' : 'text-text'}`}>
                 {backlogItem ? backlogItem.status.replace(/_/g, " ") : "Add to Backlog"}
               </Text>
             </Pressable>
@@ -203,11 +203,11 @@ export default function GameDetailPage() {
                     className={`flex-row items-center justify-between ${backlogItem?.status === s.key ? 'bg-gold/15' : ''}`}
                     style={{ paddingHorizontal: 16, paddingVertical: 12 }}
                   >
-                    <Text style={{ fontFamily: FONT_BODY, fontSize: 12 }} className={`${backlogItem?.status === s.key ? 'text-gold' : 'text-text'}`}>
+                    <Text style={{ fontFamily: FONT_BODY }} className={`text-sm ${backlogItem?.status === s.key ? 'text-gold' : 'text-text'}`}>
                       {s.label}
                     </Text>
                     {backlogItem?.status === s.key && (
-                      <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-gold">ACTIVE</Text>
+                      <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-gold">ACTIVE</Text>
                     )}
                   </Pressable>
                 ))}
@@ -225,7 +225,7 @@ export default function GameDetailPage() {
                     className="border-t border-borderLight"
                     style={{ paddingHorizontal: 16, paddingVertical: 12 }}
                   >
-                    <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-red uppercase text-center">Remove from Backlog</Text>
+                    <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-red uppercase text-center">Remove from Backlog</Text>
                   </Pressable>
                 )}
               </View>
@@ -248,7 +248,7 @@ export default function GameDetailPage() {
                 style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 4, gap: 8 }}
               >
                 <Heart size={18} color={isFavorite ? C.gold : C.textMuted} fill={isFavorite ? C.gold : "transparent"} />
-                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className={`uppercase tracking-wider ${isFavorite ? 'text-gold' : 'text-textMuted'}`}>
+                <Text style={{ fontFamily: FONT_MONO }} className={`text-xs uppercase tracking-wider ${isFavorite ? 'text-gold' : 'text-textMuted'}`}>
                   Favorite
                 </Text>
               </Pressable>
@@ -265,7 +265,7 @@ export default function GameDetailPage() {
                 style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 4, gap: 8 }}
               >
                 <Bookmark size={18} color={backlogItem ? C.gold : C.textMuted} />
-                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className={`uppercase tracking-wider ${backlogItem ? 'text-gold' : 'text-textMuted'}`}>
+                <Text style={{ fontFamily: FONT_MONO }} className={`text-xs uppercase tracking-wider ${backlogItem ? 'text-gold' : 'text-textMuted'}`}>
                   {backlogItem ? 'In Backlog' : 'Wishlist'}
                 </Text>
               </Pressable>
@@ -275,8 +275,8 @@ export default function GameDetailPage() {
           {/* WRITE REVIEW BANNER */}
           <View className="border border-borderLight bg-surface relative overflow-hidden" style={{ padding: 16, borderRadius: 12 }}>
             <CornerMarkers size={16} color={C.borderLight} />
-            <Text style={{ fontFamily: FONT_HEADING, fontSize: 18, marginBottom: 8 }} className="text-text">Ready to share your experience?</Text>
-            <Text style={{ fontFamily: FONT_BODY, fontSize: 12, lineHeight: 19, marginBottom: 16 }} className="text-textMuted">
+            <Text style={{ fontFamily: FONT_HEADING, marginBottom: 8 }} className="text-xl text-text">Ready to share your experience?</Text>
+            <Text style={{ fontFamily: FONT_BODY, marginBottom: 16 }} className="text-sm leading-relaxed text-textMuted">
               Head over to the full review editor to capture your thoughts, rating, and playtime in one place.
             </Text>
             <Button
@@ -289,8 +289,8 @@ export default function GameDetailPage() {
           {game.summary && (
             <View className="border border-borderLight bg-surface relative" style={{ padding: 16, borderRadius: 12 }}>
               <CornerMarkers size={12} color={C.borderLight} />
-              <Text style={{ fontFamily: FONT_HEADING, fontSize: 18, marginBottom: 12 }} className="text-text">Summary</Text>
-              <Text style={{ fontFamily: FONT_BODY, fontSize: 12, lineHeight: 19 }} className="text-textMuted">
+              <Text style={{ fontFamily: FONT_HEADING, marginBottom: 12 }} className="text-xl text-text">Summary</Text>
+              <Text style={{ fontFamily: FONT_BODY }} className="text-sm leading-relaxed text-textMuted">
                 {game.summary}
               </Text>
             </View>
@@ -298,15 +298,15 @@ export default function GameDetailPage() {
 
           {/* ABOUT THIS GAME */}
           <View className="border border-borderLight bg-surface" style={{ padding: 16, borderRadius: 12, gap: 16 }}>
-            <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">About This Game</Text>
+            <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">About This Game</Text>
 
             {genreNames.length > 0 && (
               <View style={{ gap: 8 }}>
-                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase tracking-widest">Genres</Text>
+                <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textMuted uppercase tracking-widest">Genres</Text>
                 <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                   {genreNames.map((g, i) => (
                     <View key={`${g}-${i}`} className="rounded-full bg-gold/20 border border-gold/30" style={{ paddingHorizontal: 12, paddingVertical: 6 }}>
-                      <Text style={{ fontFamily: FONT_BODY, fontSize: 11 }} className="text-gold font-medium">{g}</Text>
+                      <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-gold font-medium">{g}</Text>
                     </View>
                   ))}
                 </View>
@@ -315,11 +315,11 @@ export default function GameDetailPage() {
 
             {developerNames.length > 0 && (
               <View style={{ gap: 8 }}>
-                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase tracking-widest">Developers</Text>
+                <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textMuted uppercase tracking-widest">Developers</Text>
                 <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                   {developerNames.map((c, i) => (
                     <View key={`${c}-${i}`} className="border border-borderLight bg-bg" style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
-                      <Text style={{ fontFamily: FONT_BODY, fontSize: 11 }} className="text-text">{c} <Text className="text-textDim">· Developer</Text></Text>
+                      <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-text">{c} <Text className="text-textDim">· Developer</Text></Text>
                     </View>
                   ))}
                 </View>
@@ -328,11 +328,11 @@ export default function GameDetailPage() {
 
             {publisherNames.length > 0 && (
               <View style={{ gap: 8 }}>
-                <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase tracking-widest">Publishers</Text>
+                <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textMuted uppercase tracking-widest">Publishers</Text>
                 <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                   {publisherNames.map((c, i) => (
                     <View key={`${c}-${i}`} className="border border-borderLight bg-bg" style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
-                      <Text style={{ fontFamily: FONT_BODY, fontSize: 11 }} className="text-text">{c} <Text className="text-textDim">· Publisher</Text></Text>
+                      <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-text">{c} <Text className="text-textDim">· Publisher</Text></Text>
                     </View>
                   ))}
                 </View>
@@ -346,9 +346,9 @@ export default function GameDetailPage() {
             className="flex-row items-center justify-between border border-borderLight bg-surface"
             style={{ padding: 16, borderRadius: 12 }}
           >
-            <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">Related Content</Text>
+            <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Related Content</Text>
             <View className="flex-row items-center" style={{ gap: 12 }}>
-              <Text style={{ fontFamily: FONT_BODY, fontSize: 12 }} className="text-textMuted">
+              <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-textMuted">
                 {isFetchingRelated ? "Loading..." : (relatedItems.length ? `${relatedItems.length} items` : "Load")}
               </Text>
               <ChevronDown size={20} color={C.textMuted} style={{ transform: [{ rotate: showRelated ? '180deg' : '0deg' }] }} />
@@ -359,8 +359,8 @@ export default function GameDetailPage() {
             <View style={{ gap: 8 }}>
               {relatedItems.map(item => (
                 <View key={item.id} className="border-b border-borderLight bg-bgAlt flex-row justify-between items-start" style={{ padding: 12, gap: 12 }}>
-                  <Text style={{ fontFamily: FONT_BODY, fontSize: 12 }} className="text-text flex-1" numberOfLines={2}>{item.title}</Text>
-                  <Text style={{ fontFamily: FONT_MONO, fontSize: 10, marginTop: 2 }} className="text-textMuted uppercase flex-shrink-0">{item.category.replace(/_/g, " ")}</Text>
+                  <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-text flex-1" numberOfLines={2}>{item.title}</Text>
+                  <Text style={{ fontFamily: FONT_MONO, marginTop: 2 }} className="text-xs text-textMuted uppercase flex-shrink-0">{item.category.replace(/_/g, " ")}</Text>
                 </View>
               ))}
             </View>
@@ -369,16 +369,16 @@ export default function GameDetailPage() {
           {/* COMMUNITY REVIEWS */}
           <View className="border border-borderLight bg-surface" style={{ padding: 16, borderRadius: 12, gap: 16 }}>
             <View className="flex-row justify-between items-center">
-              <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">Community Reviews</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Community Reviews</Text>
               <Pressable onPress={() => router.push({ pathname: "/review/new", params: { gameId: `${game._id}` } })}>
-                <Text style={{ fontFamily: FONT_BODY, fontSize: 12 }} className="text-gold">Write a Review →</Text>
+                <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-gold">Write a Review →</Text>
               </Pressable>
             </View>
 
             {reviews.length === 0 ? (
               <View className="items-center" style={{ paddingVertical: 32 }}>
                 <PenLine size={32} color={C.textDim} />
-                <Text style={{ fontFamily: FONT_BODY, fontSize: 12, marginTop: 8 }} className="text-textMuted">No reviews yet.</Text>
+                <Text style={{ fontFamily: FONT_BODY, marginTop: 8 }} className="text-sm text-textMuted">No reviews yet.</Text>
               </View>
             ) : (
               <View style={{ gap: 16 }}>

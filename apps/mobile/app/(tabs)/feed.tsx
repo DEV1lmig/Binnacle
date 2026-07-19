@@ -89,16 +89,16 @@ export default function FeedTab() {
               {dashboard?.user.avatarUrl ? (
                 <Image source={{ uri: dashboard.user.avatarUrl }} style={{ width: 44, height: 44 }} resizeMode="cover" />
               ) : (
-                <Text style={{ fontFamily: FONT_HEADING, fontSize: 18, color: C.gold, fontWeight: "300" }}>
+                <Text className="text-xl" style={{ fontFamily: FONT_HEADING, color: C.gold, fontWeight: "300" }}>
                   {(dashboard?.user.name ?? "?")[0]?.toUpperCase()}
                 </Text>
               )}
             </View>
             <View style={{ gap: 2 }}>
-              <Text style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 1 }}>
+              <Text className="text-sm" style={{ fontFamily: FONT_MONO, color: C.textDim, textTransform: "uppercase", letterSpacing: 1 }}>
                 {greeting}, archivist
               </Text>
-              <Text style={{ fontFamily: FONT_HEADING, fontSize: 20, fontWeight: "300", color: C.text }}>
+              <Text className="text-2xl" style={{ fontFamily: FONT_HEADING, fontWeight: "300", color: C.text }}>
                 {dashboard?.user.name ?? "Loading..."}
               </Text>
             </View>
@@ -120,7 +120,7 @@ export default function FeedTab() {
             }}
           >
             <PenLine size={14} color={C.bg} strokeWidth={2.5} />
-            <Text style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1, color: C.bg }}>
+            <Text className="text-sm" style={{ fontFamily: FONT_MONO, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1, color: C.bg }}>
               Review
             </Text>
           </Pressable>
@@ -189,10 +189,10 @@ export default function FeedTab() {
               }}
             >
               <Activity size={24} color={C.textDim} strokeWidth={1.5} />
-              <Text style={{ fontFamily: FONT_HEADING, fontSize: 16, color: C.textMuted, fontWeight: "300" }}>
+              <Text className="text-lg" style={{ fontFamily: FONT_HEADING, color: C.textMuted, fontWeight: "300" }}>
                 No {activeTab} activity yet
               </Text>
-              <Text style={{ fontFamily: FONT_BODY, fontSize: 13, color: C.textDim, textAlign: "center" }}>
+              <Text className="text-sm" style={{ fontFamily: FONT_BODY, color: C.textDim, textAlign: "center" }}>
                 {activeTab === "friends"
                   ? "Follow more players to see their reviews here."
                   : "Community reviews will appear here once available."}
@@ -243,7 +243,7 @@ export default function FeedTab() {
                           fill={entry.viewerHasLiked ? C.gold : "none"}
                           strokeWidth={2}
                         />
-                        <Text style={{ fontFamily: FONT_MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: entry.viewerHasLiked ? C.gold : C.textMuted }}>
+                        <Text className="text-sm" style={{ fontFamily: FONT_MONO, textTransform: "uppercase", letterSpacing: 1, color: entry.viewerHasLiked ? C.gold : C.textMuted }}>
                           {entry.viewerHasLiked ? "Liked" : "Like"}
                         </Text>
                       </Pressable>
@@ -262,7 +262,7 @@ export default function FeedTab() {
                         }}
                       >
                         <MessageSquare size={14} color={C.textMuted} strokeWidth={2} />
-                        <Text style={{ fontFamily: FONT_MONO, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: C.textMuted }}>
+                        <Text className="text-sm" style={{ fontFamily: FONT_MONO, textTransform: "uppercase", letterSpacing: 1, color: C.textMuted }}>
                           Game
                         </Text>
                       </Pressable>
@@ -313,19 +313,21 @@ export default function FeedTab() {
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ fontFamily: FONT_HEADING, fontSize: 16, color: C.gold, fontWeight: "300" }}>
+                    <Text className="text-lg" style={{ fontFamily: FONT_HEADING, color: C.gold, fontWeight: "300" }}>
                       {(user.name ?? "?")[0]?.toUpperCase()}
                     </Text>
                   </View>
                   <Text
                     numberOfLines={1}
-                    style={{ fontFamily: FONT_BODY, fontSize: 13, fontWeight: "500", color: C.text }}
+                    className="text-sm"
+                    style={{ fontFamily: FONT_BODY, fontWeight: "500", color: C.text }}
                   >
                     {user.name}
                   </Text>
                   <Text
                     numberOfLines={1}
-                    style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textDim }}
+                    className="text-sm"
+                    style={{ fontFamily: FONT_MONO, color: C.textDim }}
                   >
                     @{user.username}
                   </Text>

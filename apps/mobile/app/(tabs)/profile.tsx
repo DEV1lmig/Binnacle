@@ -117,8 +117,8 @@ export default function ProfileTab() {
     >
       <Icon size={14} color={active ? C.gold : color} />
       <Text
-        style={{ fontFamily: FONT_MONO, fontSize: 10 }}
-        className={`uppercase tracking-wider ${active ? "text-gold" : "text-textMuted"}`}
+        style={{ fontFamily: FONT_MONO }}
+        className={`text-xs uppercase tracking-wider ${active ? "text-gold" : "text-textMuted"}`}
       >
         {label}
       </Text>
@@ -157,10 +157,10 @@ export default function ProfileTab() {
           </View>
         ) : editingTopGames ? (
           <View className="border border-borderLight bg-surface" style={{ padding: 16, borderRadius: 4, gap: 16 }}>
-            <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">Edit Top Games</Text>
+            <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Edit Top Games</Text>
             {topGamesDraft.map((entry, index) => (
               <View key={`${entry.gameId}`} className="bg-bg border border-borderLight" style={{ padding: 12, borderRadius: 4, gap: 8 }}>
-                <Text style={{ fontFamily: FONT_HEADING, fontSize: 14 }} className="text-text">
+                <Text style={{ fontFamily: FONT_HEADING }} className="text-base text-text">
                   #{index + 1} {entry.title}
                 </Text>
                 <Button label="Remove" variant="danger" onPress={() => {
@@ -178,7 +178,7 @@ export default function ProfileTab() {
             />
             {(gameSearchResults ?? []).slice(0, 4).map((game) => (
               <View key={`${game._id}`} className="flex-row items-center justify-between bg-bg border border-borderLight" style={{ padding: 8, borderRadius: 4 }}>
-                <Text className="text-text flex-1" style={{ fontFamily: FONT_BODY, fontSize: 14 }}>{game.title}</Text>
+                <Text className="text-text flex-1 text-base" style={{ fontFamily: FONT_BODY }}>{game.title}</Text>
                 <Button label="Add" variant="secondary" onPress={() => onAddTopGame({ _id: game._id, title: game.title })} />
               </View>
             ))}
@@ -194,21 +194,21 @@ export default function ProfileTab() {
               <CornerMarkers size={16} color={C.borderLight} />
 
               <View className="items-center justify-center rounded-full border-2 border-borderLight bg-surface z-10 relative" style={{ width: 80, height: 80 }}>
-                <Text style={{ fontFamily: FONT_HEADING, fontSize: 20 }} className="text-gold">
+                <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-gold">
                   {dashboard.user.name[0]?.toUpperCase()}
                 </Text>
                 <View className="absolute bottom-0 right-0 rounded-full border-2 border-surface bg-green" style={{ width: 16, height: 16 }} />
               </View>
 
-              <Text style={{ fontFamily: FONT_HEADING, fontSize: 20, marginTop: 12 }} className="text-text text-center">
+              <Text style={{ fontFamily: FONT_HEADING, marginTop: 12 }} className="text-2xl text-text text-center">
                 {dashboard.user.name}
               </Text>
-               <Text style={{ fontFamily: FONT_MONO, fontSize: 10, marginTop: 4 }} className="text-textMuted uppercase tracking-wider text-center">
+               <Text style={{ fontFamily: FONT_MONO, marginTop: 4 }} className="text-xs text-textMuted uppercase tracking-wider text-center">
                 @{dashboard.user.username} · Since {formatDate(dashboard.user._creationTime)}
               </Text>
 
               {dashboard.user.bio && (
-                <Text style={{ fontFamily: FONT_BODY, fontSize: 12, marginTop: 16 }} className="text-textDim text-center">
+                <Text style={{ fontFamily: FONT_BODY, marginTop: 16 }} className="text-sm text-textDim text-center">
                   {dashboard.user.bio}
                 </Text>
               )}
@@ -222,7 +222,7 @@ export default function ProfileTab() {
                     { label: "Reviews", value: dashboard.reviewStats.reviewCount, color: C.accent },
                   ].map((s, i) => (
                     <View key={i} className="flex-1 items-center justify-center border bg-bg" style={{ padding: 12, borderColor: C.borderLight, borderStyle: "dashed", borderRadius: 4 }}>
-                      <Text style={{ fontFamily: FONT_HEADING, color: s.color || C.cyan, fontSize: 18 }}>{s.value}</Text>
+                      <Text style={{ fontFamily: FONT_HEADING, color: s.color || C.cyan }} className="text-xl">{s.value}</Text>
                       <Text style={{ fontFamily: FONT_MONO, fontSize: 9, marginTop: 4 }} className="text-textMuted uppercase tracking-widest">{s.label}</Text>
                     </View>
                   ))}
@@ -233,7 +233,7 @@ export default function ProfileTab() {
                     { label: "Avg Rating", value: dashboard.reviewStats.averageRating?.toFixed(1) || "0.0", color: C.gold },
                   ].map((s, i) => (
                     <View key={i} className="flex-1 items-center justify-center border bg-bg" style={{ padding: 12, borderColor: C.borderLight, borderStyle: "dashed", borderRadius: 4 }}>
-                      <Text style={{ fontFamily: FONT_HEADING, color: s.color || C.cyan, fontSize: 18 }}>{s.value}</Text>
+                      <Text style={{ fontFamily: FONT_HEADING, color: s.color || C.cyan }} className="text-xl">{s.value}</Text>
                       <Text style={{ fontFamily: FONT_MONO, fontSize: 9, marginTop: 4 }} className="text-textMuted uppercase tracking-widest">{s.label}</Text>
                     </View>
                   ))}
@@ -244,7 +244,7 @@ export default function ProfileTab() {
             {/* HALL OF FAME */}
             <View style={{ gap: 16 }}>
               <HudBadge color={C.cyan}>Hall of Fame</HudBadge>
-              <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">Top Games</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Top Games</Text>
 
               <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                 {dashboard.topGames.map((entry, idx) => (
@@ -256,17 +256,17 @@ export default function ProfileTab() {
                     )}
                     <View className="absolute inset-0 bg-black/40" />
                     <View className="absolute bg-gold" style={{ top: 8, left: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
-                      <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-bg font-bold">#{idx + 1}</Text>
+                      <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-bg font-bold">#{idx + 1}</Text>
                     </View>
                     <View className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ padding: 8 }}>
-                      <Text style={{ fontFamily: FONT_BODY, fontSize: 11 }} className="text-text font-medium" numberOfLines={1}>
+                      <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-text font-medium" numberOfLines={1}>
                         {entry.game.title}
                       </Text>
                     </View>
                   </View>
                 ))}
                 {dashboard.topGames.length === 0 && (
-                  <Text style={{ fontFamily: FONT_BODY, fontSize: 14 }} className="text-textMuted">No top games pinned.</Text>
+                  <Text style={{ fontFamily: FONT_BODY }} className="text-base text-textMuted">No top games pinned.</Text>
                 )}
               </View>
             </View>
@@ -274,7 +274,7 @@ export default function ProfileTab() {
             {/* BACKLOG INVENTORY */}
             <View style={{ gap: 16 }}>
               <HudBadge color={C.cyan}>Inventory</HudBadge>
-              <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">Backlog</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Backlog</Text>
 
               <View className="border bg-surface" style={{ padding: 16, borderRadius: 12, gap: 16, borderColor: C.borderLight }}>
                 {/* Progress bar */}
@@ -297,15 +297,15 @@ export default function ProfileTab() {
                     <View className="flex-row items-center" style={{ gap: 12 }}>
                       <View className="rounded-full" style={{ width: 8, height: 8, backgroundColor: s.color }} />
                       <s.icon size={14} color={C.textMuted} />
-                      <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase tracking-wider">{s.label}</Text>
+                      <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textMuted uppercase tracking-wider">{s.label}</Text>
                     </View>
-                    <Text style={{ fontFamily: FONT_MONO, fontSize: 12 }} className="text-text">{s.value}</Text>
+                    <Text style={{ fontFamily: FONT_MONO }} className="text-sm text-text">{s.value}</Text>
                   </View>
                 ))}
                 <HudDivider />
                 <View className="flex-row items-center justify-between" style={{ paddingTop: 4 }}>
-                  <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textDim uppercase tracking-wider">Total</Text>
-                  <Text style={{ fontFamily: FONT_MONO, fontSize: 16 }} className="text-gold">{dashboard.backlogStats.total}</Text>
+                  <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textDim uppercase tracking-wider">Total</Text>
+                  <Text style={{ fontFamily: FONT_MONO }} className="text-lg text-gold">{dashboard.backlogStats.total}</Text>
                 </View>
               </View>
             </View>
@@ -313,31 +313,31 @@ export default function ProfileTab() {
             {/* ANALYTICS */}
             <View style={{ gap: 16 }}>
               <HudBadge color={C.gold}>Analytics</HudBadge>
-              <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">Review Highlights</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Review Highlights</Text>
 
               <View className="border bg-surface relative overflow-hidden" style={{ padding: 16, borderRadius: 12, borderColor: C.borderLight }}>
                 <CornerMarkers size={12} color={C.borderLight} />
                 <View className="flex-row justify-between border-b" style={{ paddingBottom: 24, borderColor: C.borderLight }}>
                   <View className="items-center flex-1">
-                    <Text style={{ fontFamily: FONT_HEADING, fontSize: 20 }} className="text-accent">{dashboard.reviewStats.reviewCount}</Text>
+                    <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-accent">{dashboard.reviewStats.reviewCount}</Text>
                     <Text style={{ fontFamily: FONT_MONO, fontSize: 9, marginTop: 4 }} className="text-textDim uppercase tracking-widest">Reviews</Text>
                   </View>
                   <View className="items-center flex-1">
-                    <Text style={{ fontFamily: FONT_HEADING, fontSize: 20 }} className="text-gold">{dashboard.reviewStats.averageRating?.toFixed(1) || "0.0"}</Text>
+                    <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-gold">{dashboard.reviewStats.averageRating?.toFixed(1) || "0.0"}</Text>
                     <Text style={{ fontFamily: FONT_MONO, fontSize: 9, marginTop: 4 }} className="text-textDim uppercase tracking-widest">Avg Rating</Text>
                   </View>
                   <View className="items-center flex-1">
-                    <Text style={{ fontFamily: FONT_HEADING, fontSize: 20 }} className="text-cyan">{dashboard.reviewStats.totalPlaytimeHours || 0}</Text>
+                    <Text style={{ fontFamily: FONT_HEADING }} className="text-2xl text-cyan">{dashboard.reviewStats.totalPlaytimeHours || 0}</Text>
                     <Text style={{ fontFamily: FONT_MONO, fontSize: 9, marginTop: 4 }} className="text-textDim uppercase tracking-widest">Hours Logged</Text>
                   </View>
                 </View>
                 <View style={{ paddingTop: 16, gap: 8 }}>
-                  <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textDim uppercase tracking-wider">Top Platforms</Text>
+                  <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textDim uppercase tracking-wider">Top Platforms</Text>
                   <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                     {dashboard.reviewStats.topPlatforms?.map(p => (
                       <View key={p.name} className="flex-row items-center border bg-bg" style={{ borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4, gap: 8, borderColor: C.borderLight }}>
-                        <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textMuted uppercase">{p.name}</Text>
-                        <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-cyan">{p.count}</Text>
+                        <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textMuted uppercase">{p.name}</Text>
+                        <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-cyan">{p.count}</Text>
                       </View>
                     ))}
                   </View>
@@ -348,7 +348,7 @@ export default function ProfileTab() {
             {/* MISSION LOG (Recent Reviews) */}
             <View style={{ gap: 16 }}>
               <HudBadge color={C.green}>Mission Log</HudBadge>
-              <Text style={{ fontFamily: FONT_HEADING, fontSize: 18 }} className="text-text">Recent Activity</Text>
+              <Text style={{ fontFamily: FONT_HEADING }} className="text-xl text-text">Recent Activity</Text>
 
               <View style={{ gap: 8 }}>
                 {dashboard.recentReviews.map((review) => (
@@ -367,19 +367,19 @@ export default function ProfileTab() {
                     </View>
                     <View className="flex-1" style={{ gap: 4 }}>
                       <View className="flex-row items-center justify-between">
-                        <Text style={{ fontFamily: FONT_HEADING, fontSize: 14 }} className="text-text">{review.game.title}</Text>
+                        <Text style={{ fontFamily: FONT_HEADING }} className="text-base text-text">{review.game.title}</Text>
                         <ChevronRight size={16} color={C.textDim} />
                       </View>
                       <View className="flex-row items-center" style={{ gap: 8 }}>
-                        <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-amber uppercase tracking-wider">★ {review.rating}/10</Text>
-                        <Text style={{ fontFamily: FONT_MONO, fontSize: 10 }} className="text-textDim uppercase tracking-wider">{review.platform}</Text>
+                        <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-amber uppercase tracking-wider">★ {review.rating}/10</Text>
+                        <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-textDim uppercase tracking-wider">{review.platform}</Text>
                       </View>
-                      <Text style={{ fontFamily: FONT_BODY, fontSize: 11 }} className="text-textMuted" numberOfLines={1}>{review.text}</Text>
+                      <Text style={{ fontFamily: FONT_BODY }} className="text-sm text-textMuted" numberOfLines={1}>{review.text}</Text>
                     </View>
                   </Pressable>
                 ))}
                 {dashboard.recentReviews.length === 0 && (
-                  <Text style={{ fontFamily: FONT_BODY, fontSize: 14 }} className="text-textMuted">No recent activity.</Text>
+                  <Text style={{ fontFamily: FONT_BODY }} className="text-base text-textMuted">No recent activity.</Text>
                 )}
               </View>
             </View>
