@@ -18,9 +18,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+        # No explicit version: reads `packageManager` from package.json, so it
+        # always matches the pnpm that wrote pnpm-lock.yaml (lockfile v9 needs
+        # pnpm >= 9; pnpm 8 silently re-resolves everything from scratch).
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,7 +30,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Copy .env.example files
         shell: bash
