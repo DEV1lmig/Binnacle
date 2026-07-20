@@ -128,11 +128,17 @@ export default function FeedTab() {
 
         {/* Stats grid */}
         {stats ? (
-          <View className="flex-row flex-wrap" style={{ gap: 8 }}>
-            <StatPill label="Reviews" value={formatNumber(stats.reviews)} icon={Activity} color={C.cyan} />
-            <StatPill label="Avg Rating" value={stats.avgRating} icon={Star} color={C.amber} />
-            <StatPill label="Hours" value={formatNumber(stats.hours)} icon={Clock} color={C.green} />
-            <StatPill label="Games" value={formatNumber(stats.games)} icon={Gamepad2} color={C.accent} />
+          // Two explicit rows (like profile.tsx) — flex-wrap doesn't reliably
+          // break rows here, which squeezed the pills until labels clipped.
+          <View style={{ gap: 8 }}>
+            <View className="flex-row" style={{ gap: 8 }}>
+              <StatPill label="Reviews" value={formatNumber(stats.reviews)} icon={Activity} color={C.cyan} />
+              <StatPill label="Avg Rating" value={stats.avgRating} icon={Star} color={C.amber} />
+            </View>
+            <View className="flex-row" style={{ gap: 8 }}>
+              <StatPill label="Hours" value={formatNumber(stats.hours)} icon={Clock} color={C.green} />
+              <StatPill label="Games" value={formatNumber(stats.games)} icon={Gamepad2} color={C.accent} />
+            </View>
           </View>
         ) : null}
 

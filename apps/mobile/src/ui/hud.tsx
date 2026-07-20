@@ -141,9 +141,10 @@ export function StatPill({ label, value, icon: Icon, color = C.gold, style }: St
           {value}
         </Text>
         <Text
+          numberOfLines={1}
           style={{
             fontFamily: FONT_MONO,
-            fontSize: 10,
+            fontSize: 11,
             color: C.textDim,
             textTransform: "uppercase",
             letterSpacing: 1,

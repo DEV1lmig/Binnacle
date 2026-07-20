@@ -1,8 +1,17 @@
 diff --git a/dist/commonjs/compiler/declarations.js b/dist/commonjs/compiler/declarations.js
-index 12ebd5f4e3ecba0a31c38b28e1c41513bf1b29a3..98459a46c88cb1bc5534b5dfec60197e6184f142 100644
+index 22509fe35674bb09ca156606b3e48d99c4bf3f6c..89e3920a60ee417b7362cf738e5246469bd413e2 100644
 --- a/dist/commonjs/compiler/declarations.js
 +++ b/dist/commonjs/compiler/declarations.js
-@@ -1598,7 +1598,7 @@
+@@ -91,7 +91,7 @@ const CommaSeparator = Symbol("CommaSeparator");
+ const propertyRename = {
+   "background-image": "experimental_backgroundImage"
+ };
+-const unparsedRuntimeParsing = new Set(["animation", "border", "box-shadow", "line-height", "rotate", "scale", "text-shadow", "transform", "translate"]);
++const unparsedRuntimeParsing = new Set(["animation", "border", "box-shadow", "rotate", "scale", "text-shadow", "transform", "translate"]);
+ const parsers = {
+   "align-content": parseAlignContent,
+   "align-items": parseAlignItems,
+@@ -1598,7 +1598,7 @@ function parseFontFamily({
    return value[0];
  }
  function parseLineHeightDeclaration(declaration, builder) {
@@ -10,4 +19,26 @@ index 12ebd5f4e3ecba0a31c38b28e1c41513bf1b29a3..98459a46c88cb1bc5534b5dfec60197e
 +  builder.addDescriptor("line-height", parseLineHeight(declaration.value, builder));
  }
  function parseLineHeight(value, builder) {
+   switch (value.type) {
+diff --git a/dist/module/compiler/declarations.js b/dist/module/compiler/declarations.js
+index 9f4abf182e769b8c4836a419d37a7ae1afd55ede..f2db275c1844aa5259b7d33734662564636ab0f1 100644
+--- a/dist/module/compiler/declarations.js
++++ b/dist/module/compiler/declarations.js
+@@ -10,7 +10,7 @@ const CommaSeparator = Symbol("CommaSeparator");
+ const propertyRename = {
+   "background-image": "experimental_backgroundImage"
+ };
+-const unparsedRuntimeParsing = new Set(["animation", "border", "box-shadow", "line-height", "rotate", "scale", "text-shadow", "transform", "translate"]);
++const unparsedRuntimeParsing = new Set(["animation", "border", "box-shadow", "rotate", "scale", "text-shadow", "transform", "translate"]);
+ const parsers = {
+   "align-content": parseAlignContent,
+   "align-items": parseAlignItems,
+@@ -1517,7 +1517,7 @@ function parseFontFamily({
+   return value[0];
+ }
+ export function parseLineHeightDeclaration(declaration, builder) {
+-  builder.addDescriptor("line-height", [{}, "lineHeight", [parseLineHeight(declaration.value, builder)], 1]);
++  builder.addDescriptor("line-height", parseLineHeight(declaration.value, builder));
+ }
+ export function parseLineHeight(value, builder) {
    switch (value.type) {
