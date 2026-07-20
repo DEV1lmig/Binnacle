@@ -39,9 +39,9 @@ export default function SignUpScreen() {
     try {
       setOauthProvider(provider);
 
-      const { createdSessionId, setActive: setActiveFromSSO } = await startSSOFlow({
+      const { createdSessionId, setActive: setActiveFromSSO, signIn: ssoSignIn, signUp: ssoSignUp } = await startSSOFlow({
         strategy,
-        redirectUrl: Linking.createURL("/"),
+        redirectUrl: Linking.createURL("/sso-callback"),
       });
 
       if (createdSessionId && setActiveFromSSO) {
@@ -49,6 +49,55 @@ export default function SignUpScreen() {
         await syncCurrentUser({});
         router.replace("/(tabs)/feed");
         return;
+      }
+
+      // An account with this email already exists (the flow transferred to a
+      // sign-in), but the provider did not verify the email — Clerk requires
+      // an email code before linking the social account to the existing one.
+      if (ssoSignIn?.status === "needs_first_factor") {
+        const emailFactor = ssoSignIn.supportedFirstFactors?.find(
+          (factor) => factor.strategy === "email_code"
+        );
+        if (emailFactor && "emailAddressId" in emailFactor) {
+          await ssoSignIn.prepareFirstFactor({
+            strategy: "email_code",
+            emailAddressId: emailFactor.emailAddressId,
+          });
+          router.push({
+            pathname: "/(auth)/complete",
+            params: { mode: "sign-in-verify", emailAddress: emailFactor.safeIdentifier ?? "" },
+          });
+          return;
+        }
+      }
+
+      // The provider account was created but Clerk still needs more from the
+      // user (e.g. a username, or email verification for unverified provider
+      // emails). Send them to the completion screen instead of dropping them
+      // back on the auth screens.
+      if (ssoSignUp?.status === "missing_requirements") {
+        const missing = ssoSignUp.missingFields ?? [];
+        const needsProfile = missing.some(
+          (field) => field === "username" || field === "first_name" || field === "last_name"
+        );
+        const ssoEmail = ssoSignUp.emailAddress ?? "";
+
+        if (needsProfile) {
+          router.push({
+            pathname: "/(auth)/complete",
+            params: { mode: "profile", emailAddress: ssoEmail },
+          });
+          return;
+        }
+
+        if (ssoSignUp.unverifiedFields?.includes("email_address")) {
+          await ssoSignUp.prepareEmailAddressVerification({ strategy: "email_code" });
+          router.push({
+            pathname: "/(auth)/complete",
+            params: { emailAddress: ssoEmail },
+          });
+          return;
+        }
       }
 
       Alert.alert(

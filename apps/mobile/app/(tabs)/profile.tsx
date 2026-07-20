@@ -11,7 +11,7 @@ import { C, FONT_MONO, FONT_HEADING, FONT_BODY, STATUS_COLORS } from "@binnacle/
 import { View, Text, ScrollView, Pressable } from "@/src/tw";
 import { formatNumber, formatDate } from "@/src/lib/format";
 import { HudBadge, HudDivider, CornerMarkers, SectionHeader, StatPill } from "@/src/ui/hud";
-import { User, Settings, Gamepad2, ChevronRight, Play, CheckCircle2, ListTodo, PauseCircle, XCircle } from "lucide-react-native";
+import { User, Settings, Gamepad2, ChevronRight, Play, CheckCircle2, ListTodo, PauseCircle, XCircle, LogOut } from "lucide-react-native";
 import { Image } from "@/src/tw/image";
 
 type TopGameDraft = {
@@ -73,6 +73,26 @@ export default function ProfileTab() {
     } catch (error: any) {
       Alert.alert("Could not update profile", error?.message ?? "Please try again.");
     }
+  };
+
+  const onSignOut = () => {
+    Alert.alert("Sign out", "You'll need to sign in again to access your backlog.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: () => {
+          void (async () => {
+            try {
+              await signOut();
+              router.replace("/(auth)");
+            } catch (error: any) {
+              Alert.alert("Could not sign out", error?.message ?? "Please try again.");
+            }
+          })();
+        },
+      },
+    ]);
   };
 
   const onAddTopGame = (game: { _id: Id<"games">; title: string }) => {
@@ -140,10 +160,13 @@ export default function ProfileTab() {
               setEditing(true);
             }} />
           </View>
-          <TopButton icon={Gamepad2} label="Manage Top Games" active={editingTopGames} color={C.gold} onPress={() => {
-            setEditing(false);
-            setEditingTopGames(true);
-          }} />
+          <View className="flex-row" style={{ gap: 8 }}>
+            <TopButton icon={Gamepad2} label="Manage Top Games" active={editingTopGames} color={C.gold} onPress={() => {
+              setEditing(false);
+              setEditingTopGames(true);
+            }} />
+            <TopButton icon={LogOut} label="Sign Out" color={C.red} onPress={onSignOut} />
+          </View>
         </View>
 
         {editing ? (
