@@ -1,6 +1,7 @@
 import { UserX, Ghost } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
+import { ScrollView } from "@/src/tw";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@binnacle/convex-generated/api";

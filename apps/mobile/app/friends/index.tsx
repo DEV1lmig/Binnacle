@@ -1,5 +1,6 @@
 import { Inbox, Send, Users } from "lucide-react-native";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView } from "@/src/tw";
+import { StyleSheet, View } from "react-native";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@binnacle/convex-generated/api";
 import { Body, Button, EmptyState, Heading, Screen, SectionTag } from "@/src/ui/primitives";

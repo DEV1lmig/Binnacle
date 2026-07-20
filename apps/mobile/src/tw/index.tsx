@@ -55,18 +55,25 @@ export const Text = (
 Text.displayName = "CSS(Text)";
 
 // ScrollView
-export const ScrollView = (
-  props: React.ComponentProps<typeof RNScrollView> & {
-    className?: string;
-    contentContainerClassName?: string;
-  }
-) => {
+export const ScrollView = ({
+  // Hide scroll indicators globally; callers can still opt back in per use.
+  showsVerticalScrollIndicator = false,
+  showsHorizontalScrollIndicator = false,
+  ...props
+}: React.ComponentProps<typeof RNScrollView> & {
+  className?: string;
+  contentContainerClassName?: string;
+}) => {
   // Cast: RN's ScrollView props produce a TS2590 union that is too complex
   // for useCssElement's generic to represent.
-  return useCssElement(RNScrollView as any, props, {
-    className: "style",
-    contentContainerClassName: "contentContainerStyle",
-  });
+  return useCssElement(
+    RNScrollView as any,
+    { showsVerticalScrollIndicator, showsHorizontalScrollIndicator, ...props },
+    {
+      className: "style",
+      contentContainerClassName: "contentContainerStyle",
+    }
+  );
 };
 ScrollView.displayName = "CSS(ScrollView)";
 
@@ -89,19 +96,26 @@ export const TextInput = (
 TextInput.displayName = "CSS(TextInput)";
 
 // AnimatedScrollView
-export const AnimatedScrollView = (
-  props: {
-    className?: string;
-    contentClassName?: string;
-    contentContainerClassName?: string;
-    [key: string]: any;
-  }
-) => {
-  return useCssElement(Animated.ScrollView as any, props, {
-    className: "style",
-    contentClassName: "contentContainerStyle",
-    contentContainerClassName: "contentContainerStyle",
-  });
+export const AnimatedScrollView = ({
+  // Hide scroll indicators globally; callers can still opt back in per use.
+  showsVerticalScrollIndicator = false,
+  showsHorizontalScrollIndicator = false,
+  ...props
+}: {
+  className?: string;
+  contentClassName?: string;
+  contentContainerClassName?: string;
+  [key: string]: any;
+}) => {
+  return useCssElement(
+    Animated.ScrollView as any,
+    { showsVerticalScrollIndicator, showsHorizontalScrollIndicator, ...props },
+    {
+      className: "style",
+      contentClassName: "contentContainerStyle",
+      contentContainerClassName: "contentContainerStyle",
+    }
+  );
 };
 
 export * from "./image";

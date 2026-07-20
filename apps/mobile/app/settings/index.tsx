@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
+import { ScrollView } from "@/src/tw";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@binnacle/convex-generated/api";
 import { Body, Button, Heading, Input, Screen, SectionTag } from "@/src/ui/primitives";
