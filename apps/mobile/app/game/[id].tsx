@@ -13,7 +13,9 @@ import { View, Text, ScrollView, Pressable } from "@/src/tw";
 import { Image } from "@/src/tw/image";
 import { HudDivider, CornerMarkers, HudBadge } from "@/src/ui/hud";
 import { toIdString } from "@/src/lib/id";
+import { igdbImageUrl } from "@/src/lib/format";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from "react-native-svg";
 
 /**
  * Game taxonomy (platforms/genres/developers/publishers) is stored as a JSON
@@ -119,6 +121,9 @@ export default function GameDetailPage() {
   };
 
   const formattedCoverUrl = game.coverUrl?.startsWith("//") ? `https:${game.coverUrl}` : game.coverUrl;
+  const heroCoverUrl = igdbImageUrl(formattedCoverUrl, "t_1080p");
+  const heroHeight = Math.min(windowWidth * 0.7, 380);
+  const heroFadeHeight = Math.round(heroHeight * 0.55);
 
   const platformNames = parseNames(game.platforms);
   const genreNames = parseNames(game.genres);
@@ -129,31 +134,54 @@ export default function GameDetailPage() {
     <View className="flex-1 bg-bg">
       <ScrollView contentContainerStyle={{ paddingBottom: 96 }} bounces={false}>
         {/* HERO POSTER */}
-        <View className="w-full relative" style={{ height: Math.min(windowWidth * 0.7, 380) }}>
-          {formattedCoverUrl ? (
-            <Image source={{ uri: formattedCoverUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
-          ) : (
-            <View className="flex-1 bg-surface items-center justify-center">
-              <Gamepad2 size={48} color={C.textDim} />
-            </View>
-          )}
-          {/* Overlay for text legibility */}
-          <View className="absolute inset-0 bg-black/40" />
-          <View className="absolute bottom-0 left-0 right-0 h-2/5 bg-black/70" />
+        <View className="w-full relative">
+          <View style={{ height: heroHeight }}>
+            {heroCoverUrl ? (
+              <Image source={{ uri: heroCoverUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+            ) : (
+              <View className="flex-1 bg-surface items-center justify-center">
+                <Gamepad2 size={48} color={C.textDim} />
+              </View>
+            )}
+            {/* Fade the poster into the app background so the title below is legible */}
+            <Svg
+              width="100%"
+              height={heroFadeHeight}
+              style={{ position: "absolute", bottom: 0, left: 0 }}
+              pointerEvents="none"
+            >
+              <Defs>
+                <SvgLinearGradient id="heroFade" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={C.bg} stopOpacity="0" />
+                  <Stop offset="0.55" stopColor={C.bg} stopOpacity="0.75" />
+                  <Stop offset="1" stopColor={C.bg} stopOpacity="1" />
+                </SvgLinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100%" height="100%" fill="url(#heroFade)" />
+            </Svg>
+          </View>
 
           {/* Back button */}
           <Pressable
             onPress={() => { if (router.canGoBack()) router.back(); else router.replace("/"); }}
             className="absolute z-10 flex-row items-center"
-            style={{ left: 16, gap: 4, top: Math.max(insets.top, 16) }}
+            style={{
+              left: 16,
+              gap: 4,
+              top: Math.max(insets.top, 16),
+              backgroundColor: `${C.bg}99`,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              borderRadius: 4,
+            }}
           >
             <Text style={{ fontFamily: FONT_MONO }} className="text-xs text-text uppercase tracking-widest">
               &lt; Back
             </Text>
           </Pressable>
 
-          {/* Title and Meta */}
-          <View className="absolute bottom-0 left-0 right-0" style={{ padding: 16, gap: 8 }}>
+          {/* Title and Meta — over the faded area, on (almost) solid background */}
+          <View style={{ paddingHorizontal: 16, marginTop: -Math.round(heroFadeHeight * 0.2), gap: 8 }}>
             <Text style={{ fontFamily: FONT_HEADING, lineHeight: 28 }} className="text-4xl text-text">
               {game.title}
             </Text>

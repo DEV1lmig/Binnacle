@@ -71,8 +71,8 @@ export default function FeedTab() {
     <Screen>
       <ScrollView contentContainerClassName="px-4 py-4 gap-6 pb-24">
         {/* Greeting bar */}
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center" style={{ gap: 12 }}>
+        <View className="flex-row items-center justify-between" style={{ gap: 12 }}>
+          <View className="flex-row items-center" style={{ gap: 12, flex: 1, minWidth: 0 }}>
             <View
               style={{
                 width: 44,
@@ -94,19 +94,22 @@ export default function FeedTab() {
                 </Text>
               )}
             </View>
-            <View style={{ gap: 2 }}>
-              <Text className="text-sm" style={{ fontFamily: FONT_MONO, color: C.textDim, textTransform: "uppercase", letterSpacing: 1 }}>
+            <View style={{ gap: 2, flex: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} className="text-sm" style={{ fontFamily: FONT_MONO, color: C.textDim, textTransform: "uppercase", letterSpacing: 1 }}>
                 {greeting}, archivist
               </Text>
-              <Text className="text-2xl" style={{ fontFamily: FONT_HEADING, fontWeight: "300", color: C.text }}>
+              <Text numberOfLines={1} className="text-2xl" style={{ fontFamily: FONT_HEADING, fontWeight: "300", color: C.text }}>
                 {dashboard?.user.name ?? "Loading..."}
               </Text>
             </View>
           </View>
           <Pressable
-            onPress={() => router.push("/review/new")}
+            // Reviews start from a game: send the user to Discover to pick one
+            // (the game page's "Write a Review" opens the editor pre-locked).
+            onPress={() => router.push("/(tabs)/discover")}
             className="flex-row items-center active:opacity-70"
             style={{
+              flexShrink: 0,
               backgroundColor: C.gold,
               paddingHorizontal: 14,
               paddingVertical: 10,

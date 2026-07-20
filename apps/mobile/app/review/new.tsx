@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
+import { ScrollView } from "@/src/tw";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@binnacle/convex-generated/api";
@@ -23,6 +24,8 @@ export default function NewReviewPage() {
   const params = useLocalSearchParams<{ gameId?: string }>();
 
   const initialGameId = params.gameId as Id<"games"> | undefined;
+  // Opened from a game page: the review is for that game, so hide the picker.
+  const lockedToGame = Boolean(initialGameId);
 
   const [selectedGameId, setSelectedGameId] = useState<Id<"games"> | null>(initialGameId ?? null);
   const [selectedGameTitle, setSelectedGameTitle] = useState<string>("");
@@ -117,38 +120,44 @@ export default function NewReviewPage() {
           {selectedGameId ? (
             <View style={styles.selectedGameCard}>
               <Body style={styles.selectedGameTitle}>{resolvedGameTitle || "Selected game"}</Body>
-              <Button
-                label="Clear"
-                variant="secondary"
-                onPress={() => {
-                  setSelectedGameId(null);
-                  setSelectedGameTitle("");
-                }}
-              />
+              {!lockedToGame && (
+                <Button
+                  label="Clear"
+                  variant="secondary"
+                  onPress={() => {
+                    setSelectedGameId(null);
+                    setSelectedGameTitle("");
+                  }}
+                />
+              )}
             </View>
           ) : null}
-          <Input
-            label="Search games"
-            value={gameSearch}
-            onChangeText={setGameSearch}
-            placeholder="Type a game title"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {(gameSearchResults ?? []).map((game) => (
-            <View key={`${game._id}`} style={styles.searchResultRow}>
-              <Body style={styles.resultTitle}>{game.title}</Body>
-              <Button
-                label="Select"
-                variant="secondary"
-                onPress={() => {
-                  setSelectedGameId(game._id);
-                  setSelectedGameTitle(game.title);
-                  setGameSearch("");
-                }}
+          {!lockedToGame && (
+            <>
+              <Input
+                label="Search games"
+                value={gameSearch}
+                onChangeText={setGameSearch}
+                placeholder="Type a game title"
+                autoCapitalize="none"
+                autoCorrect={false}
               />
-            </View>
-          ))}
+              {(gameSearchResults ?? []).map((game) => (
+                <View key={`${game._id}`} style={styles.searchResultRow}>
+                  <Body style={styles.resultTitle}>{game.title}</Body>
+                  <Button
+                    label="Select"
+                    variant="secondary"
+                    onPress={() => {
+                      setSelectedGameId(game._id);
+                      setSelectedGameTitle(game.title);
+                      setGameSearch("");
+                    }}
+                  />
+                </View>
+              ))}
+            </>
+          )}
         </View>
 
         <View style={styles.section}>

@@ -93,10 +93,15 @@ function clampText(text: string, maxChars: number) {
   return text.slice(0, maxChars).trimEnd() + "…";
 }
 
+// IGDB t_cover_* sizes are exactly 264:374, so a container with this aspect
+// ratio hugs the poster with zero cropping (t_720p keeps the ORIGINAL upload's
+// aspect, which drifts from the cover crop and caused visible clipping).
+const COVER_ASPECT = 264 / 374;
+
 function getIgdbHighResCover(url: string | undefined) {
   if (!url) return undefined;
   if (!url.includes("images.igdb.com")) return url;
-  return url.replace(/\/t_[^/]+\//, "/t_720p/");
+  return url.replace(/\/t_[^/]+\//, "/t_cover_big_2x/");
 }
 
 function StarIcon({ fill, size }: { fill: string; size: number }) {
@@ -334,6 +339,12 @@ function ReviewShareCard({
   const fontBase = Math.round(width * 0.028);
 
   const coverUrl = getIgdbHighResCover(review.game.coverUrl);
+  const posterH = isWide
+    ? Math.round(height * 0.5)
+    : isStory
+    ? Math.round(height * 0.48)
+    : Math.round(height * 0.42);
+  const posterW = Math.round(posterH * COVER_ASPECT);
 
   return (
     <div
@@ -424,14 +435,16 @@ function ReviewShareCard({
             minHeight: 0,
           }}
         >
-          {/* Poster */}
+          {/* Poster — container matches the cover's aspect ratio so the frame
+              hugs the image and nothing gets cropped or overflows the card. */}
           {showPoster ? (
             <div
               style={{
                 display: "flex",
                 flexShrink: 0,
-                width: isWide ? Math.round(height * 0.35) : width - pad * 2,
-                height: isWide ? height : isStory ? Math.round(width * 0.72) : Math.round(width * 0.55),
+                alignSelf: "center",
+                height: posterH,
+                width: posterW,
                 borderRadius: 8,
                 overflow: "hidden",
                 borderWidth: 1,

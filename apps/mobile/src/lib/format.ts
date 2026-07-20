@@ -32,6 +32,19 @@ export function formatDate(timestamp: number | undefined | null) {
   });
 }
 
+/**
+ * IGDB image URLs are stored at t_cover_big (264×374), which pixelates when
+ * rendered full-width. Swap the size segment for a larger named size.
+ */
+export function igdbImageUrl(
+  url: string | undefined | null,
+  size: "t_cover_big_2x" | "t_720p" | "t_1080p" = "t_1080p"
+) {
+  if (!url) return undefined;
+  if (!url.includes("images.igdb.com")) return url;
+  return url.replace(/\/t_[^/]+\//, `/${size}/`);
+}
+
 export const ratingToFiveStar = sharedRatingToFiveStar;
 
 export const normalizeRatingToTen = sharedNormalizeRatingToTen;
