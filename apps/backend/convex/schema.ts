@@ -362,6 +362,52 @@ export default defineSchema({
     lastUpdated: v.number(),
   }).index("by_key", ["key"]),
 
+  // == Articles Table ==
+  // Long-form content (reviews de crítica / opinión / análisis) written with Tiptap.
+  articles: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    content: v.string(), // JSON de Tiptap serializado
+    excerpt: v.optional(v.string()), // auto-generado si no se indica
+    type: v.optional(v.string()), // "review" | "opinion" | "analysis"
+    tags: v.optional(v.array(v.string())),
+    containsSpoilers: v.boolean(),
+    coverUrl: v.optional(v.string()), // fallback: cover del primer juego vinculado
+    status: v.string(), // "draft" | "published"
+    publishedAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  })
+    .index("by_user_id", ["userId"])
+    .index("by_user_and_status", ["userId", "status"])
+    .index("by_status_and_published_at", ["status", "publishedAt"]),
+
+  // == Article Games Table ==
+  // N:M relation between articles and the games they reference.
+  articleGames: defineTable({
+    articleId: v.id("articles"),
+    gameId: v.id("games"),
+  })
+    .index("by_article_id", ["articleId"])
+    .index("by_game_id", ["gameId"]),
+
+  // == Article Likes Table ==
+  articleLikes: defineTable({
+    userId: v.id("users"),
+    articleId: v.id("articles"),
+  })
+    .index("by_user_and_article", ["userId", "articleId"])
+    .index("by_article_id", ["articleId"]),
+
+  // == Article Comments Table ==
+  articleComments: defineTable({
+    userId: v.id("users"),
+    articleId: v.id("articles"),
+    text: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_article_id", ["articleId"])
+    .index("by_user_id", ["userId"]),
+
   // == Franchise Metadata ==
   // Tracks franchise completeness to optimize search fallback decisions
   franchiseMetadata: defineTable({

@@ -4,13 +4,48 @@
 import { query, QueryCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { canViewActivityInternal, canViewReviewsInternal } from "./privacy";
+import { canViewActivityInternal, canViewProfileInternal, canViewReviewsInternal } from "./privacy";
 import { getBlockedUserIdSets } from "./blocking";
 
 const defaultFeedLimit = 30;
 const maxFollowingForFeed = 200;
 const maxFriendsForFeed = 200;
 const perUserReviewLimit = 25;
+const perUserArticleLimit = 10;
+
+// Articles are returned as a separate pair of arrays (`articleCommunity`/`articleFriends`)
+// instead of being merged into `community`/`friends`. This keeps the existing review-entry
+// shape byte-for-byte unchanged for mobile (which never requests `includeArticles`), while
+// letting web merge both entry kinds client-side sorted by their own publish timestamp.
+const articleFeedEntryValidator = v.object({
+  article: v.object({
+    _id: v.id("articles"),
+    _creationTime: v.number(),
+    title: v.string(),
+    excerpt: v.optional(v.string()),
+    type: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    containsSpoilers: v.boolean(),
+    coverUrl: v.optional(v.string()),
+    publishedAt: v.optional(v.number()),
+  }),
+  author: v.object({
+    _id: v.id("users"),
+    name: v.string(),
+    username: v.string(),
+    avatarUrl: v.optional(v.string()),
+  }),
+  games: v.array(
+    v.object({
+      _id: v.id("games"),
+      title: v.string(),
+      coverUrl: v.optional(v.string()),
+    })
+  ),
+  likeCount: v.number(),
+  viewerHasLiked: v.boolean(),
+  commentCount: v.number(),
+});
 
 const timelineEntryValidator = v.object({
   review: v.object({
@@ -47,15 +82,19 @@ const timelineEntryValidator = v.object({
 export const timeline = query({
   args: {
     limit: v.optional(v.number()),
+    includeArticles: v.optional(v.boolean()),
   },
   returns: v.object({
     community: v.array(timelineEntryValidator),
     friends: v.array(timelineEntryValidator),
+    articleCommunity: v.array(articleFeedEntryValidator),
+    articleFriends: v.array(articleFeedEntryValidator),
   }),
   handler: async (ctx, args) => {
     const viewer = await requireCurrentUser(ctx);
     const limit = sanitizeLimit(args.limit);
     const perUserLimit = Math.min(limit, perUserReviewLimit);
+    const includeArticles = args.includeArticles ?? false;
 
     const { blocked, blockedBy } = await getBlockedUserIdSets(ctx, viewer._id);
     const isBlockedUser = (userId: Id<"users">) => blocked.has(userId) || blockedBy.has(userId);
@@ -89,9 +128,11 @@ export const timeline = query({
       }
     }
 
+    const communityUserIds = await filterFeedSources(ctx, viewer, communitySources);
+
     const communityReviews = await collectReviewsForUsers(
       ctx,
-      await filterFeedSources(ctx, viewer, communitySources),
+      communityUserIds,
       perUserLimit,
       limit
     );
@@ -99,9 +140,35 @@ export const timeline = query({
     const friends = await hydrateReviews(ctx, viewer._id, friendReviews);
     const community = await hydrateReviews(ctx, viewer._id, communityReviews);
 
+    let articleFriends: Awaited<ReturnType<typeof hydrateArticlesForFeed>> = [];
+    let articleCommunity: Awaited<ReturnType<typeof hydrateArticlesForFeed>> = [];
+
+    if (includeArticles) {
+      const articleFriendSources = await filterArticleFeedSources(ctx, viewer, visibleFriendIds);
+      const articleCommunitySources = await filterArticleFeedSources(ctx, viewer, communityUserIds);
+
+      const friendArticles = await collectArticlesForUsers(
+        ctx,
+        articleFriendSources,
+        perUserArticleLimit,
+        limit
+      );
+      const communityArticles = await collectArticlesForUsers(
+        ctx,
+        articleCommunitySources,
+        perUserArticleLimit,
+        limit
+      );
+
+      articleFriends = await hydrateArticlesForFeed(ctx, viewer._id, friendArticles);
+      articleCommunity = await hydrateArticlesForFeed(ctx, viewer._id, communityArticles);
+    }
+
     return {
       community,
       friends,
+      articleCommunity,
+      articleFriends,
     };
   },
 });
@@ -135,6 +202,150 @@ async function filterFeedSources(
   }
 
   return filtered;
+}
+
+/**
+ * Filters user IDs down to those whose articles the viewer is allowed to see
+ * in their feed (profile visibility + activity visibility, not reviews visibility).
+ */
+async function filterArticleFeedSources(
+  ctx: QueryCtx,
+  viewer: Doc<"users">,
+  userIds: Iterable<Id<"users">>
+) {
+  const filtered: Id<"users">[] = [];
+
+  for (const userId of userIds) {
+    if (userId === viewer._id) {
+      filtered.push(userId);
+      continue;
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      continue;
+    }
+
+    const [canViewActivity, canViewProfile] = await Promise.all([
+      canViewActivityInternal(ctx, viewer, user),
+      canViewProfileInternal(ctx, viewer, user),
+    ]);
+
+    if (canViewActivity && canViewProfile) {
+      filtered.push(userId);
+    }
+  }
+
+  return filtered;
+}
+
+/**
+ * Collects recently published articles for the provided set of user IDs,
+ * ordered by publish time (not creation time, since a draft can be published
+ * long after it was first created).
+ */
+async function collectArticlesForUsers(
+  ctx: QueryCtx,
+  userIds: Iterable<Id<"users">>,
+  perUserLimit: number,
+  totalLimit: number
+) {
+  const collected: Doc<"articles">[] = [];
+
+  for (const userId of userIds) {
+    const articles = await ctx.db
+      .query("articles")
+      .withIndex("by_user_and_status", (q) => q.eq("userId", userId).eq("status", "published"))
+      .order("desc")
+      .take(perUserLimit);
+
+    collected.push(...articles);
+  }
+
+  collected.sort((a, b) => (b.publishedAt ?? b.updatedAt) - (a.publishedAt ?? a.updatedAt));
+  return collected.slice(0, totalLimit);
+}
+
+/**
+ * Hydrates article documents with author, linked games, and social counts for the feed.
+ */
+async function hydrateArticlesForFeed(
+  ctx: QueryCtx,
+  viewerId: Id<"users">,
+  articles: Doc<"articles">[]
+) {
+  const entries: Array<{
+    article: Doc<"articles">;
+    author: Doc<"users">;
+    games: Array<{ _id: Id<"games">; title: string; coverUrl?: string }>;
+    likeCount: number;
+    viewerHasLiked: boolean;
+    commentCount: number;
+  }> = [];
+
+  for (const article of articles) {
+    const author = await ctx.db.get(article.userId);
+    if (!author) {
+      continue;
+    }
+
+    const links = await ctx.db
+      .query("articleGames")
+      .withIndex("by_article_id", (q) => q.eq("articleId", article._id))
+      .collect();
+
+    const games: Array<{ _id: Id<"games">; title: string; coverUrl?: string }> = [];
+    for (const link of links) {
+      const game = await ctx.db.get(link.gameId);
+      if (game) {
+        games.push({ _id: game._id, title: game.title, coverUrl: game.coverUrl ?? undefined });
+      }
+    }
+
+    let likeCount = 0;
+    let viewerHasLiked = false;
+    for await (const like of ctx.db
+      .query("articleLikes")
+      .withIndex("by_article_id", (q) => q.eq("articleId", article._id))) {
+      likeCount += 1;
+      if (like.userId === viewerId) {
+        viewerHasLiked = true;
+      }
+    }
+
+    let commentCount = 0;
+    for await (const _comment of ctx.db
+      .query("articleComments")
+      .withIndex("by_article_id", (q) => q.eq("articleId", article._id))) {
+      commentCount += 1;
+    }
+
+    entries.push({ article, author, games, likeCount, viewerHasLiked, commentCount });
+  }
+
+  return entries.map((entry) => ({
+    article: {
+      _id: entry.article._id,
+      _creationTime: entry.article._creationTime,
+      title: entry.article.title,
+      excerpt: entry.article.excerpt ?? undefined,
+      type: entry.article.type ?? undefined,
+      tags: entry.article.tags ?? undefined,
+      containsSpoilers: entry.article.containsSpoilers,
+      coverUrl: entry.article.coverUrl ?? entry.games.find((g) => g.coverUrl)?.coverUrl,
+      publishedAt: entry.article.publishedAt ?? undefined,
+    },
+    author: {
+      _id: entry.author._id,
+      name: entry.author.name,
+      username: entry.author.username,
+      avatarUrl: entry.author.avatarUrl ?? undefined,
+    },
+    games: entry.games,
+    likeCount: entry.likeCount,
+    viewerHasLiked: entry.viewerHasLiked,
+    commentCount: entry.commentCount,
+  }));
 }
 
 /**

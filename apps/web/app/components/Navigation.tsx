@@ -166,6 +166,7 @@ export function Navigation() {
                 { href: "/friends", label: "Friends", badge: pendingFriendRequests },
                 { href: "/backlog", label: "Backlog" },
                 { href: "/discover", label: "Discover" },
+                { href: "/articles", label: "Articles" },
                 { href: "/notifications", label: "Notifications", badge: unreadCount },
               ] as const).map((item) => {
                 const active = isActive(item.href);

@@ -7,10 +7,8 @@ import { api } from "@/convex/_generated/api";
 import { useCurrentUser } from "@/app/context/CurrentUserContext";
 import { GameCard } from "@/app/components/GameCard";
 import { AdSpace } from "@/app/components/AdSpace";
-import {
-  FeedReviewList,
-  type FeedReviewEntry,
-} from "./components/FeedReviewList";
+import { type FeedReviewEntry } from "./components/FeedReviewList";
+import { FeedActivityList, type FeedArticleEntry } from "./components/FeedActivityList";
 import {
   Avatar,
   AvatarFallback,
@@ -312,7 +310,7 @@ export default function FeedPage() {
 
   const feedTimeline = useQuery(
     api.feed.timeline,
-    currentUser ? { limit: 30 } : "skip"
+    currentUser ? { limit: 30, includeArticles: true } : "skip"
   );
   const discoverPeople = useQuery(api.users.search, {
     query: "",
@@ -322,8 +320,14 @@ export default function FeedPage() {
   const communityEntries = (feedTimeline?.community ??
     []) as FeedReviewEntry[];
   const friendEntries = (feedTimeline?.friends ?? []) as FeedReviewEntry[];
+  const communityArticleEntries = (feedTimeline?.articleCommunity ??
+    []) as FeedArticleEntry[];
+  const friendArticleEntries = (feedTimeline?.articleFriends ??
+    []) as FeedArticleEntry[];
   const activityEntries =
     activityTab === "friends" ? friendEntries : communityEntries;
+  const activityArticleEntries =
+    activityTab === "friends" ? friendArticleEntries : communityArticleEntries;
   const peopleToDisplay = (discoverPeople || [])
     .filter((user) => !currentUser || user._id !== currentUser._id)
     .slice(0, 6);
@@ -820,8 +824,9 @@ export default function FeedPage() {
                   </Tabs>
                 </div>
 
-                <FeedReviewList
-                  entries={activityEntries}
+                <FeedActivityList
+                  reviewEntries={activityEntries}
+                  articleEntries={activityArticleEntries}
                   isLoading={isLoading}
                   emptyMessage={
                     activityTab === "friends"

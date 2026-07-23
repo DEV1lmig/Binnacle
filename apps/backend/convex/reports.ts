@@ -15,7 +15,9 @@ const defaultListLimit = 50;
 const reportTargetTypeValidator = v.union(
   v.literal("user"),
   v.literal("review"),
-  v.literal("comment")
+  v.literal("comment"),
+  v.literal("article"),
+  v.literal("article_comment")
 );
 
 const reportReasonValidator = v.union(
@@ -95,6 +97,28 @@ export const create = mutation({
       }
     }
 
+    if (args.targetType === "article") {
+      const target = await ctx.db.get(args.targetId as Id<"articles">);
+      if (!target) {
+        throw new ConvexError("Article not found");
+      }
+
+      if (target.userId === reporter._id) {
+        throw new ConvexError("You can't report your own article");
+      }
+    }
+
+    if (args.targetType === "article_comment") {
+      const target = await ctx.db.get(args.targetId as Id<"articleComments">);
+      if (!target) {
+        throw new ConvexError("Comment not found");
+      }
+
+      if (target.userId === reporter._id) {
+        throw new ConvexError("You can't report your own comment");
+      }
+    }
+
     const description = args.description?.trim();
     if (description && description.length > 1000) {
       throw new ConvexError("Description cannot exceed 1000 characters");
@@ -151,6 +175,18 @@ export const list = query({
             return { type: "review" as const, review };
           }
 
+          if (report.targetType === "article") {
+            const article = await ctx.db.get(report.targetId as Id<"articles">);
+            if (!article) return null;
+            return { type: "article" as const, article };
+          }
+
+          if (report.targetType === "article_comment") {
+            const comment = await ctx.db.get(report.targetId as Id<"articleComments">);
+            if (!comment) return null;
+            return { type: "article_comment" as const, comment };
+          }
+
           const comment = await ctx.db.get(report.targetId as Id<"comments">);
           if (!comment) return null;
           return { type: "comment" as const, comment };
@@ -163,7 +199,11 @@ export const list = query({
               ? target.review.userId
               : target?.type === "comment"
                 ? target.comment.userId
-                : null;
+                : target?.type === "article"
+                  ? target.article.userId
+                  : target?.type === "article_comment"
+                    ? target.comment.userId
+                    : null;
 
         const targetUser = targetUserId ? await ctx.db.get(targetUserId) : null;
 
@@ -199,13 +239,28 @@ export const list = query({
                     userId: target.review.userId,
                     textPreview: target.review.text?.slice(0, 240) ?? undefined,
                   }
-                : {
-                    type: "comment" as const,
-                    commentId: target.comment._id,
-                    reviewId: target.comment.reviewId,
-                    userId: target.comment.userId,
-                    textPreview: target.comment.text.slice(0, 240),
-                  }
+                : target.type === "article"
+                  ? {
+                      type: "article" as const,
+                      articleId: target.article._id,
+                      userId: target.article.userId,
+                      textPreview: target.article.title.slice(0, 240),
+                    }
+                  : target.type === "article_comment"
+                    ? {
+                        type: "article_comment" as const,
+                        commentId: target.comment._id,
+                        articleId: target.comment.articleId,
+                        userId: target.comment.userId,
+                        textPreview: target.comment.text.slice(0, 240),
+                      }
+                    : {
+                        type: "comment" as const,
+                        commentId: target.comment._id,
+                        reviewId: target.comment.reviewId,
+                        userId: target.comment.userId,
+                        textPreview: target.comment.text.slice(0, 240),
+                      }
             : null,
           targetUser: targetUser
             ? {

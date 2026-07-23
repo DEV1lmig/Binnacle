@@ -9,7 +9,9 @@ import { requireModerator } from "./lib/auth";
 
 const moderationContentTypeValidator = v.union(
   v.literal("review"),
-  v.literal("comment")
+  v.literal("comment"),
+  v.literal("article"),
+  v.literal("article_comment")
 );
 
 function normalizeModerationStatus(existing: {
@@ -241,6 +243,67 @@ export const deleteContent = mutation({
         targetType: "comment",
         targetId: comment._id,
         targetUserId: comment.userId,
+        reason: args.reason.trim() || undefined,
+        createdAt: Date.now(),
+      });
+
+      return { success: true };
+    }
+
+    if (args.contentType === "article_comment") {
+      const comment = await ctx.db.get(args.contentId as Id<"articleComments">);
+      if (!comment) {
+        throw new ConvexError("Comment not found");
+      }
+
+      await ctx.db.delete(comment._id);
+
+      await ctx.db.insert("moderationLogs", {
+        moderatorId: moderator._id,
+        action: "delete_content",
+        targetType: "article_comment",
+        targetId: comment._id,
+        targetUserId: comment.userId,
+        reason: args.reason.trim() || undefined,
+        createdAt: Date.now(),
+      });
+
+      return { success: true };
+    }
+
+    if (args.contentType === "article") {
+      const article = await ctx.db.get(args.contentId as Id<"articles">);
+      if (!article) {
+        throw new ConvexError("Article not found");
+      }
+
+      // Clean up associated likes, comments, and game links.
+      for await (const like of ctx.db
+        .query("articleLikes")
+        .withIndex("by_article_id", (q) => q.eq("articleId", article._id))) {
+        await ctx.db.delete(like._id);
+      }
+
+      for await (const comment of ctx.db
+        .query("articleComments")
+        .withIndex("by_article_id", (q) => q.eq("articleId", article._id))) {
+        await ctx.db.delete(comment._id);
+      }
+
+      for await (const link of ctx.db
+        .query("articleGames")
+        .withIndex("by_article_id", (q) => q.eq("articleId", article._id))) {
+        await ctx.db.delete(link._id);
+      }
+
+      await ctx.db.delete(article._id);
+
+      await ctx.db.insert("moderationLogs", {
+        moderatorId: moderator._id,
+        action: "delete_content",
+        targetType: "article",
+        targetId: article._id,
+        targetUserId: article.userId,
         reason: args.reason.trim() || undefined,
         createdAt: Date.now(),
       });

@@ -22,7 +22,7 @@ import {
 } from "@/app/components/ui/select";
 import { Textarea } from "@/app/components/ui/textarea";
 
-type ReportTargetType = "user" | "review" | "comment";
+type ReportTargetType = "user" | "review" | "comment" | "article" | "article_comment";
 
 type ReportReason = "spam" | "harassment" | "inappropriate" | "other";
 

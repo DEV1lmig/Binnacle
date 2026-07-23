@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 import { GameReviewsSection } from "@/app/components/game/GameReviewsSection";
+import { GameArticlesSection } from "@/app/components/game/GameArticlesSection";
 
 type CreditEntry = {
   id?: number | string;
@@ -388,6 +389,13 @@ export default function GameDetailPage() {
               >
                 Write a Review
               </Button>
+              <Button
+                variant="outline"
+                className="border-border ml-3"
+                onClick={() => router.push(`/article/new?gameId=${game._id}`)}
+              >
+                Write an Article
+              </Button>
             </div>
           </div>
         </div>
@@ -568,6 +576,8 @@ export default function GameDetailPage() {
               </div>
             </section>
           )}
+
+          <GameArticlesSection gameId={game._id as Id<"games">} />
 
           <GameReviewsSection gameId={game._id as Id<"games">} />
         </div>

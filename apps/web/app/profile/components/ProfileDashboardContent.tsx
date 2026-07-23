@@ -90,6 +90,16 @@ export interface ProfileDashboardData {
       releaseYear?: number;
     };
   }>;
+  recentArticles: Array<{
+    _id: Id<"articles">;
+    _creationTime: number;
+    title: string;
+    excerpt?: string;
+    type?: string;
+    coverUrl?: string;
+    publishedAt?: number;
+  }>;
+  draftArticleCount: number;
 }
 
 interface ProfileDashboardContentProps {
@@ -1082,6 +1092,100 @@ export function ProfileDashboardContent({
                   }}
                 >
                   No recent reviews yet.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 mb-8">
+            <div className="flex items-center justify-between gap-4 mb-5">
+              <div className="flex items-center gap-4">
+                <HudBadge color={C.accent}>Dispatches</HudBadge>
+                <span
+                  style={{
+                    fontFamily: FONT_HEADING,
+                    fontSize: 20,
+                    fontWeight: 200,
+                    color: C.text,
+                  }}
+                >
+                  Articles
+                </span>
+              </div>
+              {data.viewerIsSelf ? (
+                <button
+                  onClick={() => router.push("/article/new")}
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 11,
+                    color: C.gold,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  {data.draftArticleCount > 0
+                    ? `${data.draftArticleCount} draft${data.draftArticleCount === 1 ? "" : "s"} · Write new`
+                    : "Write new"}
+                </button>
+              ) : null}
+            </div>
+
+            {data.recentArticles.length > 0 ? (
+              <div className="space-y-4">
+                {data.recentArticles.map((article) => (
+                  <div
+                    key={article._id}
+                    className="relative flex gap-4 p-4 cursor-pointer"
+                    style={{ border: `1px solid ${C.border}`, borderRadius: 2, background: C.surface }}
+                    onClick={() => router.push(`/article/${article._id}`)}
+                    role="link"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") router.push(`/article/${article._id}`);
+                    }}
+                  >
+                    <CornerMarkers size={6} />
+                    <div
+                      className="relative flex-shrink-0 overflow-hidden"
+                      style={{ width: 56, height: 72, borderRadius: 2, backgroundColor: C.bgAlt }}
+                    >
+                      {article.coverUrl ? (
+                        <Image src={article.coverUrl} alt={article.title} fill sizes="56px" style={{ objectFit: "cover" }} unoptimized />
+                      ) : (
+                        <div className="flex items-center justify-center w-full h-full">
+                          <BookOpen style={{ width: 20, height: 20, color: C.textDim }} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="truncate"
+                        style={{ fontFamily: FONT_BODY, fontSize: 15, fontWeight: 400, color: C.text }}
+                      >
+                        {article.title}
+                      </p>
+                      {article.excerpt ? (
+                        <p
+                          className="mt-1 line-clamp-2"
+                          style={{ fontFamily: FONT_BODY, fontSize: 13, fontWeight: 300, color: C.textMuted, lineHeight: 1.5 }}
+                        >
+                          {article.excerpt}
+                        </p>
+                      ) : null}
+                    </div>
+                    <ChevronRight style={{ width: 16, height: 16, color: C.textDim, flexShrink: 0, marginTop: 2 }} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                className="relative flex flex-col items-center justify-center py-12"
+                style={{ border: `1px solid ${C.border}`, borderRadius: 2, background: C.surface }}
+              >
+                <CornerMarkers />
+                <BookOpen style={{ width: 36, height: 36, color: C.textDim, marginBottom: 10 }} />
+                <p style={{ fontFamily: FONT_BODY, fontSize: 13, color: C.textMuted }}>
+                  No published articles yet.
                 </p>
               </div>
             )}

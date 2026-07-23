@@ -47,6 +47,20 @@ const NOTIFICATION_TEXT: Record<string, string> = {
   mention: "mentioned you",
 };
 
+// `type` (like/comment/mention) is shared across target kinds — the copy has to
+// take `targetType` into account too, otherwise an article like/comment reads
+// as "liked your review" and the click-through has nowhere to go.
+const TARGET_AWARE_TEXT: Partial<Record<string, Partial<Record<string, string>>>> = {
+  like: { article: "liked your article" },
+  comment: { article: "commented on your article" },
+  mention: { article: "mentioned you in an article" },
+};
+
+function resolveActionText(type: string, targetType: string | undefined, fallback?: string) {
+  const targetOverride = targetType ? TARGET_AWARE_TEXT[type]?.[targetType] : undefined;
+  return targetOverride ?? NOTIFICATION_TEXT[type] ?? fallback ?? "New notification";
+}
+
 function timeAgo(timestamp: number) {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
   if (seconds < 60) return "Just now";
@@ -77,6 +91,8 @@ export function NotificationItem({ notification, actor }: NotificationItemProps)
       }
     } else if (notification.targetType === "review" && notification.targetId) {
       router.push(`/review/${notification.targetId}`);
+    } else if (notification.targetType === "article" && notification.targetId) {
+      router.push(`/article/${notification.targetId}`);
     } else if (notification.targetType === "game" && notification.targetId) {
       router.push(`/game/${notification.targetId}`);
     }
@@ -85,7 +101,7 @@ export function NotificationItem({ notification, actor }: NotificationItemProps)
   const iconEntry = NOTIFICATION_ICONS[notification.type];
   const IconComponent = iconEntry?.icon;
   const iconColor = iconEntry?.color ?? C.gold;
-  const actionText = NOTIFICATION_TEXT[notification.type] ?? notification.message ?? "New notification";
+  const actionText = resolveActionText(notification.type, notification.targetType, notification.message);
   const actorName = actor?.name ?? "Someone";
 
   return (

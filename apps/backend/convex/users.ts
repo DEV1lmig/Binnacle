@@ -565,6 +565,18 @@ export const dashboard = query({
           }),
         })
       ),
+      recentArticles: v.array(
+        v.object({
+          _id: v.id("articles"),
+          _creationTime: v.number(),
+          title: v.string(),
+          excerpt: v.optional(v.string()),
+          type: v.optional(v.string()),
+          coverUrl: v.optional(v.string()),
+          publishedAt: v.optional(v.number()),
+        })
+      ),
+      draftArticleCount: v.number(),
     })
   ),
   handler: async (ctx, args) => {
@@ -611,13 +623,15 @@ export const dashboard = query({
       on_hold: 0,
     };
 
-    const [followerCount, followingCount, reviewStats, backlogStats, topGames, recentReviews] = await Promise.all([
+    const [followerCount, followingCount, reviewStats, backlogStats, topGames, recentReviews, recentArticles, draftArticleCount] = await Promise.all([
       countFollowers(ctx, targetUser._id),
       countFollowing(ctx, targetUser._id),
       privacy.showStats && canViewReviews ? computeReviewStats(ctx, targetUser._id) : Promise.resolve(emptyReviewStats),
       privacy.showStats && canViewBacklog ? computeBacklogStats(ctx, targetUser._id) : Promise.resolve(emptyBacklogStats),
       hydrateTopGames(ctx, targetUser.topGames ?? []),
       canViewReviews ? fetchRecentReviews(ctx, targetUser._id, recentLimit) : Promise.resolve([]),
+      fetchRecentPublishedArticles(ctx, targetUser._id, recentLimit),
+      viewerIsSelf ? countDraftArticles(ctx, targetUser._id) : Promise.resolve(0),
     ]);
 
     const viewerFollows = !viewer || viewerIsSelf
@@ -641,6 +655,8 @@ export const dashboard = query({
       backlogStats,
       topGames,
       recentReviews,
+      recentArticles,
+      draftArticleCount,
     } as const;
   },
 });
@@ -779,6 +795,38 @@ async function hydrateTopGames(
   }
 
   return result;
+}
+
+async function fetchRecentPublishedArticles(ctx: QueryCtx, userId: Id<"users">, limit: number) {
+  const published = await ctx.db
+    .query("articles")
+    .withIndex("by_user_and_status", (q) => q.eq("userId", userId).eq("status", "published"))
+    .collect();
+
+  published.sort((a, b) => (b.publishedAt ?? b.updatedAt) - (a.publishedAt ?? a.updatedAt));
+
+  return published.slice(0, limit).map((article) => ({
+    _id: article._id,
+    _creationTime: article._creationTime,
+    title: article.title,
+    excerpt: article.excerpt ?? undefined,
+    type: article.type ?? undefined,
+    coverUrl: article.coverUrl ?? undefined,
+    publishedAt: article.publishedAt ?? undefined,
+  }));
+}
+
+async function countDraftArticles(ctx: QueryCtx, userId: Id<"users">) {
+  let count = 0;
+  const iterator = ctx.db
+    .query("articles")
+    .withIndex("by_user_and_status", (q) => q.eq("userId", userId).eq("status", "draft"));
+
+  for await (const _draft of iterator) {
+    count += 1;
+  }
+
+  return count;
 }
 
 async function fetchRecentReviews(ctx: QueryCtx, userId: Id<"users">, limit: number) {

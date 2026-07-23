@@ -23,7 +23,8 @@ const notificationTypeValidator = v.union(
 const notificationTargetTypeValidator = v.union(
   v.literal("review"),
   v.literal("comment"),
-  v.literal("game")
+  v.literal("game"),
+  v.literal("article")
 );
 
 const notificationPreferencesValidator = v.object({

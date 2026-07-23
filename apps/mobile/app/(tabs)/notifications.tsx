@@ -28,11 +28,21 @@ const TYPE_META: Record<string, { icon: LucideIcon; color: string; label: string
   mention: { icon: AtSign, color: C.accent, label: "mentioned you" },
 };
 
+// `type` (like/comment/mention) is shared across target kinds — an article like/comment
+// still comes through as type "like"/"comment", so the label needs targetType too.
+const TARGET_AWARE_LABEL: Partial<Record<string, Partial<Record<string, string>>>> = {
+  like: { article: "liked your article" },
+  comment: { article: "commented on your article" },
+  mention: { article: "mentioned you in an article" },
+};
+
 function NotificationRow({ notification }: { notification: any }) {
   const actor = useQuery(api.users.getPublicProfile, { userId: notification.actorId });
   const markAsRead = useMutation(api.notifications.markAsRead);
 
-  const meta = TYPE_META[notification.type] ?? { icon: BellOff, color: C.textMuted, label: notification.type };
+  const baseMeta = TYPE_META[notification.type] ?? { icon: BellOff, color: C.textMuted, label: notification.type };
+  const targetLabel = TARGET_AWARE_LABEL[notification.type]?.[notification.targetType];
+  const meta = targetLabel ? { ...baseMeta, label: targetLabel } : baseMeta;
   const Icon = meta.icon;
   const isUnread = !notification.read;
 
