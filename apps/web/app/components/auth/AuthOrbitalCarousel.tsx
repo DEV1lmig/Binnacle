@@ -52,30 +52,32 @@ export function AuthOrbitalCarousel({ coverUrls }: { coverUrls?: Record<string, 
 
   return (
     <div
-      className="relative mx-auto h-[320px] w-full max-w-[900px] scale-[0.56] sm:scale-[0.62] md:h-[640px] md:scale-100"
+      className="relative mx-auto w-full max-w-[900px]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
+      <div className="relative h-[380px] w-full sm:h-[440px] md:h-[600px]">
+        <div className="absolute inset-0 scale-[0.56] sm:scale-[0.66] md:scale-100">
       <div
-        className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          width: 700,
-          height: 700,
+          width: 640,
+          height: 640,
           border: `1px solid ${COLORS.border}`,
           opacity: 0.25,
         }}
       />
       <div
-        className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          width: 540,
-          height: 540,
+          width: 480,
+          height: 480,
           border: `1px solid ${COLORS.border}`,
           opacity: 0.1,
         }}
       />
       <div
-        className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
           width: 288,
           height: 288,
@@ -84,12 +86,12 @@ export function AuthOrbitalCarousel({ coverUrls }: { coverUrls?: Record<string, 
         }}
       />
       <div
-        className="absolute left-1/2 top-[45%] -translate-x-1/2"
-        style={{ width: 700, height: 1, background: "linear-gradient(90deg, transparent 0%, rgba(96,165,250,0.2) 50%, transparent 100%)" }}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2"
+        style={{ width: 640, height: 1, background: "linear-gradient(90deg, transparent 0%, rgba(96,165,250,0.2) 50%, transparent 100%)" }}
       />
       <div
-        className="absolute left-1/2 top-[45%] -translate-y-1/2"
-        style={{ width: 1, height: 700, background: "linear-gradient(180deg, transparent 0%, rgba(96,165,250,0.2) 50%, transparent 100%)", marginLeft: -0.5 }}
+        className="absolute left-1/2 top-1/2 -translate-y-1/2"
+        style={{ width: 1, height: 640, background: "linear-gradient(180deg, transparent 0%, rgba(96,165,250,0.2) 50%, transparent 100%)", marginLeft: -0.5 }}
       />
 
       {ARCHIVE_ITEMS.map((item, i) => {
@@ -102,7 +104,7 @@ export function AuthOrbitalCarousel({ coverUrls }: { coverUrls?: Record<string, 
         const x = Math.sin(radians) * rx;
         const y = -Math.cos(radians) * ry * 0.55;
         const depth = Math.cos(radians);
-        const scale = isActive ? 1.35 : 0.45 + Math.max(0, depth) * 0.25;
+        const scale = isActive ? 1.2 : 0.45 + Math.max(0, depth) * 0.25;
         const opacity = isActive ? 1 : 0.15 + Math.max(0, depth) * 0.4;
         const blur = isActive ? 0 : Math.max(0, (1 - depth) * 5);
         const zIndex = isActive ? 20 : Math.round((depth + 1) * 5);
@@ -113,7 +115,7 @@ export function AuthOrbitalCarousel({ coverUrls }: { coverUrls?: Record<string, 
           <button
             key={item.title}
             type="button"
-            className="absolute left-1/2 top-[45%] cursor-pointer border-0 bg-transparent p-0"
+            className="absolute left-1/2 top-1/2 cursor-pointer border-0 bg-transparent p-0"
             style={{
               width: baseWidth,
               height: baseHeight,
@@ -146,31 +148,32 @@ export function AuthOrbitalCarousel({ coverUrls }: { coverUrls?: Record<string, 
                   unoptimized
                 />
               )}
-              <div className="absolute inset-x-0 bottom-0 p-2" style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.72))" }}>
-                <div
-                  className="truncate text-left"
-                  style={{
-                    fontSize: isActive ? 14 : 7,
-                    fontFamily: "'Geist Mono', 'JetBrains Mono', monospace",
-                    color: COLORS.text,
-                    letterSpacing: "0.045em",
-                    opacity: 0.95,
-                  }}
-                >
-                  {item.title}
+              {!isActive && (
+                <div className="absolute inset-x-0 bottom-0 p-2" style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.72))" }}>
+                  <div
+                    className="truncate text-left"
+                    style={{
+                      fontSize: 7,
+                      fontFamily: "'Geist Mono', 'JetBrains Mono', monospace",
+                      color: COLORS.text,
+                      letterSpacing: "0.045em",
+                      opacity: 0.95,
+                    }}
+                  >
+                    {item.title}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </button>
         );
       })}
 
-      <div
-        className="absolute left-1/2 -translate-x-1/2 text-center"
-        style={{ bottom: 58, transition: "opacity 0.5s" }}
-      >
+        </div>
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center gap-2.5 pt-3">
         <div
-          className="mb-1"
           style={{
             fontFamily: "'Geist Mono', 'JetBrains Mono', monospace",
             fontSize: 14,
@@ -197,25 +200,25 @@ export function AuthOrbitalCarousel({ coverUrls }: { coverUrls?: Record<string, 
           />
           {ARCHIVE_ITEMS[activeIndex].status}
         </div>
-      </div>
 
-      <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 gap-1.5">
-        {ARCHIVE_ITEMS.map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => setActiveIndex(i)}
-            className="h-1 rounded-full transition-all duration-300"
-            style={{
-              width: i === activeIndex ? 20 : 6,
-              backgroundColor: i === activeIndex ? COLORS.activeDot : COLORS.border,
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-            }}
-            aria-label={`Go to item ${i + 1}`}
-          />
-        ))}
+        <div className="mt-1.5 flex gap-1.5">
+          {ARCHIVE_ITEMS.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setActiveIndex(i)}
+              className="h-1 rounded-full transition-all duration-300"
+              style={{
+                width: i === activeIndex ? 20 : 6,
+                backgroundColor: i === activeIndex ? COLORS.activeDot : COLORS.border,
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+              }}
+              aria-label={`Go to item ${i + 1}`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

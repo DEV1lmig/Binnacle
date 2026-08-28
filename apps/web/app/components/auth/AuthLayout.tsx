@@ -27,7 +27,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 
       <div className="relative z-20 mt-1 flex flex-1 flex-col items-center w-full">
         <div className="absolute top-[-1px] left-0 w-full -translate-y-full overflow-hidden leading-none z-0">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="relative block h-[56px] w-full md:h-[112px]">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none" className="relative block h-[56px] w-full md:h-[112px]">
             <path
               fill="#ffffff"
               fillOpacity="1"
