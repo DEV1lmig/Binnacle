@@ -56,8 +56,8 @@ export function AuthOrbitalCarousel({ coverUrls }: { coverUrls?: Record<string, 
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative h-[380px] w-full sm:h-[440px] md:h-[600px]">
-        <div className="absolute inset-0 scale-[0.56] sm:scale-[0.66] md:scale-100">
+      <div className="relative h-[14rem] w-full min-[400px]:h-[17rem] sm:h-[20rem] md:h-[25rem] lg:h-[clamp(28rem,62dvh,38rem)]">
+        <div className="absolute inset-0 scale-[0.42] min-[400px]:scale-[0.52] sm:scale-[0.62] md:scale-[0.76] lg:scale-[0.62] xl:scale-[0.78] 2xl:scale-[0.94] min-[1920px]:scale-100">
       <div
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{

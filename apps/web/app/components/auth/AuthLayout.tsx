@@ -5,7 +5,7 @@ import { AuthOrbitalCarousel } from "./AuthOrbitalCarousel";
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative flex min-h-screen flex-col overflow-x-hidden font-sans bg-[#020812]">
+    <main className="relative min-h-[100dvh] overflow-x-hidden bg-[#020812] font-sans">
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -21,25 +21,20 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         }}
       />
 
-      <div className="relative z-10 px-2 pt-2 sm:px-4 sm:pt-6">
-        <AuthOrbitalCarousel />
-      </div>
+      <div className="relative z-10 grid min-h-[100dvh] lg:grid-cols-2">
+        <aside className="relative flex min-h-[20rem] items-center overflow-hidden border-b border-white/10 px-4 py-5 sm:min-h-[25rem] sm:px-8 sm:py-7 lg:sticky lg:top-0 lg:min-h-[100dvh] lg:self-start lg:border-r lg:border-b-0 lg:px-[clamp(2.5rem,5vw,10rem)] lg:py-10">
+          <div className="mx-auto w-full max-w-[62rem]">
+            <p className="mb-1 font-mono text-[0.625rem] font-medium uppercase tracking-[0.24em] text-sky-200/60 sm:mb-3 sm:text-xs">
+              Binnacle archive
+            </p>
+            <AuthOrbitalCarousel />
+          </div>
+        </aside>
 
-      <div className="relative z-20 mt-1 flex flex-1 flex-col items-center w-full">
-        <div className="absolute top-[-1px] left-0 w-full -translate-y-full overflow-hidden leading-none z-0">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none" className="relative block h-[56px] w-full md:h-[112px]">
-            <path
-              fill="#ffffff"
-              fillOpacity="1"
-              d="M0,192L48,186.7C96,181,192,171,288,181.3C384,192,480,224,576,213.3C672,203,768,149,864,133.3C960,117,1056,139,1152,165.3C1248,192,1344,224,1392,240L1440,256L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
-            />
-          </svg>
-        </div>
-
-        <div className="z-10 flex w-full flex-1 flex-col items-center bg-white px-6 pt-4 pb-12 md:px-12">
-          <div className="w-full max-w-[420px]">{children}</div>
-        </div>
+        <section className="flex min-h-[calc(100dvh-20rem)] items-start bg-white px-5 py-10 sm:min-h-[calc(100dvh-25rem)] sm:px-8 sm:py-14 lg:min-h-[100dvh] lg:items-center lg:px-[clamp(3rem,8vw,16rem)] lg:py-16">
+          <div className="w-full max-w-[30rem] lg:mx-auto">{children}</div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

@@ -10,9 +10,9 @@ export default function SignUpPage() {
       <SignUp.Root routing="path" path="/sign-up">
         <SignUp.Step name="start" className="flex flex-col gap-6">
           <header className="mb-2">
-            <h1 className="text-[2.5rem] font-bold text-gray-900 tracking-tight">Welcome</h1>
+            <h1 className="text-[2.5rem] font-bold text-gray-900 tracking-tight">Create your archive</h1>
             <p className="text-gray-500 font-medium text-sm mt-2 max-w-[280px]">
-              Lorem ipsum dolor sit amet consectetur. Lorem id sit.
+              Keep the games that matter to you in one place.
             </p>
           </header>
 
