@@ -136,7 +136,7 @@ export default function LandingPageV4() {
             className="text-xl tracking-tight"
             style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
           >
-            Binnacle
+            Playchive
           </Link>
           <div className="flex items-center gap-6 text-sm" style={{ color: "#737373" }}>
             <Link
@@ -275,7 +275,7 @@ export default function LandingPageV4() {
               className="block mt-8 text-sm not-italic tracking-wide"
               style={{ color: "#A3A3A3", fontWeight: 400 }}
             >
-              {"\u2014"}&nbsp;Binnacle
+              {"\u2014"}&nbsp;Playchive
             </cite>
           </blockquote>
         </FadeIn>
@@ -351,7 +351,7 @@ export default function LandingPageV4() {
               className="text-lg"
               style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
             >
-              Binnacle
+              Playchive
             </span>
             <span className="text-xs" style={{ color: "#A3A3A3" }}>
               &copy; {new Date().getFullYear()}

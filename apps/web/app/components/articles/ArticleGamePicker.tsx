@@ -106,7 +106,7 @@ export function ArticleGamePicker({ selected, onChange }: ArticleGamePickerProps
               backgroundColor: C.bgAlt,
               borderColor: C.border,
               color: C.text,
-              borderRadius: 2,
+              borderRadius: 12,
             }}
           />
           {debouncedQuery.length >= 2 && results && results.length > 0 ? (

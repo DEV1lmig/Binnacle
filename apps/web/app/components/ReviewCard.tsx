@@ -3,37 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
-import { useUser } from "@clerk/nextjs";
-import { Heart, MessageCircle, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Clock, Gamepad2, ArrowUpRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { getStandardCoverUrl } from "@/lib/igdb-images";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { CommentSection } from "./CommentSection";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu";
-import { Button } from "@/app/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu";
 import { ReportDialog } from "@/app/components/ReportDialog";
-import { C, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
+import { Cover, OpenCaseLink, ScoreMark } from "@/app/components/playchive";
 
-type ReviewAuthor = {
-  _id: Id<"users">;
-  name: string;
-  username: string;
-  avatarUrl?: string;
-};
-
-type ReviewGame = {
-  _id: Id<"games">;
-  title: string;
-  coverUrl?: string;
-  releaseYear?: number;
-};
+type ReviewAuthor = { _id: Id<"users">; name: string; username: string; avatarUrl?: string };
+type ReviewGame = { _id: Id<"games">; title: string; coverUrl?: string; releaseYear?: number };
 
 export type ReviewCardData = {
   _id: Id<"reviews">;
@@ -51,13 +31,22 @@ export type ReviewCardData = {
   game: ReviewGame;
 };
 
-interface ReviewCardProps {
-  review: ReviewCardData;
+export function relativeTime(timestamp?: number): string {
+  if (!timestamp) return "Just now";
+  const diff = Date.now() - timestamp;
+  const minutes = Math.round(diff / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric", year: days > 300 ? "numeric" : undefined });
 }
 
-export function ReviewCard({ review }: ReviewCardProps) {
+/** Editorial review tile: cover spine, big score, quoted text, like / comment rail. Clicking opens the review. */
+export function ReviewCard({ review, clampText = true }: { review: ReviewCardData; clampText?: boolean }) {
   const router = useRouter();
-  const { user: clerkUser } = useUser();
   const toggleLike = useMutation(api.likes.toggle);
 
   const [liked, setLiked] = useState(review.viewerHasLiked ?? false);
@@ -66,347 +55,101 @@ export function ReviewCard({ review }: ReviewCardProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
 
-  const reviewSnapshotRef = useRef({
-    id: review._id,
-    viewerHasLiked: review.viewerHasLiked,
-    likeCount: review.likeCount,
-    commentCount: review.commentCount,
-  });
-
+  const snapshot = useRef({ id: review._id, viewerHasLiked: review.viewerHasLiked, likeCount: review.likeCount, commentCount: review.commentCount });
   useEffect(() => {
-    if (
-      reviewSnapshotRef.current.id !== review._id ||
-      reviewSnapshotRef.current.viewerHasLiked !== review.viewerHasLiked ||
-      reviewSnapshotRef.current.likeCount !== review.likeCount ||
-      reviewSnapshotRef.current.commentCount !== review.commentCount
-    ) {
-      reviewSnapshotRef.current = {
-        id: review._id,
-        viewerHasLiked: review.viewerHasLiked,
-        likeCount: review.likeCount,
-        commentCount: review.commentCount,
-      };
+    const s = snapshot.current;
+    if (s.id !== review._id || s.viewerHasLiked !== review.viewerHasLiked || s.likeCount !== review.likeCount || s.commentCount !== review.commentCount) {
+      snapshot.current = { id: review._id, viewerHasLiked: review.viewerHasLiked, likeCount: review.likeCount, commentCount: review.commentCount };
       setLiked(review.viewerHasLiked ?? false);
       setLikeCount(review.likeCount ?? 0);
       setCommentCount(review.commentCount ?? 0);
     }
   }, [review._id, review.viewerHasLiked, review.likeCount, review.commentCount]);
 
-  const normalizedRating = useMemo(() => {
-    return Math.max(0, Math.min(10, review.rating));
-  }, [review.rating]);
-
-  const createdAt = useMemo(() => {
-    if (!review._creationTime) {
-      return "Just now";
-    }
-    const date = new Date(review._creationTime);
-    return date.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  }, [review._creationTime]);
+  const when = useMemo(() => relativeTime(review._creationTime), [review._creationTime]);
 
   const handleLike = async (event: React.MouseEvent) => {
     event.stopPropagation();
-    if (isBusy) {
-      return;
-    }
-
-    const nextLiked = !liked;
-    setLiked(nextLiked);
-    setLikeCount((count) => Math.max(0, count + (nextLiked ? 1 : -1)));
+    if (isBusy) return;
+    const next = !liked;
+    setLiked(next);
+    setLikeCount(count => Math.max(0, count + (next ? 1 : -1)));
     setIsBusy(true);
-
     try {
       await toggleLike({ reviewId: review._id });
     } catch (error) {
       console.error("[ReviewCard] Failed to toggle like", error);
       setLiked(liked);
-      setLikeCount((count) => Math.max(0, count + (liked ? 1 : -1)));
+      setLikeCount(count => Math.max(0, count + (liked ? 1 : -1)));
     } finally {
       setIsBusy(false);
     }
   };
 
-  const handleNavigate = () => {
-    router.push(`/review/${review._id}`);
-  };
-
-  const handleToggleComments = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setCommentsOpen((open) => !open);
-  };
+  const open = () => router.push(`/review/${review._id}`);
+  const stop = (event: React.SyntheticEvent) => event.stopPropagation();
 
   return (
-    <article
-      onClick={handleNavigate}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="p-4 md:p-6 cursor-pointer"
-      style={{
-        background: C.surface,
-        border: `1px solid ${hovered ? C.gold : C.border}`,
-        borderRadius: 2,
-        boxShadow: hovered ? `0 0 16px ${C.bloom}` : "none",
-        transform: hovered ? "translateY(-1px)" : "none",
-        transition: "border-color 0.2s, box-shadow 0.2s, transform 0.2s",
-      }}
-    >
-      <header className="flex items-center gap-3 mb-4">
-        <Avatar className="h-10 w-10">
-          {review.author.avatarUrl ? (
-            <AvatarImage src={review.author.avatarUrl} alt={review.author.name} />
-          ) : null}
-          <AvatarFallback
-            style={{
-              background: `linear-gradient(135deg, ${C.accent}, ${C.gold})`,
-              color: C.bg,
-            }}
-          >
-            {review.author.name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <p
-            style={{
-              fontFamily: FONT_BODY,
-              fontSize: 14,
-              fontWeight: 500,
-              color: C.text,
-            }}
-          >
-            {review.author.name}
-          </p>
-          <p
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: 11,
-              color: C.textDim,
-              letterSpacing: "0.02em",
-            }}
-          >
-            @{review.author.username} · {createdAt}
-          </p>
-        </div>
-        <div className="flex items-center gap-1" aria-label={`Rated ${review.rating} out of 10`}>
-          <span
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: 14,
-              fontWeight: 700,
-              color: C.amber,
-            }}
-          >
-            {normalizedRating.toFixed(1)}
-          </span>
-          <span
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: 14,
-              color: C.textDim,
-            }}
-          >
-            /10
-          </span>
-        </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(event) => event.stopPropagation()}
-              style={{ color: C.textMuted }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = C.textMuted; }}
-              aria-label="More actions"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
-            <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                setReportOpen(true);
-              }}
-            >
-              Report
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </header>
-
-      <div className="flex gap-3 mb-4">
-        <div
-          className="overflow-hidden flex-shrink-0"
-          style={{ width: 64, height: 96, borderRadius: 2 }}
-        >
-          <ImageWithFallback
-            src={getStandardCoverUrl(review.game.coverUrl) ?? ""}
-            alt={review.game.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="flex flex-col justify-center">
-          <p
-            style={{
-              fontFamily: FONT_BODY,
-              fontSize: 15,
-              fontWeight: 500,
-              color: C.text,
-            }}
-          >
-            {review.game.title}
-          </p>
-          {review.platform ? (
-            <p
-              style={{
-                fontFamily: FONT_MONO,
-                fontSize: 11,
-                color: C.textDim,
-                textTransform: "uppercase",
-              }}
-            >
-              Played on {review.platform}
-            </p>
-          ) : null}
-        </div>
+    <article className="pk-review" onClick={open} onKeyDown={event => { if (event.key === "Enter" && event.target === event.currentTarget) open(); }} tabIndex={0} aria-label={`${review.author.name} reviewed ${review.game.title}`}>
+      <div className="pk-review-spine" onClick={stop}>
+        <OpenCaseLink href={`/review/${review._id}`} gameId={review.gameId} coverUrl={review.game.coverUrl} title={review.game.title} aria-label={`Open ${review.author.name}’s review of ${review.game.title}`}>
+          <Cover src={review.game.coverUrl} title={review.game.title} sizes="96px" gameId={review.gameId} />
+        </OpenCaseLink>
       </div>
 
-      {review.text ? (
-        <p
-          className="mb-4"
-          style={{
-            fontFamily: FONT_BODY,
-            fontSize: 14,
-            fontWeight: 300,
-            color: C.textMuted,
-            lineHeight: 1.6,
-          }}
-        >
-          {review.text}
-        </p>
-      ) : null}
-
-      <footer
-        className="flex items-center gap-4 pt-4"
-        style={{ borderTop: `1px solid ${C.border}` }}
-      >
-        <button
-          onClick={handleLike}
-          disabled={isBusy}
-          className="flex items-center gap-2 group"
-          style={{
-            color: liked ? C.red : C.textMuted,
-            transition: "color 0.15s",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-          }}
-          onMouseEnter={(e) => { if (!liked) e.currentTarget.style.color = C.text; }}
-          onMouseLeave={(e) => { if (!liked) e.currentTarget.style.color = C.textMuted; }}
-          title={liked ? "Unlike this review" : "Like this review"}
-        >
-          <div
-            className={`transition-transform duration-200 ${liked ? "scale-110" : "group-hover:scale-110"} ${isBusy ? "opacity-50" : ""}`}
-          >
-            <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
-          </div>
-          <span
-            className="flex items-center gap-1"
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: 13,
-              color: C.textMuted,
-            }}
-          >
-            {likeCount}
-            {liked && (
-              <span
-                className="hidden sm:inline-block"
-                style={{ fontSize: 10, fontWeight: 500, opacity: 0.8 }}
-              >
-                (You)
-              </span>
-            )}
-          </span>
-        </button>
-        <button
-          onClick={handleToggleComments}
-          className="flex items-center gap-2"
-          style={{
-            color: C.textMuted,
-            transition: "color 0.15s",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = C.textMuted; }}
-        >
-          <MessageCircle className="w-4 h-4" />
-          <span
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: 13,
-              color: C.textMuted,
-            }}
-          >
-            {commentCount}
-          </span>
-        </button>
-        {clerkUser && (
-          <div className="ml-auto flex items-center gap-2">
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={clerkUser.imageUrl || ""} alt={clerkUser.fullName || "User"} />
-              <AvatarFallback
-                style={{
-                  background: `linear-gradient(135deg, ${C.accent}, ${C.gold})`,
-                  color: C.bg,
-                }}
-              >
-                {clerkUser.firstName?.charAt(0).toUpperCase() || "U"}
-              </AvatarFallback>
+      <div className="min-w-0">
+        <header className="pk-review-head">
+          <div className="pk-review-who">
+            <Avatar className="h-9 w-9 rounded-full">
+              {review.author.avatarUrl && <AvatarImage src={review.author.avatarUrl} alt="" />}
+              <AvatarFallback className="bg-primary text-white text-xs font-semibold">{review.author.name.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
-            <span
-              style={{
-                fontFamily: FONT_MONO,
-                fontSize: 11,
-                color: C.textDim,
-              }}
-            >
-              {clerkUser.firstName || clerkUser.username || "You"}
-            </span>
+            <div className="min-w-0">
+              <p className="truncate"><b>{review.author.name}</b> <span className="text-textDim">reviewed</span></p>
+              <p className="truncate">@{review.author.username} · {when}</p>
+            </div>
           </div>
-        )}
-      </footer>
+          <ScoreMark value={review.rating} size="sm" />
+        </header>
 
-      {commentsOpen ? (
-        <div
-          className="mt-4 pt-4"
-          style={{ borderTop: `1px solid ${C.border}` }}
-          onClick={(event) => event.stopPropagation()}
-        >
-          <CommentSection
-            reviewId={review._id}
-            onCountDelta={(delta) => setCommentCount((count) => Math.max(0, count + delta))}
-          />
+        <h3 className="pk-review-game">{review.game.title}</h3>
+        <div className="pk-review-meta">
+          {review.game.releaseYear && <span>{review.game.releaseYear}</span>}
+          {review.platform && <span className="inline-flex items-center gap-1"><Gamepad2 size={13} aria-hidden="true" />{review.platform}</span>}
+          {!!review.playtimeHours && <span className="inline-flex items-center gap-1"><Clock size={13} aria-hidden="true" />{review.playtimeHours}h played</span>}
         </div>
-      ) : null}
 
-      <ReportDialog
-        open={reportOpen}
-        onOpenChange={setReportOpen}
-        targetType="review"
-        targetId={review._id}
-      />
+        {review.text && <p className="pk-review-text" data-clamp={clampText || undefined}>{review.text}</p>}
+
+        <footer className="pk-actions">
+          <button type="button" className="pk-action" data-active={liked || undefined} onClick={handleLike} disabled={isBusy} aria-pressed={liked} aria-label={liked ? "Unlike this review" : "Like this review"}>
+            <Heart size={17} />{likeCount}
+          </button>
+          <button type="button" className="pk-action" aria-expanded={commentsOpen} onClick={event => { stop(event); setCommentsOpen(v => !v); }} aria-label={commentsOpen ? "Hide comments" : "Show comments"}>
+            <MessageCircle size={17} />{commentCount}
+          </button>
+          <button type="button" className="pk-action" onClick={event => { stop(event); open(); }}>
+            Read<ArrowUpRight size={15} />
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="pk-action pk-more" onClick={stop} aria-label="More actions"><MoreHorizontal size={17} /></button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={stop}>
+              <DropdownMenuItem onSelect={event => { event.preventDefault(); setReportOpen(true); }}>Report</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </footer>
+      </div>
+
+      {commentsOpen && (
+        <div className="pk-review-comments" onClick={stop} onKeyDown={stop}>
+          <CommentSection reviewId={review._id} onCountDelta={delta => setCommentCount(count => Math.max(0, count + delta))} />
+        </div>
+      )}
+
+      <ReportDialog open={reportOpen} onOpenChange={setReportOpen} targetType="review" targetId={review._id} />
     </article>
   );
 }

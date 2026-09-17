@@ -11,7 +11,7 @@ export default function AuthIndexPage() {
       <View style={styles.content}>
         <View style={styles.hero}>
           <AuthTag label="Welcome" />
-          <Text style={styles.title}>Binnacle</Text>
+          <Text style={styles.title}>Playchive</Text>
           <Text style={styles.subtitle}>
             Track games, share reviews, and keep up with your friends from your phone.
           </Text>

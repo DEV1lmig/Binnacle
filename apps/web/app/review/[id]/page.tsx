@@ -17,17 +17,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 
   return {
-    title: "Review on Binnacle",
-    description: "Check out this game review on Binnacle",
+    title: "Review on Playchive",
+    description: "Check out this game review on Playchive",
     openGraph: {
-      title: "Review on Binnacle",
-      description: "Check out this game review on Binnacle",
+      title: "Review on Playchive",
+      description: "Check out this game review on Playchive",
       images: [imageUrl],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Review on Binnacle",
-      description: "Check out this game review on Binnacle",
+      title: "Review on Playchive",
+      description: "Check out this game review on Playchive",
       images: [imageUrl],
     },
   };

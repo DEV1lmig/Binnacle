@@ -116,7 +116,7 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
     backgroundColor: C.bgAlt,
     borderColor: C.border,
     color: C.text,
-    borderRadius: 2,
+    borderRadius: 12,
     fontSize: 14,
     fontFamily: FONT_BODY,
   } as const;
@@ -298,7 +298,7 @@ export function CommentSection({ reviewId, onCountDelta, className }: CommentSec
                             color: C.textMuted,
                             fontFamily: FONT_BODY,
                             fontSize: 14,
-                            fontWeight: 300,
+                            fontWeight: 400,
                             lineHeight: 1.6,
                           }}
                         >

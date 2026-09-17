@@ -39,7 +39,7 @@ export function FeedPageSkeleton() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-16" style={{ backgroundColor: C.surface, borderRadius: 2 }} />
+              <Skeleton key={i} className="h-16" style={{ backgroundColor: C.surface, borderRadius: 12 }} />
             ))}
           </div>
         </div>
@@ -49,12 +49,12 @@ export function FeedPageSkeleton() {
         {/* Trending carousel skeleton */}
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-5">
-            <Skeleton className="h-6 w-20" style={{ backgroundColor: C.surface, borderRadius: 2 }} />
+            <Skeleton className="h-6 w-20" style={{ backgroundColor: C.surface, borderRadius: 12 }} />
             <Skeleton className="h-7 w-48" style={{ backgroundColor: C.surface }} />
           </div>
           <div className="flex gap-3 overflow-hidden">
             {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="flex-shrink-0" style={{ width: 160, height: 240, backgroundColor: C.surface, borderRadius: 2 }} />
+              <Skeleton key={i} className="flex-shrink-0" style={{ width: 160, height: 240, backgroundColor: C.surface, borderRadius: 12 }} />
             ))}
           </div>
         </div>
@@ -66,7 +66,7 @@ export function FeedPageSkeleton() {
               <div
                 key={i}
                 className="p-6 space-y-4"
-                style={{ border: `1px solid ${C.border}`, borderRadius: 2 }}
+                style={{ border: `1px solid ${C.border}`, borderRadius: 12 }}
               >
                 <div className="flex items-start gap-4">
                   <Skeleton className="h-10 w-10 rounded-full" style={{ backgroundColor: C.bgAlt }} />
@@ -76,7 +76,7 @@ export function FeedPageSkeleton() {
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <Skeleton className="flex-shrink-0" style={{ width: 64, height: 96, backgroundColor: C.bgAlt, borderRadius: 2 }} />
+                  <Skeleton className="flex-shrink-0" style={{ width: 64, height: 96, backgroundColor: C.bgAlt, borderRadius: 12 }} />
                   <div className="flex-1 space-y-2 pt-2">
                     <Skeleton className="h-4 w-40" style={{ backgroundColor: C.bgAlt }} />
                     <Skeleton className="h-3 w-24" style={{ backgroundColor: C.bgAlt }} />
@@ -93,7 +93,7 @@ export function FeedPageSkeleton() {
               <div
                 key={i}
                 className="p-5 space-y-3"
-                style={{ border: `1px solid ${C.border}`, borderRadius: 2, background: C.surface }}
+                style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: C.surface }}
               >
                 <Skeleton className="h-3 w-24 mb-3" style={{ backgroundColor: C.bgAlt }} />
                 {[...Array(3)].map((_, j) => (
@@ -120,10 +120,10 @@ export function BacklogPageSkeleton() {
       <div className="max-w-[1400px] mx-auto px-4 md:px-8">
         {/* Header skeleton */}
         <div style={{ borderBottom: `1px solid ${C.border}`, padding: "24px 0 20px" }}>
-          <Skeleton className="h-5 w-20 mb-3" style={{ backgroundColor: C.surface, borderRadius: 2 }} />
+          <Skeleton className="h-5 w-20 mb-3" style={{ backgroundColor: C.surface, borderRadius: 12 }} />
           <Skeleton className="h-9 w-48 mb-2" style={{ backgroundColor: C.surface }} />
           <Skeleton className="h-4 w-32 mb-4" style={{ backgroundColor: C.surface }} />
-          <Skeleton className="h-9 w-full max-w-md" style={{ backgroundColor: C.surface, borderRadius: 2 }} />
+          <Skeleton className="h-9 w-full max-w-md" style={{ backgroundColor: C.surface, borderRadius: 12 }} />
         </div>
 
         {/* 12-col grid: sidebar + game grid */}
@@ -132,7 +132,7 @@ export function BacklogPageSkeleton() {
           <div className="lg:col-span-3">
             <div
               className="space-y-2 p-4"
-              style={{ border: `1px solid ${C.border}`, borderRadius: 2, background: C.surface }}
+              style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: C.surface }}
             >
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="flex items-center gap-2.5 px-3 py-2">
@@ -156,7 +156,7 @@ export function BacklogPageSkeleton() {
               <div key={i} className="space-y-2">
                 <Skeleton
                   className="w-full aspect-[2/3]"
-                  style={{ backgroundColor: C.surface, borderRadius: 2 }}
+                  style={{ backgroundColor: C.surface, borderRadius: 12 }}
                 />
                 <Skeleton className="h-3 w-3/4" style={{ backgroundColor: C.surface }} />
               </div>

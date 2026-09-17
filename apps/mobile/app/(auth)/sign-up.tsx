@@ -187,7 +187,7 @@ export default function SignUpScreen() {
                 Become an <Text style={styles.titleHighlight}>archivist</Text>.
               </Text>
               <Text style={styles.subtitle}>
-                Join Binnacle to build your backlog and discover what others are playing.
+                Join Playchive to build your library and discover what others are playing.
               </Text>
             </View>
 

@@ -25,7 +25,7 @@ export function SpoilerGate({ children }: SpoilerGateProps) {
         style={{ backgroundColor: "rgba(11, 14, 20, 0.75)" }}
       >
         <TriangleAlert className="w-6 h-6" style={{ color: C.amber }} />
-        <p style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.text, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <p style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.text, textTransform: "none", letterSpacing: "0.01em" }}>
           Contains spoilers
         </p>
         <button
@@ -35,11 +35,11 @@ export function SpoilerGate({ children }: SpoilerGateProps) {
           style={{
             fontFamily: FONT_MONO,
             fontSize: 12,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
+            textTransform: "none",
+            letterSpacing: "0.01em",
             color: C.bg,
             backgroundColor: C.gold,
-            borderRadius: 2,
+            borderRadius: 12,
           }}
         >
           Show anyway

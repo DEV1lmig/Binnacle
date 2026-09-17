@@ -77,7 +77,7 @@ export function ArticleEditor({
       className={className}
       style={{
         border: editable ? `1px solid ${C.border}` : "none",
-        borderRadius: 2,
+        borderRadius: 12,
         backgroundColor: editable ? C.bg : "transparent",
       }}
     >

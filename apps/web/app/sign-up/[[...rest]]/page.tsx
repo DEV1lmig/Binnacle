@@ -10,7 +10,7 @@ export default function SignUpPage() {
       <SignUp.Root routing="path" path="/sign-up">
         <SignUp.Step name="start" className="flex flex-col gap-6">
           <header className="mb-2">
-            <h1 className="text-[2.5rem] font-bold text-gray-900 tracking-tight">Create your archive</h1>
+            <h1 className="text-[2.5rem] font-bold text-gray-900 tracking-tight">Start your story</h1>
             <p className="text-gray-500 font-medium text-sm mt-2 max-w-[280px]">
               Keep the games that matter to you in one place.
             </p>
@@ -40,7 +40,7 @@ export default function SignUpPage() {
 
           <div className="flex items-center gap-4 mt-2">
             <span className="h-px flex-1 bg-gray-200" />
-            <span className="text-xs font-semibold text-gray-400 uppercase">or</span>
+            <span className="text-xs font-semibold text-gray-500 uppercase">or</span>
             <span className="h-px flex-1 bg-gray-200" />
           </div>
 
@@ -52,7 +52,7 @@ export default function SignUpPage() {
               </Clerk.Label>
               <Clerk.Input asChild>
                 <input
-                  className="w-full border-b-2 border-gray-200 focus:border-[#F97380] py-2 outline-none transition-colors text-gray-800 placeholder-gray-400 bg-transparent"
+                  className="w-full border-b-2 border-gray-200 focus:border-[#1649E8] py-2 outline-none transition-colors text-gray-800 placeholder-gray-500 bg-transparent"
                   type="email"
                   autoComplete="email"
                   placeholder="you@example.com"
@@ -67,7 +67,7 @@ export default function SignUpPage() {
               </Clerk.Label>
               <Clerk.Input asChild>
                 <input
-                  className="w-full border-b-2 border-gray-200 focus:border-[#F97380] py-2 outline-none transition-colors text-gray-800 placeholder-gray-400 bg-transparent"
+                  className="w-full border-b-2 border-gray-200 focus:border-[#1649E8] py-2 outline-none transition-colors text-gray-800 placeholder-gray-500 bg-transparent"
                   type="password"
                   autoComplete="new-password"
                   placeholder="Create a password"
@@ -83,7 +83,7 @@ export default function SignUpPage() {
           <div className="mt-4">
             <SignUp.Action submit asChild>
               <button
-                className="w-full bg-[#F97380] hover:bg-[#e45a66] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full bg-[#1649E8] hover:bg-[#1034A9] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 Continue
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -93,7 +93,7 @@ export default function SignUpPage() {
 
           <p className="text-center text-xs font-medium text-gray-500 mt-4">
             Already have an archive?{" "}
-            <Clerk.Link navigate="sign-in" className="text-[#F97380] hover:text-[#e45a66] font-bold bg-transparent border-none p-0 cursor-pointer">
+            <Clerk.Link navigate="sign-in" className="text-[#1649E8] hover:text-[#1034A9] font-bold bg-transparent border-none p-0 cursor-pointer">
               Sign in
             </Clerk.Link>
           </p>
@@ -115,7 +115,7 @@ export default function SignUpPage() {
                 </Clerk.Label>
                 <Clerk.Input asChild>
                   <input
-                    className="w-full border-b-2 border-gray-200 focus:border-[#F97380] py-2 outline-none transition-colors text-gray-800 bg-transparent"
+                    className="w-full border-b-2 border-gray-200 focus:border-[#1649E8] py-2 outline-none transition-colors text-gray-800 bg-transparent"
                     autoComplete="given-name"
                   />
                 </Clerk.Input>
@@ -127,7 +127,7 @@ export default function SignUpPage() {
                 </Clerk.Label>
                 <Clerk.Input asChild>
                   <input
-                    className="w-full border-b-2 border-gray-200 focus:border-[#F97380] py-2 outline-none transition-colors text-gray-800 bg-transparent"
+                    className="w-full border-b-2 border-gray-200 focus:border-[#1649E8] py-2 outline-none transition-colors text-gray-800 bg-transparent"
                     autoComplete="family-name"
                   />
                 </Clerk.Input>
@@ -141,7 +141,7 @@ export default function SignUpPage() {
               </Clerk.Label>
               <Clerk.Input asChild>
                 <input
-                  className="w-full border-b-2 border-gray-200 focus:border-[#F97380] py-2 outline-none transition-colors text-gray-800 bg-transparent"
+                  className="w-full border-b-2 border-gray-200 focus:border-[#1649E8] py-2 outline-none transition-colors text-gray-800 bg-transparent"
                   autoComplete="username"
                   placeholder="your-handle"
                 />
@@ -152,7 +152,7 @@ export default function SignUpPage() {
 
           <div className="mt-8">
             <SignUp.Action submit asChild>
-              <button className="w-full bg-[#F97380] hover:bg-[#e45a66] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98]">
+              <button className="w-full bg-[#1649E8] hover:bg-[#1034A9] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98]">
                 Complete Setup
               </button>
             </SignUp.Action>
@@ -175,14 +175,14 @@ export default function SignUpPage() {
                 </Clerk.Label>
                 <Clerk.Input asChild>
                   <input
-                    className="w-full border-b-2 border-gray-200 focus:border-[#F97380] py-2 outline-none transition-colors text-gray-800 placeholder-gray-400 bg-transparent text-center text-xl tracking-widest font-mono"
+                    className="w-full border-b-2 border-gray-200 focus:border-[#1649E8] py-2 outline-none transition-colors text-gray-800 placeholder-gray-500 bg-transparent text-center text-xl tracking-widest font-mono"
                     inputMode="numeric"
                   />
                 </Clerk.Input>
                 <Clerk.FieldError className="text-xs text-red-500 mt-1 block" />
               </Clerk.Field>
               <SignUp.Action submit asChild>
-                <button className="w-full bg-[#F97380] hover:bg-[#e45a66] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98] mt-4">
+                <button className="w-full bg-[#1649E8] hover:bg-[#1034A9] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98] mt-4">
                   Verify Email
                 </button>
               </SignUp.Action>

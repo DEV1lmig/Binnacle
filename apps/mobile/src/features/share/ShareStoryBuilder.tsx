@@ -68,7 +68,7 @@ export function ShareStoryBuilder({
   );
 
   const fileName = useMemo(
-    () => `binnacle-story-${reviewId}-${options.format}.png`,
+    () => `playchive-story-${reviewId}-${options.format}.png`,
     [reviewId, options.format]
   );
 
@@ -125,7 +125,7 @@ export function ShareStoryBuilder({
       const cacheDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
       if (!cacheDir) throw new Error("No cache directory available");
       fileUri = (
-        await FileSystem.downloadAsync(storyUrl, `${cacheDir}binnacle-ig-${reviewId}.png`)
+        await FileSystem.downloadAsync(storyUrl, `${cacheDir}playchive-ig-${reviewId}.png`)
       ).uri;
 
       // Lazy-require so the screen still runs in Expo Go (where the native

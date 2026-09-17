@@ -5,7 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 import { Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
-import { C, FONT_HEADING, FONT_MONO, FONT_BODY, FONT_IMPORT_URL } from "@/app/lib/design-system";
+import { C, FONT_HEADING, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
 import { CornerMarkers, GrainOverlay } from "@/app/lib/design-primitives";
 
 interface AdminGuardProps {
@@ -30,13 +30,13 @@ function GhostButton({
       onMouseLeave={() => setHovered(false)}
       style={{
         border: `1px solid ${hovered ? C.gold : C.border}`,
-        borderRadius: 2,
+        borderRadius: 12,
         background: "transparent",
         color: hovered ? C.text : C.textMuted,
         fontFamily: FONT_MONO,
         fontSize: 11,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
+        letterSpacing: "0.01em",
+        textTransform: "none",
         padding: "8px 20px",
         cursor: "pointer",
         transition: "border-color 0.2s, color 0.2s, box-shadow 0.2s",
@@ -64,13 +64,13 @@ function PrimaryButton({
       onMouseLeave={() => setHovered(false)}
       style={{
         border: "none",
-        borderRadius: 2,
+        borderRadius: 12,
         background: C.gold,
         color: C.bg,
         fontFamily: FONT_MONO,
         fontSize: 11,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
+        letterSpacing: "0.01em",
+        textTransform: "none",
         fontWeight: 500,
         padding: "8px 20px",
         cursor: "pointer",
@@ -102,7 +102,7 @@ function GuardShell({
       className="min-h-screen flex items-center justify-center"
       style={{ backgroundColor: C.bg }}
     >
-      <style>{`@import url('${FONT_IMPORT_URL}');`}</style>
+      <style>{``}</style>
       <GrainOverlay id="admin-guard-grain" />
 
       {/* Ambient orbs */}
@@ -113,7 +113,7 @@ function GuardShell({
           height: 400,
           top: -100,
           left: -100,
-          background: `radial-gradient(circle, ${C.gold}15 0%, transparent 70%)`,
+          background: "none",
           filter: "blur(60px)",
         }}
       />
@@ -124,7 +124,7 @@ function GuardShell({
           height: 350,
           bottom: -80,
           right: -80,
-          background: `radial-gradient(circle, ${C.accent}12 0%, transparent 70%)`,
+          background: "none",
           filter: "blur(60px)",
         }}
       />
@@ -133,7 +133,7 @@ function GuardShell({
         className="relative max-w-md w-full mx-4 text-center"
         style={{
           border: `1px solid ${C.border}`,
-          borderRadius: 2,
+          borderRadius: 12,
           background: C.surface,
           padding: "40px 32px",
         }}
@@ -157,7 +157,7 @@ function GuardShell({
           style={{
             fontFamily: FONT_HEADING,
             fontSize: 22,
-            fontWeight: 200,
+            fontWeight: 800,
             color: C.text,
             marginBottom: 8,
             letterSpacing: "-0.01em",
@@ -195,7 +195,7 @@ export function AdminGuard({
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: C.bg }}
       >
-        <style>{`@import url('${FONT_IMPORT_URL}');`}</style>
+        <style>{``}</style>
         <div className="flex flex-col items-center gap-4">
           <Loader2
             className="animate-spin"
@@ -205,8 +205,8 @@ export function AdminGuard({
             style={{
               fontFamily: FONT_MONO,
               fontSize: 11,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
+              letterSpacing: "0.01em",
+              textTransform: "none",
               color: C.textMuted,
             }}
           >
@@ -229,7 +229,7 @@ export function AdminGuard({
           style={{
             fontFamily: FONT_BODY,
             fontSize: 14,
-            fontWeight: 300,
+            fontWeight: 400,
             color: C.textMuted,
             marginBottom: 24,
           }}
@@ -255,7 +255,7 @@ export function AdminGuard({
           style={{
             fontFamily: FONT_BODY,
             fontSize: 14,
-            fontWeight: 300,
+            fontWeight: 400,
             color: C.textMuted,
             marginBottom: 24,
             lineHeight: 1.6,
@@ -300,7 +300,7 @@ export function AdminGuard({
           style={{
             fontFamily: FONT_BODY,
             fontSize: 14,
-            fontWeight: 300,
+            fontWeight: 400,
             color: C.textMuted,
             marginBottom: 8,
           }}
@@ -311,8 +311,8 @@ export function AdminGuard({
           style={{
             fontFamily: FONT_MONO,
             fontSize: 10,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            letterSpacing: "0.01em",
+            textTransform: "none",
             color: C.textDim,
             marginBottom: 24,
           }}

@@ -18,9 +18,9 @@ export default function ConvexClientProvider({
       appearance={{
         cssLayerName: "clerk",
         variables: {
-          colorPrimary: "#38bdf8",
-          colorForeground: "#e5e7eb",
-          borderRadius: "1.5rem",
+          colorPrimary: "#245CF2",
+          colorForeground: "#101827",
+          borderRadius: "0.75rem",
         },
         layout: {
           socialButtonsVariant: "iconButton",

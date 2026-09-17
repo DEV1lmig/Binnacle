@@ -5,6 +5,7 @@ apps/backend/.cursor
 node_modules/
 /apps/web/.next
 /apps/web/.env.local
+.env.local.*
 *.md
 apps/backend/backup.zip
 *.heapsnapshot

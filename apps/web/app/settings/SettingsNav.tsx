@@ -24,9 +24,10 @@ export function SettingsNav() {
           <Link
             key={item.href}
             href={item.href}
+            aria-current={isActive ? "page" : undefined}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left ${
               isActive
-                ? "bg-[var(--bkl-color-accent-primary)]/20 text-[var(--bkl-color-accent-primary)] border border-[var(--bkl-color-accent-primary)]/30"
+                ? "bg-primary text-white"
                 : "text-[var(--bkl-color-text-secondary)] hover:bg-[var(--bkl-color-bg-secondary)] hover:text-[var(--bkl-color-text-primary)]"
             }`}
           >

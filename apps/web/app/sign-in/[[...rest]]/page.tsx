@@ -1,16 +1,19 @@
 "use client";
 
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import * as Clerk from "@clerk/elements/common";
 import * as SignIn from "@clerk/elements/sign-in";
 import { AuthLayout } from "../../components/auth/AuthLayout";
 
 export default function SignInPage() {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <AuthLayout>
       <SignIn.Root routing="path" path="/sign-in">
         <SignIn.Step name="start" className="flex flex-col gap-6">
           <header className="mb-2">
-            <h1 className="text-[2.5rem] font-bold text-gray-900 tracking-tight">Sign in</h1>
+            <h1 className="text-[2.5rem] font-bold text-gray-900 tracking-tight">Welcome back.</h1>
           </header>
 
           {/* Fields */}
@@ -21,7 +24,7 @@ export default function SignInPage() {
               </Clerk.Label>
               <Clerk.Input asChild>
                 <input
-                  className="w-full border-b-2 border-gray-200 focus:border-[#F97380] py-2 outline-none transition-colors text-gray-800 placeholder-gray-400 bg-transparent"
+                  className="w-full border-b-2 border-gray-200 focus:border-[#1649E8] py-2 outline-none transition-colors text-gray-800 placeholder-gray-500 bg-transparent"
                   autoComplete="email"
                   placeholder="demo@email.com"
                 />
@@ -36,28 +39,23 @@ export default function SignInPage() {
               <div className="relative">
                 <Clerk.Input asChild>
                   <input
-                    className="w-full border-b-2 border-gray-200 focus:border-[#F97380] py-2 outline-none transition-colors text-gray-800 placeholder-gray-400 bg-transparent pr-10"
-                    type="password"
+                    className="w-full border-b-2 border-gray-200 focus:border-[#1649E8] py-2 outline-none transition-colors text-gray-800 placeholder-gray-500 bg-transparent pr-10"
+                    type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     placeholder="Enter your password"
                   />
                 </Clerk.Input>
-                {/* Eye icon placeholder */}
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                </div>
+                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 p-1">
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
               <Clerk.FieldError className="text-xs text-red-500 mt-1 block" />
             </Clerk.Field>
           </div>
 
-          <div className="flex items-center justify-between mt-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="w-4 h-4 accent-[#F97380] rounded border-gray-300" />
-              <span className="text-xs font-semibold text-gray-700">Remember Me</span>
-            </label>
+          <div className="flex items-center justify-end mt-2">
             <SignIn.Action navigate="forgot-password" asChild>
-              <button className="text-xs font-semibold text-[#F97380] hover:text-[#e45a66] transition-colors bg-transparent border-none p-0 cursor-pointer">
+              <button className="text-xs font-semibold text-[#1649E8] hover:text-[#1034A9] transition-colors bg-transparent border-none p-0 cursor-pointer">
                 Forgot Password?
               </button>
             </SignIn.Action>
@@ -66,23 +64,23 @@ export default function SignInPage() {
           <div className="mt-4">
             <SignIn.Action submit asChild>
               <button
-                className="w-full bg-[#F97380] hover:bg-[#e45a66] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+                className="w-full bg-[#1649E8] hover:bg-[#1034A9] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
               >
-                Login
+                Sign in to Playchive
               </button>
             </SignIn.Action>
           </div>
 
           <p className="text-center text-xs font-medium text-gray-500 mt-4">
             Don&apos;t have an Account?{" "}
-            <Clerk.Link navigate="sign-up" className="text-[#F97380] hover:text-[#e45a66] font-bold bg-transparent border-none p-0 cursor-pointer">
+            <Clerk.Link navigate="sign-up" className="text-[#1649E8] hover:text-[#1034A9] font-bold bg-transparent border-none p-0 cursor-pointer">
               Sign up
             </Clerk.Link>
           </p>
 
           <div className="flex items-center gap-4 mt-6">
             <span className="h-px flex-1 bg-gray-200" />
-            <span className="text-xs font-semibold text-gray-400 uppercase">or connect with</span>
+            <span className="text-xs font-semibold text-gray-500 uppercase">or connect with</span>
             <span className="h-px flex-1 bg-gray-200" />
           </div>
 
@@ -122,14 +120,14 @@ export default function SignInPage() {
                 </Clerk.Label>
                 <Clerk.Input asChild>
                   <input
-                    className="w-full border-b-2 border-gray-200 focus:border-[#F97380] py-2 outline-none transition-colors text-gray-800 placeholder-gray-400 bg-transparent text-center text-xl tracking-widest font-mono"
+                    className="w-full border-b-2 border-gray-200 focus:border-[#1649E8] py-2 outline-none transition-colors text-gray-800 placeholder-gray-500 bg-transparent text-center text-xl tracking-widest font-mono"
                     inputMode="numeric"
                   />
                 </Clerk.Input>
                 <Clerk.FieldError className="text-xs text-red-500 mt-1 block" />
               </Clerk.Field>
               <SignIn.Action submit asChild>
-                <button className="w-full bg-[#F97380] hover:bg-[#e45a66] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98] mt-4">
+                <button className="w-full bg-[#1649E8] hover:bg-[#1034A9] text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98] mt-4">
                   Verify and continue
                 </button>
               </SignIn.Action>

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Binnacle Mobile",
+    "name": "Playchive",
     "slug": "binnacle-mobile",
     "scheme": "binnacle",
     "version": "1.0.0",
@@ -22,8 +22,8 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow Binnacle to save review cards to your photo library.",
-          "savePhotosPermission": "Allow Binnacle to save review cards to your photo library."
+          "photosPermission": "Allow Playchive to save review cards to your photo library.",
+          "savePhotosPermission": "Allow Playchive to save review cards to your photo library."
         }
       ],
       [

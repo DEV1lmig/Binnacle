@@ -1,11 +1,12 @@
 "use client";
 
+import { MessageSquareHeart } from "lucide-react";
 import { AdSpace } from "@/app/components/AdSpace";
 import { ReviewCard, type ReviewCardData } from "@/app/components/ReviewCard";
 import { ArticleCard, type ArticleCardData } from "@/app/components/articles/ArticleCard";
+import { EmptyState } from "@/app/components/EmptyState";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
-import { C, FONT_BODY } from "@/app/lib/design-system";
 import type { FeedReviewEntry } from "./FeedReviewList";
 
 export type FeedArticleEntry = {
@@ -31,53 +32,24 @@ type MixedEntry =
   | { kind: "review"; timestamp: number; entry: FeedReviewEntry }
   | { kind: "article"; timestamp: number; entry: FeedArticleEntry };
 
-interface FeedActivityListProps {
+export function FeedActivityList({ reviewEntries, articleEntries, isLoading, emptyMessage, emptyAction }: {
   reviewEntries: FeedReviewEntry[];
   articleEntries: FeedArticleEntry[];
   isLoading: boolean;
   emptyMessage?: string;
-}
-
-export function FeedActivityList({
-  reviewEntries,
-  articleEntries,
-  isLoading,
-  emptyMessage,
-}: FeedActivityListProps) {
+  emptyAction?: { label: string; href: string };
+}) {
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, index) => (
-          <Skeleton key={index} className="h-32" style={{ backgroundColor: C.surface }} />
-        ))}
-      </div>
-    );
+    return <div className="space-y-4">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-44 rounded-2xl bg-surface" />)}</div>;
   }
 
   const mixed: MixedEntry[] = [
-    ...reviewEntries.map((entry) => ({
-      kind: "review" as const,
-      timestamp: entry.review._creationTime,
-      entry,
-    })),
-    ...articleEntries.map((entry) => ({
-      kind: "article" as const,
-      timestamp: entry.article.publishedAt ?? entry.article._creationTime,
-      entry,
-    })),
+    ...reviewEntries.map(entry => ({ kind: "review" as const, timestamp: entry.review._creationTime, entry })),
+    ...articleEntries.map(entry => ({ kind: "article" as const, timestamp: entry.article.publishedAt ?? entry.article._creationTime, entry })),
   ].sort((a, b) => b.timestamp - a.timestamp);
 
   if (mixed.length === 0) {
-    return (
-      <div
-        className="text-center py-12"
-        style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 2 }}
-      >
-        <p style={{ color: C.textMuted, fontFamily: FONT_BODY, fontSize: 14 }}>
-          {emptyMessage || "No activity yet. Follow users to see their reviews!"}
-        </p>
-      </div>
-    );
+    return <EmptyState icon={<MessageSquareHeart size={36} />} title="Nothing here yet" description={emptyMessage ?? "Follow people to see their reviews and stories here."} actionLabel={emptyAction?.label} actionHref={emptyAction?.href} />;
   }
 
   return (
@@ -100,42 +72,16 @@ export function FeedActivityList({
             author: entry.author,
             game: entry.game,
           };
-
           return (
-            <div key={`review-${entry.review._id}-${index}`} className="space-y-4">
+            <div key={`review-${entry.review._id}`} className="space-y-4">
               <ReviewCard review={review} />
-              {index === 1 ? (
-                <div className="mt-4">
-                  <AdSpace variant="inline" />
-                </div>
-              ) : null}
+              {index === 2 && <AdSpace variant="inline" />}
             </div>
           );
         }
-
         const { entry } = item;
-        const article: ArticleCardData = {
-          _id: entry.article._id,
-          _creationTime: entry.article._creationTime,
-          title: entry.article.title,
-          excerpt: entry.article.excerpt,
-          type: entry.article.type,
-          tags: entry.article.tags,
-          containsSpoilers: entry.article.containsSpoilers,
-          coverUrl: entry.article.coverUrl,
-          publishedAt: entry.article.publishedAt,
-          likeCount: entry.likeCount,
-          viewerHasLiked: entry.viewerHasLiked,
-          commentCount: entry.commentCount,
-          author: entry.author,
-          games: entry.games,
-        };
-
-        return (
-          <div key={`article-${entry.article._id}-${index}`} className="space-y-4">
-            <ArticleCard article={article} compact />
-          </div>
-        );
+        const article: ArticleCardData = { ...entry.article, likeCount: entry.likeCount, viewerHasLiked: entry.viewerHasLiked, commentCount: entry.commentCount, author: entry.author, games: entry.games };
+        return <ArticleCard key={`article-${entry.article._id}`} article={article} layout="row" />;
       })}
     </div>
   );

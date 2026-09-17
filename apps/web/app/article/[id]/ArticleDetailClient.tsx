@@ -105,23 +105,23 @@ export default function ArticleDetailClient() {
 
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           {article.status === "draft" ? (
-            <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.amber, border: `1px solid ${C.amber}`, borderRadius: 2, padding: "2px 8px", textTransform: "uppercase" }}>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.amber, border: `1px solid ${C.amber}`, borderRadius: 12, padding: "2px 8px", textTransform: "none" }}>
               Draft
             </span>
           ) : null}
           {article.type ? (
-            <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.gold, border: `1px solid ${C.border}`, borderRadius: 2, padding: "2px 8px", textTransform: "uppercase" }}>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.gold, border: `1px solid ${C.border}`, borderRadius: 12, padding: "2px 8px", textTransform: "none" }}>
               {TYPE_LABEL[article.type] ?? article.type}
             </span>
           ) : null}
           {article.tags?.map((tag) => (
-            <span key={tag} style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textDim, border: `1px solid ${C.border}`, borderRadius: 2, padding: "2px 8px" }}>
+            <span key={tag} style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textDim, border: `1px solid ${C.border}`, borderRadius: 12, padding: "2px 8px" }}>
               #{tag}
             </span>
           ))}
         </div>
 
-        <h1 style={{ fontFamily: FONT_HEADING, fontSize: 32, fontWeight: 200, color: C.text, marginBottom: 16 }}>
+        <h1 style={{ fontFamily: FONT_HEADING, fontSize: 32, fontWeight: 800, color: C.text, marginBottom: 16 }}>
           {article.title}
         </h1>
 
@@ -131,7 +131,7 @@ export default function ArticleDetailClient() {
             onClick={() => router.push(`/profile/${article.author.username}`)}
           >
             <AvatarImage src={article.author.avatarUrl} alt={article.author.name} />
-            <AvatarFallback style={{ background: `linear-gradient(135deg, ${C.accent}, ${C.gold})`, color: C.bg }}>
+            <AvatarFallback style={{ background: C.primary, color: C.text }}>
               {article.author.name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -191,7 +191,7 @@ export default function ArticleDetailClient() {
           </div>
         ) : null}
 
-        <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 2, marginBottom: 24 }}>
+        <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, marginBottom: 24 }}>
           {article.containsSpoilers ? (
             <div className="p-4">
               <SpoilerGate>
@@ -219,8 +219,8 @@ export default function ArticleDetailClient() {
           </div>
         </div>
 
-        <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 2 }} className="p-6 md:p-8">
-          <h2 style={{ fontFamily: FONT_HEADING, fontSize: 18, fontWeight: 300, color: C.text, marginBottom: 20 }}>
+        <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 12 }} className="p-6 md:p-8">
+          <h2 style={{ fontFamily: FONT_HEADING, fontSize: 18, fontWeight: 400, color: C.text, marginBottom: 20 }}>
             Comments ({article.commentCount})
           </h2>
           <ArticleCommentSection articleId={article._id} />

@@ -94,7 +94,7 @@ export function ShareReviewModal({
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = objectUrl;
-      a.download = `binnacle-review-${reviewId}-${options.format}.png`;
+      a.download = `playchive-review-${reviewId}-${options.format}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -113,7 +113,7 @@ export function ShareReviewModal({
       const response = await fetch(fullUrl);
       if (!response.ok) throw new Error("Failed to fetch image");
       const blob = await response.blob();
-      const file = new File([blob], `binnacle-review-${reviewId}.png`, {
+      const file = new File([blob], `playchive-review-${reviewId}.png`, {
         type: "image/png",
       });
 

@@ -265,7 +265,7 @@ export default function LandingPageV1() {
             >
               <Gamepad2 size={24} color="var(--color-gold)" />
               <span className="font-display" style={{ fontSize: 20, letterSpacing: "-0.02em" }}>
-                Binnacle
+                Playchive
               </span>
             </Link>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -601,7 +601,7 @@ export default function LandingPageV1() {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Gamepad2 size={18} color="var(--color-gold)" />
               <span style={{ fontSize: 14, color: C.textMuted }}>
-                &copy; {new Date().getFullYear()} Binnacle
+                &copy; {new Date().getFullYear()} Playchive
               </span>
             </div>
             <div style={{ display: "flex", gap: 24 }}>
@@ -684,7 +684,7 @@ function DashboardMock({
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#52c97a" }} />
             </div>
             <span style={{ fontSize: 12, color: C.textMuted, marginLeft: 8 }}>
-              binnacle.gg/dashboard
+              playchive.app/dashboard
             </span>
           </div>
 

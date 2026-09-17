@@ -5,20 +5,14 @@ import { useRouter, useParams } from "next/navigation";
 import { useAction, useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
-import { Button } from "@/app/components/ui/button";
-import { Badge } from "@/app/components/ui/badge";
+import { toast } from "sonner";
 import { DlcExpansionSection } from "@/app/components/game/DlcExpansionSection";
-import { Calendar, Gamepad2, Heart, Bookmark, ChevronLeft } from "lucide-react";
-import { getHighResCoverUrl } from "@/lib/igdb-images";
+import { Calendar, ChevronLeft, PenLine, BookOpen, ChevronDown, Check, Trash2, Loader2 } from "lucide-react";
 import { normalizeRatingToTen } from "@binnacle/shared-types";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/app/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu";
+import { Skeleton } from "@/app/components/ui/skeleton";
+import { toneVars } from "@/app/lib/coverColor";
+import { CaseBackdrop, Cover, Pill, SectionHeading, ScoreMark, StatusChip, STATUS_LABEL, STATUS_ORDER, useCaseTone, type LibraryStatus } from "@/app/components/playchive";
 import { GameReviewsSection } from "@/app/components/game/GameReviewsSection";
 import { GameArticlesSection } from "@/app/components/game/GameArticlesSection";
 
@@ -122,14 +116,12 @@ export default function GameDetailPage() {
   const updateBacklog = useMutation(api.backlog.add);
   const removeBacklog = useMutation(api.backlog.remove);
 
+  const [tone, setTone] = useCaseTone(gameId);
   const [relatedContent, setRelatedContent] = useState<RelatedContentItem[]>([]);
   const [isRelatedLoading, setIsRelatedLoading] = useState(false);
   const [relatedError, setRelatedError] = useState<string | null>(null);
 
   const [status, setStatus] = useState<string | null>(null);
-  const [selectedScreenshot, setSelectedScreenshot] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [isWishlist, setIsWishlist] = useState(false);
   const [isUpdatingBacklog, setIsUpdatingBacklog] = useState(false);
   
   // Initialize status from backlog data
@@ -148,12 +140,6 @@ export default function GameDetailPage() {
     return [];
   }, []);
         
-  const screenshots = useMemo(() => {
-    // screenshots field was removed from schema in Phase 2B optimization
-    // Return empty array to maintain compatibility
-    return [];
-  }, []);
-
   const developers = useMemo(() => parseCreditField(game?.developers), [game?.developers]);
   const publishers = useMemo(() => parseCreditField(game?.publishers), [game?.publishers]);
 
@@ -232,355 +218,114 @@ export default function GameDetailPage() {
     };
   }, [cachedRelatedContent.length, fetchRelatedContent, game?.igdbId, game?.title]);
 
+  const genres = useMemo<string[]>(() => {
+    const raw = game?.genres;
+    if (!raw) return [];
+    let list: unknown = raw;
+    if (typeof raw === "string") { try { list = JSON.parse(raw); } catch { return [raw]; } }
+    if (!Array.isArray(list)) return [];
+    return list.map(g => (typeof g === "string" ? g : typeof g === "object" && g && typeof (g as { name?: unknown }).name === "string" ? (g as { name: string }).name : String(g)));
+  }, [game?.genres]);
+
+  const setShelf = async (next: LibraryStatus | "remove") => {
+    if (isUpdatingBacklog) return;
+    setIsUpdatingBacklog(true);
+    try {
+      if (next === "remove") {
+        if (backlogItem) { await removeBacklog({ backlogId: backlogItem._id }); setStatus(null); toast.success("Removed from your library"); }
+      } else {
+        await updateBacklog({ gameId: gameId as Id<"games">, status: next });
+        setStatus(next);
+        toast.success(`Moved to ${STATUS_LABEL[next]}`);
+      }
+    } catch (error) {
+      console.error("Failed to update backlog:", error);
+      toast.error("Couldn’t update your library. Try again.");
+    } finally {
+      setIsUpdatingBacklog(false);
+    }
+  };
+
   if (!game) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading game details...</p>
+      <div className="min-h-screen bg-bg">
+        <div className="max-w-[1400px] mx-auto px-5 md:px-8 pt-8 grid gap-8 md:grid-cols-[260px_minmax(0,1fr)]">
+          <Skeleton className="aspect-[2/3] rounded-2xl bg-surface" />
+          <div className="space-y-4"><Skeleton className="h-6 w-32 bg-surface" /><Skeleton className="h-16 w-3/4 bg-surface" /><Skeleton className="h-5 w-1/2 bg-surface" /><Skeleton className="h-12 w-64 rounded-full bg-surface" /></div>
+        </div>
       </div>
     );
   }
 
   const hasRelatedContent = relatedContentEntries.length > 0;
-
+  const current = (status ?? null) as LibraryStatus | null;
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-8">
-      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        {/* Back Button */}
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-          <span className="text-sm">Back</span>
-        </button>
-
-        {/* Hero Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Cover */}
-          <div className="lg:col-span-1">
-            <div className="aspect-[2/3] rounded-lg overflow-hidden shadow-lg sticky top-4">
-              <ImageWithFallback
-                src={getHighResCoverUrl(game.coverUrl)}
-                alt={game.title}
-                className="w-full h-full object-cover"
-                width={1280}
-                height={720}
-                quality={95}
-              />
-            </div>
+    <div className="pk-inside min-h-screen pb-24 md:pb-12" style={toneVars(tone)}>
+      <CaseBackdrop />
+      {/* You are inside the case: the cover's own colour behind the artwork. */}
+      <section className="pk-hero pk-hero-inside">
+        <div className="pk-hero-inner pk-detail-hero">
+          <button type="button" onClick={() => router.back()} className="pk-hero-back pk-textlink text-textMuted"><ChevronLeft size={16} />Back</button>
+          <div className="pk-detail-cover">
+            <Cover src={game.coverUrl} title={game.title} sizes="(max-width: 767px) 60vw, 280px" priority gameId={gameId} onTone={setTone} />
           </div>
-
-          {/* Game Info */}
-          <div className="lg:col-span-2 space-y-6">
-            <div>
-              <h1 className="text-foreground mb-3 text-4xl font-bold">
-                {game.title}
-              </h1>
-
-              {/* Metadata */}
-              <div className="flex flex-wrap items-center gap-4 mb-4">
-                {game.releaseYear && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-sm">
-                      {game.releaseYear}
-                    </span>
-                  </div>
-                )}
-                {game.platforms && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Gamepad2 className="w-4 h-4" />
-                    <span className="text-sm">
-                      Multi-platform
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Rating Display */}
-              {game.aggregatedRating && (
-                <div className="mb-6">
-                  <span className="text-foreground text-lg font-semibold">
-                    {"rating by multiple sources: " + normalizeRatingToTen(game.aggregatedRating).toFixed(1)} / 10
-                  </span>
-                </div>
-              )}
+          <div>
+            {current ? <StatusChip status={current} size="lg" /> : <span className="pk-eyebrow">Not on your shelf yet</span>}
+            <h1 className="!max-w-[20ch]">{game.title}</h1>
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-textMuted">
+              {game.releaseYear && <span className="inline-flex items-center gap-1.5"><Calendar size={15} aria-hidden="true" />{game.releaseYear}</span>}
+              {developers.slice(0, 2).map(d => <span key={String(d.id ?? d.name)}>{d.name}</span>)}
+              {genres.slice(0, 4).map(g => <span key={g} className="pk-tag">{g}</span>)}
             </div>
+            {game.aggregatedRating ? <div className="mt-6 flex items-end gap-4"><ScoreMark value={normalizeRatingToTen(game.aggregatedRating)} label={`Critics and players rate this ${normalizeRatingToTen(game.aggregatedRating).toFixed(1)} out of 10`} /><span className="pb-2 text-xs text-textDim">Aggregate rating (IGDB)</span></div> : null}
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3">
-              <Select
-                value={status || ""}
-                onValueChange={async (newStatus) => {
-                  setIsUpdatingBacklog(true);
-                  try {
-                    if (newStatus === "remove") {
-                      // Remove from backlog
-                      if (backlogItem) {
-                        await removeBacklog({ backlogId: backlogItem._id });
-                        setStatus(null);
-                      }
-                    } else if (newStatus === "want_to_play" || newStatus === "playing" || newStatus === "completed" || newStatus === "on_hold" || newStatus === "dropped") {
-                      // Add or update backlog
-                      await updateBacklog({
-                        gameId: gameId as Id<"games">,
-                        status: newStatus,
-                      });
-                      setStatus(newStatus);
-                    }
-                  } catch (error) {
-                    console.error("Failed to update backlog:", error);
-                  } finally {
-                    setIsUpdatingBacklog(false);
-                  }
-                }}
-                disabled={isUpdatingBacklog}
-              >
-                <SelectTrigger className="w-[200px] bg-primary border-primary text-primary-foreground disabled:opacity-50">
-                  <SelectValue className="text-primary-foreground" placeholder="Add to Backlog" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="want_to_play">Want to Play</SelectItem>
-                  <SelectItem value="playing">Playing</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="on_hold">On Hold</SelectItem>
-                  <SelectItem value="dropped">Dropped</SelectItem>
-                  {status && <SelectItem value="remove">Remove from Backlog</SelectItem>}
-                </SelectContent>
-              </Select>
-
-              <Button
-                variant="outline"
-                className={`border-border ${
-                  isWishlist
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground"
-                }`}
-                onClick={() => setIsWishlist(!isWishlist)}
-              >
-                <Bookmark className={`w-4 h-4 mr-2 ${isWishlist ? "fill-current" : ""}`} />
-                Wishlist
-              </Button>
-
-              <Button
-                variant="outline"
-                className={`border-border ${
-                  isFavorite
-                    ? "bg-destructive text-white"
-                    : "text-foreground"
-                }`}
-                onClick={() => setIsFavorite(!isFavorite)}
-              >
-                <Heart className={`w-4 h-4 ${isFavorite ? "fill-current" : ""}`} />
-              </Button>
-            </div>
-
-            {/* Review CTA */}
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h2 className="text-foreground mb-2 text-base font-semibold">
-                Ready to share your experience?
-              </h2>
-              <p className="text-muted-foreground mb-4 text-sm">
-                Head over to the full review editor to capture your thoughts, rating, and playtime in one place.
-              </p>
-              <Button
-                className="bg-primary hover:bg-primary/90"
-                onClick={() => router.push(`/review/new?gameId=${game._id}`)}
-              >
-                Write a Review
-              </Button>
-              <Button
-                variant="outline"
-                className="border-border ml-3"
-                onClick={() => router.push(`/article/new?gameId=${game._id}`)}
-              >
-                Write an Article
-              </Button>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button type="button" className="pk-pill" data-tone={current ? "ghost" : "gold"} disabled={isUpdatingBacklog} aria-label={current ? `On your shelf as ${STATUS_LABEL[current]}. Change shelf` : "Add to my library"}>
+                    {isUpdatingBacklog ? <Loader2 size={17} className="animate-spin" /> : null}{current ? `On shelf: ${STATUS_LABEL[current]}` : "Add to my library"}<ChevronDown size={16} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-52 rounded-xl p-1.5">
+                  {STATUS_ORDER.map(s => <DropdownMenuItem key={s} className="rounded-lg" onSelect={() => setShelf(s)}><StatusChip status={s} />{s === current && <Check size={14} className="ml-auto" />}</DropdownMenuItem>)}
+                  {current && <><DropdownMenuSeparator /><DropdownMenuItem className="rounded-lg text-red" onSelect={() => setShelf("remove")}><Trash2 size={14} />Remove from library</DropdownMenuItem></>}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Pill href={`/review/new?gameId=${game._id}`} tone="cobalt"><PenLine size={17} />Write a review</Pill>
+              <Pill href={`/article/new?gameId=${game._id}`} tone="ghost"><BookOpen size={17} />Tell a story</Pill>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Content Sections */}
-        <div className="space-y-8">
-          {/* Summary */}
+      <div className="max-w-[1400px] mx-auto px-5 md:px-8 pt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-12">
           {game.summary && (
-            <section className="bg-card border border-border rounded-lg p-6">
-              <h2 className="text-foreground mb-3 text-2xl font-semibold">
-                Summary
-              </h2>
-              <p className="text-muted-foreground text-base">
-                {game.summary}
-              </p>
+            <section>
+              <SectionHeading eyebrow="About" title="The short version." />
+              <p className="max-w-[68ch] text-[17px] leading-[1.65] text-[#D9E1EF]">{game.summary}</p>
             </section>
           )}
-
-          {/* About This Game */}
-          <section className="bg-card border border-border rounded-lg p-6">
-            <h2 className="text-foreground mb-4 text-2xl font-semibold">
-              About This Game
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {game.genres && (
-                <div>
-                  <h3 className="text-foreground mb-2 text-sm font-semibold">
-                    GENRES
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {(() => {
-                      const genres: Array<string | Record<string, unknown>> = (() => {
-                        if (typeof game.genres === "string") {
-                          try {
-                            const parsed = JSON.parse(game.genres);
-                            return Array.isArray(parsed)
-                              ? (parsed as Array<string | Record<string, unknown>>)
-                              : [];
-                          } catch (error) {
-                            console.error("Failed to parse genres", error);
-                            return [];
-                          }
-                        }
-
-                        return Array.isArray(game.genres)
-                          ? (game.genres as Array<string | Record<string, unknown>>)
-                          : [];
-                      })();
-
-                      return genres.map((genre, index) => {
-                        const genreObject =
-                          typeof genre === "object" && genre !== null
-                            ? (genre as Record<string, unknown>)
-                            : undefined;
-                        const genreName =
-                          typeof genre === "string"
-                            ? genre
-                            : typeof genreObject?.name === "string"
-                              ? genreObject.name
-                              : String(genre);
-
-                        return (
-                          <Badge key={`genre-${index}-${genreName}`} className="bg-primary">
-                            {genreName}
-                          </Badge>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-              )}
-
-              {developers.length > 0 && (
-                <div>
-                  <h3 className="text-foreground mb-2 text-sm font-semibold">
-                    DEVELOPERS
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {developers.map((developer, index) => (
-                      <Badge
-                        key={`developer-${developer.id ?? index}`}
-                        className="bg-secondary border-border text-foreground"
-                      >
-                        {developer.role
-                          ? `${developer.name} · ${developer.role}`
-                          : developer.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {publishers.length > 0 && (
-                <div>
-                  <h3 className="text-foreground mb-2 text-sm font-semibold">
-                    PUBLISHERS
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {publishers.map((publisher, index) => (
-                      <Badge
-                        key={`publisher-${publisher.id ?? index}`}
-                        className="bg-secondary border-border text-foreground"
-                      >
-                        {publisher.role
-                          ? `${publisher.name} · ${publisher.role}`
-                          : publisher.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {isRelatedLoading && !hasRelatedContent && (
-            <section className="flex flex-col gap-2 rounded-2xl border border-border/50 bg-secondary/40 p-6">
-              <h2 className="text-lg font-semibold text-foreground">
-                Checking for related content
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Pulling expansions, DLC, and enhanced releases from IGDB…
-              </p>
-            </section>
-          )}
-
-          {relatedError && !hasRelatedContent && (
-            <section className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4">
-              <p className="text-sm text-destructive">
-                Could not fetch related content right now. {relatedError}
-              </p>
-            </section>
-          )}
-
-          <DlcExpansionSection
-            dlcsAndExpansions={undefined}
-            relatedContent={relatedContentEntries}
-          />
-
-          {/* Similar Games */}
-          {screenshots && screenshots.length > 0 && (
-            <section className="bg-card border border-border rounded-lg p-6">
-              <h2 className="text-foreground mb-4 text-2xl font-semibold">
-                Screenshots
-              </h2>
-              <div className="space-y-4">
-                <div className="w-full rounded-lg overflow-hidden bg-black">
-                  <ImageWithFallback
-                    src={screenshots[selectedScreenshot]}
-                    alt="Game screenshot"
-                    className="w-full h-auto object-contain max-h-[720px]"
-                    width={1920}
-                    height={1080}
-                    quality={100}
-                  />
-                </div>
-                {screenshots.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {screenshots.map((screenshot: string, index: number) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedScreenshot(index)}
-                        className={`flex-shrink-0 w-24 h-16 rounded border-2 overflow-hidden transition-colors ${
-                          selectedScreenshot === index
-                            ? "border-primary"
-                            : "border-border"
-                        }`}
-                      >
-                        <ImageWithFallback
-                          src={screenshot}
-                          alt={`Thumbnail ${index}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          <GameArticlesSection gameId={game._id as Id<"games">} />
 
           <GameReviewsSection gameId={game._id as Id<"games">} />
+          <GameArticlesSection gameId={game._id as Id<"games">} />
         </div>
+
+        <aside className="space-y-5 lg:sticky lg:top-28 lg:self-start">
+          <section className="pk-panel">
+            <h3>Credits</h3>
+            <dl className="space-y-3 text-sm">
+              {developers.length > 0 && <div><dt className="pk-eyebrow" data-plain="true">Developer</dt><dd className="mt-1">{developers.map(d => d.role ? `${d.name} · ${d.role}` : d.name).join(", ")}</dd></div>}
+              {publishers.length > 0 && <div><dt className="pk-eyebrow" data-plain="true">Publisher</dt><dd className="mt-1">{publishers.map(p => p.role ? `${p.name} · ${p.role}` : p.name).join(", ")}</dd></div>}
+              {genres.length > 0 && <div><dt className="pk-eyebrow" data-plain="true">Genres</dt><dd className="mt-2 flex flex-wrap gap-1.5">{genres.map(g => <span key={g} className="pk-tag">{g}</span>)}</dd></div>}
+              {developers.length === 0 && publishers.length === 0 && genres.length === 0 && <dd className="text-textMuted">No credits on file yet.</dd>}
+            </dl>
+          </section>
+
+          {isRelatedLoading && !hasRelatedContent && <p className="text-sm text-textDim px-1">Checking IGDB for expansions and DLC…</p>}
+          {relatedError && !hasRelatedContent && <p className="text-sm text-red px-1">Couldn’t fetch related content right now.</p>}
+          <DlcExpansionSection dlcsAndExpansions={undefined} relatedContent={relatedContentEntries} />
+        </aside>
       </div>
     </div>
   );

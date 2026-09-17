@@ -54,7 +54,7 @@ export function EditProfileDialog({
         style={{
           background: C.surface,
           border: `1px solid ${C.border}`,
-          borderRadius: 2,
+          borderRadius: 12,
           color: C.text,
         }}
       >
@@ -63,7 +63,7 @@ export function EditProfileDialog({
             style={{
               fontFamily: FONT_HEADING,
               fontSize: 22,
-              fontWeight: 200,
+              fontWeight: 800,
               color: C.text,
               letterSpacing: '-0.01em',
             }}
@@ -75,10 +75,10 @@ export function EditProfileDialog({
               fontFamily: FONT_BODY,
               fontSize: 13,
               color: C.textMuted,
-              fontWeight: 300,
+              fontWeight: 400,
             }}
           >
-            Update how other players see you across Binnacle.
+            Update how other players see you across Playchive.
           </DialogDescription>
         </DialogHeader>
 
@@ -90,8 +90,8 @@ export function EditProfileDialog({
                 display: 'block',
                 fontFamily: FONT_MONO,
                 fontSize: 10,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.01em',
+                textTransform: 'none',
                 color: C.textDim,
               }}
             >
@@ -110,11 +110,11 @@ export function EditProfileDialog({
                 padding: '10px 14px',
                 background: C.bgAlt,
                 border: `1px solid ${C.border}`,
-                borderRadius: 2,
+                borderRadius: 12,
                 color: C.text,
                 fontFamily: FONT_BODY,
                 fontSize: 14,
-                fontWeight: 300,
+                fontWeight: 400,
                 outline: 'none',
               }}
               onFocus={(e) => {
@@ -130,11 +130,11 @@ export function EditProfileDialog({
               style={{
                 fontFamily: FONT_MONO,
                 fontSize: 10,
-                letterSpacing: '0.04em',
+                letterSpacing: '0.01em',
                 color: C.textDim,
               }}
             >
-              This is how other players will see you across Binnacle.
+              This is how other players will see you across Playchive.
             </p>
           </div>
 
@@ -145,8 +145,8 @@ export function EditProfileDialog({
                 display: 'block',
                 fontFamily: FONT_MONO,
                 fontSize: 10,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.01em',
+                textTransform: 'none',
                 color: C.textDim,
               }}
             >
@@ -164,11 +164,11 @@ export function EditProfileDialog({
                 padding: '10px 14px',
                 background: C.bgAlt,
                 border: `1px solid ${C.border}`,
-                borderRadius: 2,
+                borderRadius: 12,
                 color: C.text,
                 fontFamily: FONT_BODY,
                 fontSize: 14,
-                fontWeight: 300,
+                fontWeight: 400,
                 outline: 'none',
                 resize: 'vertical',
               }}
@@ -185,7 +185,7 @@ export function EditProfileDialog({
               style={{
                 fontFamily: FONT_MONO,
                 fontSize: 10,
-                letterSpacing: '0.04em',
+                letterSpacing: '0.01em',
                 color: C.textDim,
                 textAlign: 'right',
               }}
@@ -199,7 +199,7 @@ export function EditProfileDialog({
               className="px-3 py-2"
               style={{
                 border: `1px solid ${C.red}33`,
-                borderRadius: 2,
+                borderRadius: 12,
                 background: `${C.red}08`,
               }}
             >
@@ -207,7 +207,7 @@ export function EditProfileDialog({
                 style={{
                   fontFamily: FONT_MONO,
                   fontSize: 11,
-                  letterSpacing: '0.04em',
+                  letterSpacing: '0.01em',
                   color: C.red,
                 }}
               >
@@ -224,13 +224,13 @@ export function EditProfileDialog({
               className="flex items-center gap-2 px-5 py-2"
               style={{
                 border: `1px solid ${C.border}`,
-                borderRadius: 2,
+                borderRadius: 12,
                 background: 'transparent',
                 color: C.textMuted,
                 fontFamily: FONT_MONO,
                 fontSize: 11,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.01em',
+                textTransform: 'none',
                 cursor: submitting ? 'not-allowed' : 'pointer',
                 opacity: submitting ? 0.5 : 1,
               }}
@@ -243,13 +243,13 @@ export function EditProfileDialog({
               className="flex items-center gap-2 px-5 py-2"
               style={{
                 border: 'none',
-                borderRadius: 2,
+                borderRadius: 12,
                 background: C.gold,
                 color: C.bg,
                 fontFamily: FONT_MONO,
                 fontSize: 11,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.01em',
+                textTransform: 'none',
                 fontWeight: 500,
                 cursor: submitting ? 'not-allowed' : 'pointer',
                 boxShadow: `0 0 16px ${C.bloom}`,
