@@ -5,7 +5,11 @@ import {
   type RefObject,
 } from "react";
 
-const emptySubscribe = () => () => {};
+const subscribeMotion = (notify: () => void) => {
+  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+  query.addEventListener("change", notify);
+  return () => query.removeEventListener("change", notify);
+};
 
 function getPrefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -20,20 +24,21 @@ export function useScrollReveal(
   prefix: string,
 ): string {
   const reducedMotion = useSyncExternalStore(
-    emptySubscribe,
+    subscribeMotion,
     getPrefersReducedMotion,
     getServerPrefersReducedMotion,
   );
   const [visible, setVisible] = useState(false);
 
+  // Check after each commit: data-driven pages may attach the ref after loading.
   useEffect(() => {
-    if (reducedMotion) return;
+    if (reducedMotion || visible) return;
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     if (rect.top < window.innerHeight && rect.bottom > 0) {
-      requestAnimationFrame(() => setVisible(true));
-      return;
+      const timer = window.setTimeout(() => setVisible(true), 0);
+      return () => window.clearTimeout(timer);
     }
     const io = new IntersectionObserver(
       ([entry]) => {
@@ -46,7 +51,7 @@ export function useScrollReveal(
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [ref, reducedMotion]);
+  });
 
   if (reducedMotion) return prefix;
   return `${prefix} ${visible ? "visible" : ""}`;
@@ -57,14 +62,14 @@ export function useRevealVisible(
   threshold = 0.15,
 ): boolean {
   const reducedMotion = useSyncExternalStore(
-    emptySubscribe,
+    subscribeMotion,
     getPrefersReducedMotion,
     getServerPrefersReducedMotion,
   );
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (reducedMotion) return;
+    if (reducedMotion || visible) return;
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
@@ -78,7 +83,7 @@ export function useRevealVisible(
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [ref, threshold, reducedMotion]);
+  });
 
   return reducedMotion || visible;
 }

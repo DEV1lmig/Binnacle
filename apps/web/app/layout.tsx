@@ -1,17 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 import ConvexClientProvider from "@/app/components/ConvexClientProvider"; // Adjust path if needed
 import { CurrentUserProvider } from "@/app/context/CurrentUserContext";
 import { ConditionalNavigation } from "@/app/components/ConditionalNavigation";
 import { AuthGuard } from "@/app/components/AuthGuard";
 import { Toaster } from "@/app/components/ui/sonner";
+import { CaseTransitionProvider, ScrollReset } from "@/app/components/playchive";
+import { CaseStageRoot } from "@/app/components/playchive/case3d/CaseStageRoot";
 
-const inter = Inter({ subsets: ["latin"] });
+const display = Outfit({ subsets: ["latin"], weight: ["700", "800"], variable: "--playchive-display" });
+const body = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--playchive-body" });
 
 export const metadata: Metadata = {
-  title: "Binnacle",
-  description: "Your game backlog",
+  title: "Playchive",
+  description: "Your games. Your story. Organize your collection and share what you play.",
+  icons: { icon: "/brand/playchive-symbol.svg" },
 };
 
 export default function RootLayout({
@@ -21,13 +25,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${display.variable} ${body.variable}`}>
         <ConvexClientProvider>
           <CurrentUserProvider>
             <AuthGuard>
-              <ConditionalNavigation />
-              {children}
-              <Toaster />
+              <CaseTransitionProvider>
+                <ScrollReset />
+                <ConditionalNavigation />
+                {children}
+                <Toaster />
+                <CaseStageRoot />
+              </CaseTransitionProvider>
             </AuthGuard>
           </CurrentUserProvider>
         </ConvexClientProvider>

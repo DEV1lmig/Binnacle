@@ -118,7 +118,7 @@ export function NotificationItem({ notification, actor }: NotificationItemProps)
       className="relative flex items-start gap-4 p-4 cursor-pointer transition-all"
       style={{
         border: `1px solid ${notification.read ? C.border : C.gold + "55"}`,
-        borderRadius: 2,
+        borderRadius: 12,
         background: notification.read ? C.surface : C.gold + "08",
       }}
       onMouseEnter={(e) => {
@@ -176,7 +176,7 @@ export function NotificationItem({ notification, actor }: NotificationItemProps)
           style={{
             fontFamily: FONT_BODY,
             fontSize: 14,
-            fontWeight: 300,
+            fontWeight: 400,
             color: C.textMuted,
             lineHeight: 1.5,
           }}

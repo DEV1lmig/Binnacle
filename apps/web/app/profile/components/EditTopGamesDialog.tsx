@@ -189,7 +189,7 @@ export function EditTopGamesDialog({
     width: 32,
     height: 32,
     border: `1px solid ${danger ? C.red + '55' : C.border}`,
-    borderRadius: 2,
+    borderRadius: 12,
     background: 'transparent',
     color: danger ? C.red : C.textDim,
     cursor: disabled ? 'not-allowed' : 'pointer',
@@ -204,7 +204,7 @@ export function EditTopGamesDialog({
         style={{
           background: C.surface,
           border: `1px solid ${C.border}`,
-          borderRadius: 2,
+          borderRadius: 12,
           color: C.text,
         }}
       >
@@ -213,7 +213,7 @@ export function EditTopGamesDialog({
             style={{
               fontFamily: FONT_HEADING,
               fontSize: 22,
-              fontWeight: 200,
+              fontWeight: 800,
               color: C.text,
               letterSpacing: '-0.01em',
             }}
@@ -225,7 +225,7 @@ export function EditTopGamesDialog({
               fontFamily: FONT_BODY,
               fontSize: 13,
               color: C.textMuted,
-              fontWeight: 300,
+              fontWeight: 400,
             }}
           >
             Select up to five all-time favorites to pin on your profile.
@@ -241,8 +241,8 @@ export function EditTopGamesDialog({
                 display: 'block',
                 fontFamily: FONT_MONO,
                 fontSize: 10,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.01em',
+                textTransform: 'none',
                 color: C.textDim,
               }}
             >
@@ -264,11 +264,11 @@ export function EditTopGamesDialog({
                   padding: '10px 14px 10px 38px',
                   background: C.bgAlt,
                   border: `1px solid ${C.border}`,
-                  borderRadius: 2,
+                  borderRadius: 12,
                   color: C.text,
                   fontFamily: FONT_BODY,
                   fontSize: 14,
-                  fontWeight: 300,
+                  fontWeight: 400,
                   outline: 'none',
                 }}
                 onFocus={(e) => {
@@ -299,7 +299,7 @@ export function EditTopGamesDialog({
                 style={{
                   fontFamily: FONT_MONO,
                   fontSize: 10,
-                  letterSpacing: '0.04em',
+                  letterSpacing: '0.01em',
                   color: C.textDim,
                 }}
               >
@@ -323,7 +323,7 @@ export function EditTopGamesDialog({
                     style={{
                       padding: 12,
                       border: `1px solid ${C.border}`,
-                      borderRadius: 2,
+                      borderRadius: 12,
                       background: C.bgAlt,
                       cursor: disabled ? 'not-allowed' : 'pointer',
                       opacity: disabled ? 0.5 : 1,
@@ -345,7 +345,7 @@ export function EditTopGamesDialog({
                       style={{
                         width: 48,
                         height: 64,
-                        borderRadius: 2,
+                        borderRadius: 12,
                         backgroundColor: C.bg,
                       }}
                     >
@@ -369,7 +369,7 @@ export function EditTopGamesDialog({
                           fontFamily: FONT_MONO,
                           fontSize: 10,
                           color: C.textDim,
-                          letterSpacing: '0.04em',
+                          letterSpacing: '0.01em',
                         }}
                       >
                         {result.releaseYear && <span>{result.releaseYear}</span>}
@@ -386,11 +386,11 @@ export function EditTopGamesDialog({
                       style={{
                         padding: '3px 8px',
                         border: `1px solid ${C.gold}33`,
-                        borderRadius: 2,
+                        borderRadius: 12,
                         fontFamily: FONT_MONO,
                         fontSize: 10,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
+                        letterSpacing: '0.01em',
+                        textTransform: 'none',
                         color: C.gold,
                       }}
                     >
@@ -405,7 +405,7 @@ export function EditTopGamesDialog({
               className="relative flex items-center justify-center py-8"
               style={{
                 border: `1px solid ${C.border}`,
-                borderRadius: 2,
+                borderRadius: 12,
                 background: C.bgAlt,
               }}
             >
@@ -429,7 +429,7 @@ export function EditTopGamesDialog({
                 style={{
                   fontFamily: FONT_HEADING,
                   fontSize: 18,
-                  fontWeight: 200,
+                  fontWeight: 800,
                   color: C.text,
                 }}
               >
@@ -439,7 +439,7 @@ export function EditTopGamesDialog({
                 style={{
                   fontFamily: FONT_MONO,
                   fontSize: 11,
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.01em',
                   color: selected.length >= MAX_TOP_GAMES ? C.amber : C.textDim,
                 }}
               >
@@ -455,7 +455,7 @@ export function EditTopGamesDialog({
                     className="relative"
                     style={{
                       border: `1px solid ${C.border}`,
-                      borderRadius: 2,
+                      borderRadius: 12,
                       background: C.bgAlt,
                       padding: 16,
                     }}
@@ -470,13 +470,13 @@ export function EditTopGamesDialog({
                           style={{
                             width: 32,
                             height: 32,
-                            borderRadius: 2,
+                            borderRadius: 12,
                             background: `${C.gold}15`,
                             color: C.gold,
                             fontFamily: FONT_MONO,
                             fontSize: 12,
                             fontWeight: 500,
-                            letterSpacing: '0.05em',
+                            letterSpacing: '0.01em',
                           }}
                         >
                           #{index + 1}
@@ -488,7 +488,7 @@ export function EditTopGamesDialog({
                           style={{
                             width: 40,
                             height: 52,
-                            borderRadius: 2,
+                            borderRadius: 12,
                             backgroundColor: C.bg,
                           }}
                         >
@@ -525,7 +525,7 @@ export function EditTopGamesDialog({
                               fontFamily: FONT_MONO,
                               fontSize: 10,
                               color: C.textDim,
-                              letterSpacing: '0.04em',
+                              letterSpacing: '0.01em',
                             }}
                           >
                             {entry.releaseYear && <span>{entry.releaseYear}</span>}
@@ -578,8 +578,8 @@ export function EditTopGamesDialog({
                           display: 'block',
                           fontFamily: FONT_MONO,
                           fontSize: 9,
-                          letterSpacing: '0.12em',
-                          textTransform: 'uppercase',
+                          letterSpacing: '0.01em',
+                          textTransform: 'none',
                           color: C.textDim,
                           marginBottom: 4,
                         }}
@@ -598,11 +598,11 @@ export function EditTopGamesDialog({
                           padding: '8px 12px',
                           background: C.bg,
                           border: `1px solid ${C.border}`,
-                          borderRadius: 2,
+                          borderRadius: 12,
                           color: C.text,
                           fontFamily: FONT_BODY,
                           fontSize: 13,
-                          fontWeight: 300,
+                          fontWeight: 400,
                           outline: 'none',
                           resize: 'none',
                         }}
@@ -622,7 +622,7 @@ export function EditTopGamesDialog({
                 className="relative flex flex-col items-center justify-center py-10"
                 style={{
                   border: `1px solid ${C.border}`,
-                  borderRadius: 2,
+                  borderRadius: 12,
                   background: C.bgAlt,
                 }}
               >
@@ -646,7 +646,7 @@ export function EditTopGamesDialog({
               className="px-3 py-2"
               style={{
                 border: `1px solid ${C.red}33`,
-                borderRadius: 2,
+                borderRadius: 12,
                 background: `${C.red}08`,
               }}
             >
@@ -654,7 +654,7 @@ export function EditTopGamesDialog({
                 style={{
                   fontFamily: FONT_MONO,
                   fontSize: 11,
-                  letterSpacing: '0.04em',
+                  letterSpacing: '0.01em',
                   color: C.red,
                 }}
               >
@@ -671,13 +671,13 @@ export function EditTopGamesDialog({
               className="flex items-center gap-2 px-5 py-2"
               style={{
                 border: `1px solid ${C.border}`,
-                borderRadius: 2,
+                borderRadius: 12,
                 background: 'transparent',
                 color: C.textMuted,
                 fontFamily: FONT_MONO,
                 fontSize: 11,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.01em',
+                textTransform: 'none',
                 cursor: submitting ? 'not-allowed' : 'pointer',
                 opacity: submitting ? 0.5 : 1,
               }}
@@ -690,13 +690,13 @@ export function EditTopGamesDialog({
               className="flex items-center gap-2 px-5 py-2"
               style={{
                 border: 'none',
-                borderRadius: 2,
+                borderRadius: 12,
                 background: C.gold,
                 color: C.bg,
                 fontFamily: FONT_MONO,
                 fontSize: 11,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.01em',
+                textTransform: 'none',
                 fontWeight: 500,
                 cursor: submitting ? 'not-allowed' : 'pointer',
                 boxShadow: `0 0 16px ${C.bloom}`,

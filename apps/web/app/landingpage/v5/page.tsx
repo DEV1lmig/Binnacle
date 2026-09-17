@@ -306,7 +306,7 @@ export default function LandingPageV5() {
                 color: "#F1F5F9",
               }}
             >
-              Binnacle
+              Playchive
             </Link>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <Link
@@ -1305,7 +1305,7 @@ export default function LandingPageV5() {
                 className="font-syne"
                 style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.02em" }}
               >
-                Binnacle
+                Playchive
               </p>
               <div
                 style={{
@@ -1337,7 +1337,7 @@ export default function LandingPageV5() {
                 ))}
               </div>
               <p style={{ fontSize: 13, color: "#475569" }}>
-                &copy; {new Date().getFullYear()} Binnacle
+                &copy; {new Date().getFullYear()} Playchive
               </p>
             </div>
           </footer>

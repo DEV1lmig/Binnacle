@@ -88,7 +88,7 @@ export function ReportDialog({ open, onOpenChange, targetType, targetId }: Repor
         style={{
           backgroundColor: C.surface,
           borderColor: C.border,
-          borderRadius: 2,
+          borderRadius: 12,
           color: C.text,
         }}
       >
@@ -96,7 +96,7 @@ export function ReportDialog({ open, onOpenChange, targetType, targetId }: Repor
           <DialogTitle
             style={{
               fontFamily: FONT_HEADING,
-              fontWeight: 300,
+              fontWeight: 400,
               color: C.text,
             }}
           >
@@ -120,8 +120,8 @@ export function ReportDialog({ open, onOpenChange, targetType, targetId }: Repor
                 fontFamily: FONT_MONO,
                 fontSize: 12,
                 color: C.textMuted,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
+                textTransform: "none",
+                letterSpacing: "0.01em",
               }}
             >
               Reason
@@ -152,8 +152,8 @@ export function ReportDialog({ open, onOpenChange, targetType, targetId }: Repor
                 fontFamily: FONT_MONO,
                 fontSize: 12,
                 color: C.textMuted,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
+                textTransform: "none",
+                letterSpacing: "0.01em",
               }}
             >
               Description (optional)
@@ -167,7 +167,7 @@ export function ReportDialog({ open, onOpenChange, targetType, targetId }: Repor
                 backgroundColor: C.bgAlt,
                 borderColor: C.border,
                 color: C.text,
-                borderRadius: 2,
+                borderRadius: 12,
                 fontSize: 14,
                 fontFamily: FONT_BODY,
               }}

@@ -172,7 +172,7 @@ export default function UserProfilePage() {
           className="relative text-center px-8 py-10"
           style={{
             border: `1px solid ${C.border}`,
-            borderRadius: 2,
+            borderRadius: 12,
             background: C.surface,
           }}
         >
@@ -187,13 +187,13 @@ export default function UserProfilePage() {
             style={{
               padding: "8px 20px",
               border: `1px solid ${C.border}`,
-              borderRadius: 2,
+              borderRadius: 12,
               background: "transparent",
               color: C.textMuted,
               fontFamily: FONT_MONO,
               fontSize: 11,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
+              letterSpacing: "0.01em",
+              textTransform: "none",
               cursor: "pointer",
             }}
           >
@@ -218,7 +218,7 @@ export default function UserProfilePage() {
           className="relative text-center px-8 py-10"
           style={{
             border: `1px solid ${C.border}`,
-            borderRadius: 2,
+            borderRadius: 12,
             background: C.surface,
           }}
         >
@@ -233,13 +233,13 @@ export default function UserProfilePage() {
             style={{
               padding: "8px 20px",
               border: `1px solid ${C.border}`,
-              borderRadius: 2,
+              borderRadius: 12,
               background: "transparent",
               color: C.textMuted,
               fontFamily: FONT_MONO,
               fontSize: 11,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
+              letterSpacing: "0.01em",
+              textTransform: "none",
               cursor: "pointer",
             }}
           >
@@ -265,7 +265,7 @@ export default function UserProfilePage() {
         className="mt-3 px-4 py-3 relative"
         style={{
           border: `1px solid ${C.red}33`,
-          borderRadius: 2,
+          borderRadius: 12,
           background: `${C.red}08`,
         }}
       >
@@ -294,7 +294,7 @@ export default function UserProfilePage() {
                 width: 36,
                 height: 36,
                 border: `1px solid ${C.border}`,
-                borderRadius: 2,
+                borderRadius: 12,
                 background: "transparent",
                 color: C.textDim,
                 cursor: "pointer",
@@ -308,7 +308,7 @@ export default function UserProfilePage() {
             style={{
               background: C.surface,
               border: `1px solid ${C.border}`,
-              borderRadius: 2,
+              borderRadius: 12,
             }}
           >
             <DropdownMenuItem
@@ -368,13 +368,13 @@ export default function UserProfilePage() {
           className="flex items-center gap-2 px-4 py-2"
           style={{
             border: `1px solid ${C.border}`,
-            borderRadius: 2,
+            borderRadius: 12,
             background: "transparent",
             color: C.textMuted,
             fontFamily: FONT_MONO,
             fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            letterSpacing: "0.01em",
+            textTransform: "none",
             cursor: isUpdatingBlock ? "not-allowed" : "pointer",
             opacity: isUpdatingBlock ? 0.5 : 1,
           }}
@@ -421,13 +421,13 @@ export default function UserProfilePage() {
         className="flex items-center gap-2 px-4 py-2"
         style={{
           border: "none",
-          borderRadius: 2,
+          borderRadius: 12,
           background: (isFollowing ?? profileData.viewerFollows) ? C.surface : C.gold,
           color: (isFollowing ?? profileData.viewerFollows) ? C.textMuted : C.bg,
           fontFamily: FONT_MONO,
           fontSize: 11,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
+          letterSpacing: "0.01em",
+          textTransform: "none",
           cursor: isUpdatingFollow ? "not-allowed" : "pointer",
           fontWeight: 500,
           boxShadow: (isFollowing ?? profileData.viewerFollows) ? "none" : `0 0 16px ${C.bloom}`,
@@ -460,13 +460,13 @@ export default function UserProfilePage() {
           className="flex items-center gap-2 px-4 py-2"
           style={{
             border: `1px solid ${C.border}`,
-            borderRadius: 2,
+            borderRadius: 12,
             background: "transparent",
             color: C.textMuted,
             fontFamily: FONT_MONO,
             fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            letterSpacing: "0.01em",
+            textTransform: "none",
             cursor: isSendingFriendRequest ? "not-allowed" : "pointer",
             opacity: isSendingFriendRequest ? 0.5 : 1,
             transition: "border-color 0.2s, color 0.2s",
@@ -487,11 +487,11 @@ export default function UserProfilePage() {
           className="flex items-center gap-2 px-4 py-2"
           style={{
             border: `1px solid ${C.border}`,
-            borderRadius: 2,
+            borderRadius: 12,
             fontFamily: FONT_MONO,
             fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            letterSpacing: "0.01em",
+            textTransform: "none",
             color: C.textDim,
           }}
         >
@@ -503,11 +503,11 @@ export default function UserProfilePage() {
           className="flex items-center gap-2 px-4 py-2"
           style={{
             border: `1px solid ${C.cyan}33`,
-            borderRadius: 2,
+            borderRadius: 12,
             fontFamily: FONT_MONO,
             fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            letterSpacing: "0.01em",
+            textTransform: "none",
             color: C.cyan,
           }}
         >
@@ -519,11 +519,11 @@ export default function UserProfilePage() {
           className="flex items-center gap-2 px-4 py-2"
           style={{
             border: `1px solid ${C.green}33`,
-            borderRadius: 2,
+            borderRadius: 12,
             fontFamily: FONT_MONO,
             fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            letterSpacing: "0.01em",
+            textTransform: "none",
             color: C.green,
           }}
         >
@@ -540,13 +540,13 @@ export default function UserProfilePage() {
         className="flex items-center gap-2 px-4 py-2"
         style={{
           border: `1px solid ${C.border}`,
-          borderRadius: 2,
+          borderRadius: 12,
           background: "transparent",
           color: C.textDim,
           fontFamily: FONT_MONO,
           fontSize: 11,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
+          letterSpacing: "0.01em",
+          textTransform: "none",
           cursor: isUpdatingBlock ? "not-allowed" : "pointer",
           opacity: isUpdatingBlock ? 0.5 : 1,
           transition: "border-color 0.2s, color 0.2s",
@@ -573,7 +573,7 @@ export default function UserProfilePage() {
               width: 36,
               height: 36,
               border: `1px solid ${C.border}`,
-              borderRadius: 2,
+              borderRadius: 12,
               background: "transparent",
               color: C.textDim,
               cursor: "pointer",
@@ -588,7 +588,7 @@ export default function UserProfilePage() {
           style={{
             background: C.surface,
             border: `1px solid ${C.border}`,
-            borderRadius: 2,
+            borderRadius: 12,
           }}
         >
           <DropdownMenuItem
@@ -620,7 +620,7 @@ export default function UserProfilePage() {
           className="mt-2 px-3 py-2 relative"
           style={{
             border: `1px solid ${C.red}33`,
-            borderRadius: 2,
+            borderRadius: 12,
             background: `${C.red}08`,
           }}
         >
@@ -641,7 +641,7 @@ export default function UserProfilePage() {
           className="mt-2 px-3 py-2 relative"
           style={{
             border: `1px solid ${C.red}33`,
-            borderRadius: 2,
+            borderRadius: 12,
             background: `${C.red}08`,
           }}
         >

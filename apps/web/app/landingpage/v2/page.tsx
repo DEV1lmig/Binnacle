@@ -767,7 +767,7 @@ export default function LandingPageV2() {
                 textTransform: "uppercase",
               }}
             >
-              Binnacle
+              Playchive
             </Link>
             <div className="flex items-center gap-6">
               <Link
@@ -1501,7 +1501,7 @@ export default function LandingPageV2() {
                     maxWidth: 300,
                   }}
                 >
-                  binnacle.app/collection
+                  playchive.app/collection
                 </div>
               </div>
 
@@ -1703,7 +1703,7 @@ export default function LandingPageV2() {
                 textTransform: "uppercase",
               }}
             >
-              Binnacle
+              Playchive
             </span>
             <div
               className="flex items-center gap-6"
@@ -1731,7 +1731,7 @@ export default function LandingPageV2() {
                 letterSpacing: "0.05em",
               }}
             >
-              &copy; {new Date().getFullYear()} Binnacle
+              &copy; {new Date().getFullYear()} Playchive
             </span>
           </div>
         </footer>

@@ -59,8 +59,8 @@ export function ArticleMetaPanel({
     fontFamily: FONT_MONO,
     fontSize: 12,
     color: C.textMuted,
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.08em",
+    textTransform: "none" as const,
+    letterSpacing: "0.01em",
   };
 
   return (
@@ -124,7 +124,7 @@ export function ArticleMetaPanel({
               }
             }}
             placeholder="Add a tag and press Enter…"
-            style={{ backgroundColor: C.bgAlt, borderColor: C.border, color: C.text, borderRadius: 2 }}
+            style={{ backgroundColor: C.bgAlt, borderColor: C.border, color: C.text, borderRadius: 12 }}
           />
         ) : null}
       </section>

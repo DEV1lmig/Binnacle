@@ -1,7 +1,7 @@
 "use client";
 
 import { SignIn } from "@clerk/nextjs";
-import { C, FONT_HEADING, FONT_BODY, FONT_IMPORT_URL } from "@/app/lib/design-system";
+import { C, FONT_HEADING, FONT_BODY } from "@/app/lib/design-system";
 import { CornerMarkers, GrainOverlay } from "@/app/lib/design-primitives";
 
 export default function AdminSignInPage() {
@@ -10,7 +10,7 @@ export default function AdminSignInPage() {
       className="min-h-screen flex items-center justify-center p-4"
       style={{ backgroundColor: C.bg }}
     >
-      <style>{`@import url('${FONT_IMPORT_URL}');`}</style>
+      <style>{``}</style>
       <GrainOverlay id="admin-signin-grain" />
 
       {/* Ambient orbs */}
@@ -21,7 +21,7 @@ export default function AdminSignInPage() {
           height: 400,
           top: -100,
           left: -100,
-          background: `radial-gradient(circle, ${C.gold}15 0%, transparent 70%)`,
+          background: "none",
           filter: "blur(60px)",
         }}
       />
@@ -32,7 +32,7 @@ export default function AdminSignInPage() {
           height: 350,
           bottom: -80,
           right: -80,
-          background: `radial-gradient(circle, ${C.accent}12 0%, transparent 70%)`,
+          background: "none",
           filter: "blur(60px)",
         }}
       />
@@ -42,7 +42,7 @@ export default function AdminSignInPage() {
           className="relative"
           style={{
             border: `1px solid ${C.border}`,
-            borderRadius: 2,
+            borderRadius: 12,
             background: C.surface,
             padding: 24,
           }}
@@ -63,7 +63,7 @@ export default function AdminSignInPage() {
               style={{
                 fontFamily: FONT_HEADING,
                 fontSize: 22,
-                fontWeight: 200,
+                fontWeight: 800,
                 color: C.text,
                 letterSpacing: "-0.01em",
                 marginBottom: 4,
@@ -75,7 +75,7 @@ export default function AdminSignInPage() {
               style={{
                 fontFamily: FONT_BODY,
                 fontSize: 13,
-                fontWeight: 300,
+                fontWeight: 400,
                 color: C.textMuted,
               }}
             >

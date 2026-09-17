@@ -31,21 +31,11 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
     return (
       <button
         onClick={onClick}
-        className="group relative overflow-hidden transition-all"
+        className="pc-game-card group relative overflow-hidden text-left transition-all duration-300"
         style={{
-          borderRadius: 2,
+          borderRadius: 12,
           border: `1px solid ${C.border}`,
           background: C.surface,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = C.gold;
-          e.currentTarget.style.boxShadow = `0 0 20px ${C.bloom}`;
-          e.currentTarget.style.transform = 'translateY(-1px)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = C.border;
-          e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.transform = 'translateY(0)';
         }}
       >
         <div className="aspect-[2/3] relative">
@@ -71,7 +61,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
             className="absolute bottom-2 left-2 flex items-center gap-1 backdrop-blur-sm px-2 py-1"
             style={{
               background: `${C.bg}d9`,
-              borderRadius: 2,
+              borderRadius: 12,
             }}
           >
             <Star
@@ -86,7 +76,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
                 color: C.text,
               }}
             >
-              {rating ? normalizeRatingToTen(rating).toFixed(1) : '0.0'}
+              {rating ? normalizeRatingToTen(rating).toFixed(1) : '—'}
             </span>
           </div>
         </div>
@@ -108,7 +98,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
               fontFamily: FONT_MONO,
               fontSize: 11,
               color: C.textDim,
-              textTransform: 'uppercase',
+              textTransform: 'none',
             }}
           >
             {game.releaseYear ?? 'N/A'}
@@ -121,30 +111,20 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
   return (
     <button
       onClick={onClick}
-      className="group w-full text-left overflow-hidden transition-all"
+      className="pc-game-card group w-full text-left overflow-hidden transition-all duration-300"
       style={{
-        borderRadius: 2,
+        borderRadius: 12,
         border: `1px solid ${C.border}`,
         background: C.surface,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = C.gold;
-        e.currentTarget.style.boxShadow = `0 0 20px ${C.bloom}`;
-        e.currentTarget.style.transform = 'translateY(-1px)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = C.border;
-        e.currentTarget.style.boxShadow = 'none';
-        e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
       <div className="flex gap-4 p-4">
         <div
           className="relative w-24 h-36 flex-shrink-0 overflow-hidden"
-          style={{ borderRadius: 2 }}
+          style={{ borderRadius: 12 }}
         >
           <ImageWithFallback
-            src={game.cover}
+            src={coverImage}
             alt={game.title}
             className="w-full h-full object-cover"
           />
@@ -153,7 +133,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
               className="absolute top-2 right-2 flex items-center gap-1 backdrop-blur-sm px-2 py-1"
               style={{
                 background: `${C.bg}d9`,
-                borderRadius: 2,
+                borderRadius: 12,
               }}
             >
               <Star
@@ -194,7 +174,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
                   fontFamily: FONT_MONO,
                   fontSize: 11,
                   color: C.textDim,
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                 }}
               >
                 {game.releaseYear ?? 'N/A'}{game.developer ? ` / ${game.developer}` : ''}
@@ -214,7 +194,7 @@ export function GameCard({ game, onClick, variant = 'default' }: GameCardProps) 
                     fontSize: 11,
                     color: C.textMuted,
                     background: C.bgAlt,
-                    borderRadius: 2,
+                    borderRadius: 12,
                   }}
                 >
                   {genre}

@@ -48,7 +48,7 @@ export default function ProfilePage() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: C.bg }}>
         <div
           className="relative text-center px-8 py-10"
-          style={{ border: `1px solid ${C.border}`, borderRadius: 2, background: C.surface }}
+          style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: C.surface }}
         >
           <CornerMarkers />
           <p style={{ fontFamily: FONT_BODY, fontSize: 14, color: C.textMuted }}>
@@ -68,7 +68,7 @@ export default function ProfilePage() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: C.bg }}>
         <div
           className="relative text-center px-8 py-10"
-          style={{ border: `1px solid ${C.border}`, borderRadius: 2, background: C.surface }}
+          style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: C.surface }}
         >
           <CornerMarkers />
           <p style={{ fontFamily: FONT_BODY, fontSize: 14, color: C.textMuted }}>
@@ -162,13 +162,13 @@ export default function ProfilePage() {
           className="flex items-center gap-2 px-4 py-2"
           style={{
             border: `1px solid ${C.accent}33`,
-            borderRadius: 2,
+            borderRadius: 12,
             background: `${C.accent}11`,
             color: C.accent,
             fontFamily: FONT_MONO,
             fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase" as const,
+            letterSpacing: "0.01em",
+            textTransform: "none" as const,
             textDecoration: "none",
             cursor: "pointer",
             transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s",
@@ -194,13 +194,13 @@ export default function ProfilePage() {
         className="flex items-center gap-2 px-4 py-2"
         style={{
           border: `1px solid ${C.border}`,
-          borderRadius: 2,
+          borderRadius: 12,
           background: "transparent",
           color: C.textMuted,
           fontFamily: FONT_MONO,
           fontSize: 11,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
+          letterSpacing: "0.01em",
+          textTransform: "none",
           cursor: "pointer",
           transition: "border-color 0.2s, color 0.2s, box-shadow 0.2s",
         }}
@@ -224,13 +224,13 @@ export default function ProfilePage() {
         className="flex items-center gap-2 px-4 py-2"
         style={{
           border: "none",
-          borderRadius: 2,
+          borderRadius: 12,
           background: C.gold,
           color: C.bg,
           fontFamily: FONT_MONO,
           fontSize: 11,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
+          letterSpacing: "0.01em",
+          textTransform: "none",
           cursor: "pointer",
           fontWeight: 500,
           boxShadow: `0 0 16px ${C.bloom}`,

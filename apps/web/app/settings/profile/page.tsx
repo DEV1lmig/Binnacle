@@ -240,7 +240,7 @@ function AppearanceSettings({
       <CardHeader>
         <CardTitle className="text-[var(--bkl-color-text-primary)]">Appearance</CardTitle>
         <CardDescription className="text-[var(--bkl-color-text-secondary)]">
-          Customize how Binnacle looks for you
+          Customize how Playchive looks for you
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

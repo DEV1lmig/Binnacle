@@ -54,7 +54,7 @@ export function FeedReviewList({ entries, isLoading, emptyMessage }: FeedReviewL
         style={{
           backgroundColor: C.surface,
           border: `1px solid ${C.border}`,
-          borderRadius: 2,
+          borderRadius: 12,
         }}
       >
         <p

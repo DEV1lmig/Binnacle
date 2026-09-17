@@ -18,17 +18,15 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import { Search, UserPlus, Users, Send, Inbox } from "lucide-react";
 import {
   C,
-  FONT_HEADING,
   FONT_MONO,
   FONT_BODY,
-  FONT_IMPORT_URL,
 } from "@/app/lib/design-system";
 import {
   CornerMarkers,
   GrainOverlay,
-  HudBadge,
 } from "@/app/lib/design-primitives";
 import { useScrollReveal } from "@/app/lib/useScrollReveal";
+import { PageHero, Pill } from "@/app/components/playchive";
 
 // ---------------------------------------------------------------------------
 // User card component
@@ -49,7 +47,7 @@ function UserCard({
       className="relative flex items-center gap-4 p-4 transition-all"
       style={{
         border: `1px solid ${C.border}`,
-        borderRadius: 2,
+        borderRadius: 12,
         background: C.surface,
       }}
       onMouseEnter={(e) => {
@@ -118,7 +116,7 @@ function EmptyTabState({ icon: Icon, message }: { icon: typeof Users; message: s
       className="relative flex flex-col items-center justify-center py-16"
       style={{
         border: `1px solid ${C.border}`,
-        borderRadius: 2,
+        borderRadius: 12,
         background: C.surface,
       }}
     >
@@ -128,7 +126,7 @@ function EmptyTabState({ icon: Icon, message }: { icon: typeof Users; message: s
         style={{
           fontFamily: FONT_BODY,
           fontSize: 14,
-          fontWeight: 300,
+          fontWeight: 400,
           color: C.textMuted,
         }}
       >
@@ -146,24 +144,24 @@ function FriendsPageSkeleton() {
     <div className="min-h-screen pb-20 md:pb-8" style={{ backgroundColor: C.bg }}>
       <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
         <div className="mb-6">
-          <Skeleton className="h-5 w-20 mb-3" style={{ backgroundColor: C.surface, borderRadius: 2 }} />
+          <Skeleton className="h-5 w-20 mb-3" style={{ backgroundColor: C.surface, borderRadius: 12 }} />
           <Skeleton className="h-9 w-40 mb-2" style={{ backgroundColor: C.surface }} />
           <Skeleton className="h-4 w-56" style={{ backgroundColor: C.surface }} />
         </div>
-        <Skeleton className="h-10 w-80 mb-6" style={{ backgroundColor: C.surface, borderRadius: 2 }} />
+        <Skeleton className="h-10 w-full max-w-80 mb-6" style={{ backgroundColor: C.surface, borderRadius: 12 }} />
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
               className="flex items-center gap-4 p-4"
-              style={{ border: `1px solid ${C.border}`, borderRadius: 2 }}
+              style={{ border: `1px solid ${C.border}`, borderRadius: 12 }}
             >
               <Skeleton className="h-10 w-10 rounded-full" style={{ backgroundColor: C.bgAlt }} />
               <div className="flex-1">
                 <Skeleton className="h-4 w-32 mb-1" style={{ backgroundColor: C.bgAlt }} />
                 <Skeleton className="h-3 w-24" style={{ backgroundColor: C.bgAlt }} />
               </div>
-              <Skeleton className="h-8 w-20" style={{ backgroundColor: C.bgAlt, borderRadius: 2 }} />
+              <Skeleton className="h-8 w-20" style={{ backgroundColor: C.bgAlt, borderRadius: 12 }} />
             </div>
           ))}
         </div>
@@ -191,9 +189,6 @@ export default function FriendsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [workingIds, setWorkingIds] = useState<Set<string>>(new Set());
-
-  const headerRef = useRef<HTMLDivElement>(null);
-  const headerReveal = useScrollReveal(headerRef, "friends-reveal");
   const contentRef = useRef<HTMLDivElement>(null);
   const contentReveal = useScrollReveal(contentRef, "friends-reveal");
 
@@ -273,7 +268,7 @@ export default function FriendsPage() {
   return (
     <>
       <style>{`
-        @import url('${FONT_IMPORT_URL}');
+
         .friends-reveal {
           opacity: 0;
           transform: translateY(16px);
@@ -298,7 +293,7 @@ export default function FriendsPage() {
               left: "-10%",
               width: "50%",
               height: "50%",
-              background: `radial-gradient(circle, ${C.goldDim}15 0%, transparent 70%)`,
+              background: "none",
               filter: "blur(60px)",
             }}
           />
@@ -309,7 +304,7 @@ export default function FriendsPage() {
               right: "-10%",
               width: "40%",
               height: "40%",
-              background: `radial-gradient(circle, ${C.accentDim}10 0%, transparent 70%)`,
+              background: "none",
               filter: "blur(60px)",
             }}
           />
@@ -317,54 +312,16 @@ export default function FriendsPage() {
 
         <GrainOverlay id="friends-grain" />
 
+        <PageHero tone="orange" compact eyebrow="Your people" title={<>Friends, <em>{friends?.length ?? 0}</em> strong.</>} lede={incomingCount > 0 ? `${incomingCount} request${incomingCount === 1 ? "" : "s"} waiting for you.` : "Follow players who play like you. Their reviews and stories land in your feed."} aside={<Pill href="/discover/people" tone="ink"><Users size={17} />Find players</Pill>} />
         <div className="relative z-10 max-w-4xl mx-auto px-4 md:px-8">
           {/* Header */}
-          <div
-            ref={headerRef}
-            className={headerReveal}
-            style={{
-              borderBottom: `1px solid ${C.border}`,
-              padding: "24px 0 20px",
-            }}
-          >
-            <HudBadge color={C.accent}>Network</HudBadge>
-            <h1
-              className="mt-3"
-              style={{
-                fontFamily: FONT_HEADING,
-                fontSize: "clamp(24px, 4vw, 36px)",
-                fontWeight: 200,
-                color: C.text,
-                letterSpacing: "-0.01em",
-              }}
-            >
-              Friends
-            </h1>
-            <p
-              className="mt-1"
-              style={{
-                fontFamily: FONT_MONO,
-                fontSize: 12,
-                color: C.textMuted,
-                letterSpacing: "0.08em",
-              }}
-            >
-              {friends?.length ?? 0} CONNECTIONS
-              {incomingCount > 0 && (
-                <span style={{ color: C.cyan, marginLeft: 12 }}>
-                  {incomingCount} PENDING
-                </span>
-              )}
-            </p>
-          </div>
-
           {/* Error banner */}
           {actionError && (
             <div
               className="mt-4 px-4 py-3"
               style={{
                 border: `1px solid ${C.red}66`,
-                borderRadius: 2,
+                borderRadius: 12,
                 backgroundColor: C.red + "15",
               }}
             >
@@ -392,7 +349,7 @@ export default function FriendsPage() {
                 style={{
                   backgroundColor: C.surface,
                   border: `1px solid ${C.border}`,
-                  borderRadius: 2,
+                  borderRadius: 12,
                   padding: 3,
                 }}
               >
@@ -409,9 +366,9 @@ export default function FriendsPage() {
                     style={{
                       fontFamily: FONT_MONO,
                       fontSize: 11,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      borderRadius: 2,
+                      letterSpacing: "0.01em",
+                      textTransform: "none",
+                      borderRadius: 12,
                       color: activeTab === tab.value ? C.bg : C.textMuted,
                       backgroundColor: activeTab === tab.value ? C.gold : "transparent",
                     }}
@@ -443,7 +400,7 @@ export default function FriendsPage() {
                       <div
                         key={i}
                         className="flex items-center gap-4 p-4"
-                        style={{ border: `1px solid ${C.border}`, borderRadius: 2 }}
+                        style={{ border: `1px solid ${C.border}`, borderRadius: 12 }}
                       >
                         <Skeleton className="h-10 w-10 rounded-full" style={{ backgroundColor: C.bgAlt }} />
                         <div className="flex-1">
@@ -471,12 +428,12 @@ export default function FriendsPage() {
                             style={{
                               backgroundColor: "transparent",
                               border: `1px solid ${C.border}`,
-                              borderRadius: 2,
+                              borderRadius: 12,
                               color: C.textMuted,
                               fontFamily: FONT_MONO,
                               fontSize: 10,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
+                              letterSpacing: "0.01em",
+                              textTransform: "none",
                               padding: "6px 14px",
                               height: "auto",
                             }}
@@ -506,7 +463,7 @@ export default function FriendsPage() {
                       <div
                         key={i}
                         className="flex items-center gap-4 p-4"
-                        style={{ border: `1px solid ${C.border}`, borderRadius: 2 }}
+                        style={{ border: `1px solid ${C.border}`, borderRadius: 12 }}
                       >
                         <Skeleton className="h-10 w-10 rounded-full" style={{ backgroundColor: C.bgAlt }} />
                         <div className="flex-1">
@@ -536,11 +493,11 @@ export default function FriendsPage() {
                                 style={{
                                   backgroundColor: C.gold,
                                   color: C.bg,
-                                  borderRadius: 2,
+                                  borderRadius: 12,
                                   fontFamily: FONT_MONO,
                                   fontSize: 10,
-                                  letterSpacing: "0.08em",
-                                  textTransform: "uppercase",
+                                  letterSpacing: "0.01em",
+                                  textTransform: "none",
                                   padding: "6px 14px",
                                   height: "auto",
                                   border: "none",
@@ -555,12 +512,12 @@ export default function FriendsPage() {
                                 style={{
                                   backgroundColor: "transparent",
                                   border: `1px solid ${C.border}`,
-                                  borderRadius: 2,
+                                  borderRadius: 12,
                                   color: C.textMuted,
                                   fontFamily: FONT_MONO,
                                   fontSize: 10,
-                                  letterSpacing: "0.08em",
-                                  textTransform: "uppercase",
+                                  letterSpacing: "0.01em",
+                                  textTransform: "none",
                                   padding: "6px 14px",
                                   height: "auto",
                                 }}
@@ -584,7 +541,7 @@ export default function FriendsPage() {
                       <div
                         key={i}
                         className="flex items-center gap-4 p-4"
-                        style={{ border: `1px solid ${C.border}`, borderRadius: 2 }}
+                        style={{ border: `1px solid ${C.border}`, borderRadius: 12 }}
                       >
                         <Skeleton className="h-10 w-10 rounded-full" style={{ backgroundColor: C.bgAlt }} />
                         <div className="flex-1">
@@ -613,12 +570,12 @@ export default function FriendsPage() {
                               style={{
                                 backgroundColor: "transparent",
                                 border: `1px solid ${C.border}`,
-                                borderRadius: 2,
+                                borderRadius: 12,
                                 color: C.textMuted,
                                 fontFamily: FONT_MONO,
                                 fontSize: 10,
-                                letterSpacing: "0.08em",
-                                textTransform: "uppercase",
+                                letterSpacing: "0.01em",
+                                textTransform: "none",
                                 padding: "6px 14px",
                                 height: "auto",
                               }}
@@ -656,7 +613,7 @@ export default function FriendsPage() {
                     style={{
                       backgroundColor: C.surface,
                       border: `1px solid ${C.border}`,
-                      borderRadius: 2,
+                      borderRadius: 12,
                       color: C.text,
                       fontFamily: FONT_MONO,
                       fontSize: 12,
@@ -672,7 +629,7 @@ export default function FriendsPage() {
                       <div
                         key={i}
                         className="flex items-center gap-4 p-4"
-                        style={{ border: `1px solid ${C.border}`, borderRadius: 2 }}
+                        style={{ border: `1px solid ${C.border}`, borderRadius: 12 }}
                       >
                         <Skeleton className="h-10 w-10 rounded-full" style={{ backgroundColor: C.bgAlt }} />
                         <div className="flex-1">
@@ -699,11 +656,11 @@ export default function FriendsPage() {
                             style={{
                               backgroundColor: C.gold,
                               color: C.bg,
-                              borderRadius: 2,
+                              borderRadius: 12,
                               fontFamily: FONT_MONO,
                               fontSize: 10,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
+                              letterSpacing: "0.01em",
+                              textTransform: "none",
                               padding: "6px 14px",
                               height: "auto",
                               border: "none",

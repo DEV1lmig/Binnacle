@@ -13,14 +13,14 @@ import {
   ratingToFiveStar,
   type ShareCardOptions,
 } from "@binnacle/shared-types";
-import { colors } from "@binnacle/design-tokens";
+import { colors } from "@/app/lib/design-system";
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 
 // Font names must match the family names passed to ImageResponse fonts.
 const FONT_HEADING_NAME = "Outfit";
 const FONT_BODY_NAME = "DM Sans";
-const FONT_MONO_NAME = "JetBrains Mono";
+const FONT_MONO_NAME = "DM Sans";
 
 type FontOption = {
   name: string;
@@ -37,10 +37,10 @@ type FontDef = {
 };
 
 const FONT_DEFS: FontDef[] = [
-  { name: FONT_HEADING_NAME, weight: 600, family: "Outfit" },
+  { name: FONT_HEADING_NAME, weight: 800, family: "Outfit" },
   { name: FONT_BODY_NAME, weight: 400, family: "DM Sans" },
   { name: FONT_BODY_NAME, weight: 500, family: "DM Sans" },
-  { name: FONT_MONO_NAME, weight: 400, family: "JetBrains Mono" },
+  { name: FONT_MONO_NAME, weight: 600, family: "DM Sans" },
 ];
 
 async function loadFontData(family: string, weight: number): Promise<ArrayBuffer | null> {
@@ -209,7 +209,7 @@ function HudBadge({
           fontSize: 11,
           fontWeight: 500,
           color: accent,
-          textTransform: "uppercase",
+          textTransform: "none",
         }}
       >
         {children}
@@ -308,7 +308,7 @@ function PlaceholderCard({
           marginBottom: pad * 0.5,
         }}
       >
-        Binnacle
+        Playchive
       </span>
       <span style={{ fontSize: Math.round(width * 0.03) }}>{message}</span>
     </div>
@@ -418,10 +418,10 @@ function ReviewShareCard({
               fontFamily: FONT_MONO_NAME,
               fontSize: Math.round(fontBase * 0.85),
               color: colors.textMuted,
-              textTransform: "uppercase",
+              textTransform: "none",
             }}
           >
-            Binnacle
+            Playchive
           </span>
         </div>
 
@@ -481,7 +481,7 @@ function ReviewShareCard({
                 style={{
                   fontFamily: FONT_HEADING_NAME,
                   fontSize: isWide ? Math.round(fontBase * 2.2) : isStory ? Math.round(fontBase * 2.6) : Math.round(fontBase * 2.2),
-                  fontWeight: 600,
+                  fontWeight: 800,
                   lineHeight: 1.15,
                   color: colors.text,
                   margin: 0,
@@ -636,7 +636,7 @@ function ReviewShareCard({
                 fontFamily: FONT_MONO_NAME,
                 fontSize: Math.round(fontBase * 0.8),
                 color: colors.textDim,
-                textTransform: "uppercase",
+                textTransform: "none",
               }}
             >
               {formatDate(review._creationTime)}

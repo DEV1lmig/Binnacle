@@ -1,38 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
-import { useUser } from "@clerk/nextjs";
 import { Heart, MessageCircle, MoreHorizontal, TriangleAlert } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { getStandardCoverUrl } from "@/lib/igdb-images";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { ArticleCommentSection } from "./ArticleCommentSection";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu";
-import { Button } from "@/app/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu";
 import { ReportDialog } from "@/app/components/ReportDialog";
-import { C, FONT_MONO, FONT_BODY } from "@/app/lib/design-system";
+import { relativeTime } from "@/app/components/ReviewCard";
 
-type ArticleAuthor = {
-  _id: Id<"users">;
-  name: string;
-  username: string;
-  avatarUrl?: string;
-};
-
-type ArticleGame = {
-  _id: Id<"games">;
-  title: string;
-  coverUrl?: string;
-};
+type ArticleAuthor = { _id: Id<"users">; name: string; username: string; avatarUrl?: string };
+type ArticleGame = { _id: Id<"games">; title: string; coverUrl?: string };
 
 export type ArticleCardData = {
   _id: Id<"articles">;
@@ -51,21 +34,15 @@ export type ArticleCardData = {
   games: ArticleGame[];
 };
 
-const TYPE_LABEL: Record<string, string> = {
-  review: "Review",
-  opinion: "Opinion",
-  analysis: "Analysis",
-};
+const TYPE_LABEL: Record<string, string> = { review: "Review", opinion: "Opinion", analysis: "Analysis" };
 
-interface ArticleCardProps {
-  article: ArticleCardData;
-  compact?: boolean;
-}
+type Layout = "tile" | "row" | "feature";
 
-export function ArticleCard({ article, compact = false }: ArticleCardProps) {
+/** Cover-led story tile. `layout="row"` for feeds, `"feature"` for the lead story. */
+export function ArticleCard({ article, compact = false, layout }: { article: ArticleCardData; compact?: boolean; layout?: Layout }) {
   const router = useRouter();
-  const { user: clerkUser } = useUser();
   const toggleLike = useMutation(api.articleLikes.toggle);
+  const mode: Layout = layout ?? (compact ? "row" : "tile");
 
   const [liked, setLiked] = useState(article.viewerHasLiked ?? false);
   const [likeCount, setLikeCount] = useState(article.likeCount ?? 0);
@@ -73,257 +50,90 @@ export function ArticleCard({ article, compact = false }: ArticleCardProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
+  const [coverFailed, setCoverFailed] = useState(false);
 
-  const snapshotRef = useRef({
-    id: article._id,
-    viewerHasLiked: article.viewerHasLiked,
-    likeCount: article.likeCount,
-    commentCount: article.commentCount,
-  });
-
+  const snapshot = useRef({ id: article._id, viewerHasLiked: article.viewerHasLiked, likeCount: article.likeCount, commentCount: article.commentCount });
   useEffect(() => {
-    if (
-      snapshotRef.current.id !== article._id ||
-      snapshotRef.current.viewerHasLiked !== article.viewerHasLiked ||
-      snapshotRef.current.likeCount !== article.likeCount ||
-      snapshotRef.current.commentCount !== article.commentCount
-    ) {
-      snapshotRef.current = {
-        id: article._id,
-        viewerHasLiked: article.viewerHasLiked,
-        likeCount: article.likeCount,
-        commentCount: article.commentCount,
-      };
+    const s = snapshot.current;
+    if (s.id !== article._id || s.viewerHasLiked !== article.viewerHasLiked || s.likeCount !== article.likeCount || s.commentCount !== article.commentCount) {
+      snapshot.current = { id: article._id, viewerHasLiked: article.viewerHasLiked, likeCount: article.likeCount, commentCount: article.commentCount };
       setLiked(article.viewerHasLiked ?? false);
       setLikeCount(article.likeCount ?? 0);
       setCommentCount(article.commentCount ?? 0);
     }
   }, [article._id, article.viewerHasLiked, article.likeCount, article.commentCount]);
 
-  const publishedLabel = useMemo(() => {
-    const timestamp = article.publishedAt ?? article._creationTime;
-    if (!timestamp) return "Just now";
-    return new Date(timestamp).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  }, [article.publishedAt, article._creationTime]);
-
-  const cover = article.coverUrl ?? article.games.find((g) => g.coverUrl)?.coverUrl;
+  const when = useMemo(() => relativeTime(article.publishedAt ?? article._creationTime), [article.publishedAt, article._creationTime]);
+  const cover = article.coverUrl ?? article.games.find(g => g.coverUrl)?.coverUrl;
+  const coverUrl = article.coverUrl ? article.coverUrl : getStandardCoverUrl(cover);
 
   const handleLike = async (event: React.MouseEvent) => {
     event.stopPropagation();
     if (isBusy) return;
-
-    const nextLiked = !liked;
-    setLiked(nextLiked);
-    setLikeCount((count) => Math.max(0, count + (nextLiked ? 1 : -1)));
+    const next = !liked;
+    setLiked(next);
+    setLikeCount(count => Math.max(0, count + (next ? 1 : -1)));
     setIsBusy(true);
-
     try {
       await toggleLike({ articleId: article._id });
     } catch (error) {
       console.error("[ArticleCard] Failed to toggle like", error);
       setLiked(liked);
-      setLikeCount((count) => Math.max(0, count + (liked ? 1 : -1)));
+      setLikeCount(count => Math.max(0, count + (liked ? 1 : -1)));
     } finally {
       setIsBusy(false);
     }
   };
 
-  const handleNavigate = () => {
-    router.push(`/article/${article._id}`);
-  };
-
-  const handleToggleComments = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setCommentsOpen((open) => !open);
-  };
-
-  const showSpoilerGate = article.containsSpoilers && !spoilerRevealed;
+  const open = () => router.push(`/article/${article._id}`);
+  const stop = (event: React.SyntheticEvent) => event.stopPropagation();
+  const gated = article.containsSpoilers && !spoilerRevealed;
+  const kind = article.type ?? "opinion";
 
   return (
-    <article
-      onClick={handleNavigate}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="p-4 md:p-6 cursor-pointer"
-      style={{
-        background: C.surface,
-        border: `1px solid ${hovered ? C.gold : C.border}`,
-        borderRadius: 2,
-        boxShadow: hovered ? `0 0 16px ${C.bloom}` : "none",
-        transform: hovered ? "translateY(-1px)" : "none",
-        transition: "border-color 0.2s, box-shadow 0.2s, transform 0.2s",
-      }}
-    >
-      <header className="flex items-center gap-3 mb-4">
-        <Avatar className="h-10 w-10">
-          {article.author.avatarUrl ? (
-            <AvatarImage src={article.author.avatarUrl} alt={article.author.name} />
-          ) : null}
-          <AvatarFallback style={{ background: `linear-gradient(135deg, ${C.accent}, ${C.gold})`, color: C.bg }}>
-            {article.author.name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <p style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 500, color: C.text }}>
-            {article.author.name}
-          </p>
-          <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textDim, letterSpacing: "0.02em" }}>
-            @{article.author.username} · {publishedLabel}
-          </p>
-        </div>
-        {article.type ? (
-          <span
-            className="px-2 py-1"
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: 10,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: C.gold,
-              border: `1px solid ${C.border}`,
-              borderRadius: 2,
-            }}
-          >
-            {TYPE_LABEL[article.type] ?? article.type}
-          </span>
-        ) : null}
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(event) => event.stopPropagation()}
-              style={{ color: C.textMuted }}
-              aria-label="More actions"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
-            <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                setReportOpen(true);
-              }}
-            >
-              Report
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </header>
-
-      <div className="flex gap-3 mb-4">
-        {cover ? (
-          <div className="overflow-hidden flex-shrink-0" style={{ width: 64, height: 96, borderRadius: 2 }}>
-            <ImageWithFallback src={getStandardCoverUrl(cover) ?? ""} alt={article.title} className="w-full h-full object-cover" unoptimized />
-          </div>
-        ) : null}
-        <div className="flex flex-col justify-center">
-          <p style={{ fontFamily: FONT_BODY, fontSize: !compact ? 18 : 15, fontWeight: 500, color: C.text }}>
-            {article.title}
-          </p>
-          {article.games.length > 0 ? (
-            <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textDim, textTransform: "uppercase" }}>
-              {article.games.map((g) => g.title).join(" · ")}
-            </p>
-          ) : null}
-        </div>
+    <article className="pk-article" data-layout={mode} onClick={open} onKeyDown={event => { if (event.key === "Enter" && event.target === event.currentTarget) open(); }} tabIndex={0} aria-label={article.title}>
+      <div className="pk-article-art">
+        {coverUrl && !coverFailed && <Image src={coverUrl} alt="" fill sizes={mode === "feature" ? "(max-width: 767px) 100vw, 60vw" : "(max-width: 767px) 100vw, 400px"} unoptimized={!!article.coverUrl} onError={() => setCoverFailed(true)} />}
+        <span className="pk-article-kind" data-kind={kind}>{TYPE_LABEL[kind] ?? kind}</span>
       </div>
 
-      {article.excerpt ? (
-        showSpoilerGate ? (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              setSpoilerRevealed(true);
-            }}
-            className="w-full flex items-center gap-2 mb-4 px-3 py-2 text-left"
-            style={{ border: `1px solid ${C.border}`, borderRadius: 2, backgroundColor: C.bgAlt }}
-          >
-            <TriangleAlert className="w-4 h-4 flex-shrink-0" style={{ color: C.amber }} />
-            <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.textMuted }}>
-              Contains spoilers — tap to show excerpt
-            </span>
-          </button>
-        ) : (
-          <p
-            className="mb-4"
-            style={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 300, color: C.textMuted, lineHeight: 1.6 }}
-          >
-            {article.excerpt}
-          </p>
-        )
-      ) : null}
+      <div className="pk-article-body">
+        {article.games.length > 0 && <span className="pk-article-games">{article.games.map(g => g.title).join(" · ")}</span>}
+        <h3>{article.title}</h3>
+        {article.excerpt && (gated
+          ? <button type="button" className="pk-spoiler" onClick={event => { stop(event); setSpoilerRevealed(true); }}><TriangleAlert size={15} aria-hidden="true" />Contains spoilers. Tap to show the excerpt.</button>
+          : <p className="pk-article-excerpt">{article.excerpt}</p>)}
+        {mode !== "row" && article.tags && article.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">{article.tags.slice(0, 4).map(tag => <span key={tag} className="pk-tag">#{tag}</span>)}</div>
+        )}
 
-      {article.tags && article.tags.length > 0 ? (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {article.tags.map((tag) => (
-            <span
-              key={tag}
-              style={{
-                fontFamily: FONT_MONO,
-                fontSize: 10,
-                color: C.textDim,
-                border: `1px solid ${C.border}`,
-                borderRadius: 2,
-                padding: "2px 6px",
-              }}
-            >
-              #{tag}
-            </span>
-          ))}
+        <div className="pk-article-by">
+          <Avatar className="h-7 w-7 rounded-full">
+            {article.author.avatarUrl && <AvatarImage src={article.author.avatarUrl} alt="" />}
+            <AvatarFallback className="bg-primary text-white text-[10px] font-semibold">{article.author.name.charAt(0).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <span className="truncate"><b>{article.author.name}</b> · {when}</span>
+          <span className="ml-auto flex items-center">
+            <button type="button" className="pk-action" data-active={liked || undefined} onClick={handleLike} disabled={isBusy} aria-pressed={liked} aria-label={liked ? "Unlike this story" : "Like this story"}><Heart size={15} />{likeCount}</button>
+            <button type="button" className="pk-action" aria-expanded={commentsOpen} onClick={event => { stop(event); setCommentsOpen(v => !v); }} aria-label={commentsOpen ? "Hide comments" : "Show comments"}><MessageCircle size={15} />{commentCount}</button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="pk-action" onClick={stop} aria-label="More actions"><MoreHorizontal size={15} /></button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" onClick={stop}>
+                <DropdownMenuItem onSelect={event => { event.preventDefault(); setReportOpen(true); }}>Report</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </span>
         </div>
-      ) : null}
 
-      <footer className="flex items-center gap-4 pt-4" style={{ borderTop: `1px solid ${C.border}` }}>
-        <button
-          onClick={handleLike}
-          disabled={isBusy}
-          className="flex items-center gap-2 group"
-          style={{ color: liked ? C.red : C.textMuted, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-          title={liked ? "Unlike this article" : "Like this article"}
-        >
-          <div className={`transition-transform duration-200 ${liked ? "scale-110" : "group-hover:scale-110"} ${isBusy ? "opacity-50" : ""}`}>
-            <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
-          </div>
-          <span style={{ fontFamily: FONT_MONO, fontSize: 13, color: C.textMuted }}>{likeCount}</span>
-        </button>
-        <button
-          onClick={handleToggleComments}
-          className="flex items-center gap-2"
-          style={{ color: C.textMuted, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-        >
-          <MessageCircle className="w-4 h-4" />
-          <span style={{ fontFamily: FONT_MONO, fontSize: 13, color: C.textMuted }}>{commentCount}</span>
-        </button>
-        {clerkUser && (
-          <div className="ml-auto flex items-center gap-2">
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={clerkUser.imageUrl || ""} alt={clerkUser.fullName || "User"} />
-              <AvatarFallback style={{ background: `linear-gradient(135deg, ${C.accent}, ${C.gold})`, color: C.bg }}>
-                {clerkUser.firstName?.charAt(0).toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
+        {commentsOpen && (
+          <div className="pk-review-comments" onClick={stop} onKeyDown={stop}>
+            <ArticleCommentSection articleId={article._id} onCountDelta={delta => setCommentCount(count => Math.max(0, count + delta))} />
           </div>
         )}
-      </footer>
-
-      {commentsOpen ? (
-        <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${C.border}` }} onClick={(event) => event.stopPropagation()}>
-          <ArticleCommentSection
-            articleId={article._id}
-            onCountDelta={(delta) => setCommentCount((count) => Math.max(0, count + delta))}
-          />
-        </div>
-      ) : null}
+      </div>
 
       <ReportDialog open={reportOpen} onOpenChange={setReportOpen} targetType="article" targetId={article._id} />
     </article>

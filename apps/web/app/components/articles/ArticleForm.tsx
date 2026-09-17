@@ -204,9 +204,9 @@ export function ArticleForm({ articleId: initialArticleId, initialGameId }: Arti
           Back
         </button>
 
-        <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 2 }}>
+        <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 12 }}>
           <header className="p-6" style={{ borderBottom: `1px solid ${C.border}` }}>
-            <h1 style={{ fontFamily: FONT_HEADING, fontSize: 24, fontWeight: 200, color: C.text }}>
+            <h1 style={{ fontFamily: FONT_HEADING, fontSize: 24, fontWeight: 800, color: C.text }}>
               {articleId ? "Edit Article" : "Write an Article"}
             </h1>
             <p style={{ fontFamily: FONT_BODY, fontSize: 13, color: C.textMuted, marginTop: 4 }}>
@@ -227,7 +227,7 @@ export function ArticleForm({ articleId: initialArticleId, initialGameId }: Arti
                 backgroundColor: C.bgAlt,
                 borderColor: C.border,
                 color: C.text,
-                borderRadius: 2,
+                borderRadius: 12,
                 fontSize: 20,
                 fontFamily: FONT_HEADING,
                 height: 52,
@@ -237,7 +237,7 @@ export function ArticleForm({ articleId: initialArticleId, initialGameId }: Arti
             <ArticleEditor content={content} onChange={setContent} />
 
             <div className="grid gap-2">
-              <p style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              <p style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.textMuted, textTransform: "none", letterSpacing: "0.01em" }}>
                 Excerpt (optional — auto-generated if left blank)
               </p>
               <Textarea
@@ -245,12 +245,12 @@ export function ArticleForm({ articleId: initialArticleId, initialGameId }: Arti
                 onChange={(e) => setExcerpt(e.target.value)}
                 placeholder="A short teaser for cards and previews…"
                 className="min-h-[72px] resize-none"
-                style={{ backgroundColor: C.bgAlt, borderColor: C.border, color: C.text, borderRadius: 2, fontSize: 14, fontFamily: FONT_BODY }}
+                style={{ backgroundColor: C.bgAlt, borderColor: C.border, color: C.text, borderRadius: 12, fontSize: 14, fontFamily: FONT_BODY }}
               />
             </div>
 
             <div>
-              <p style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+              <p style={{ fontFamily: FONT_MONO, fontSize: 12, color: C.textMuted, textTransform: "none", letterSpacing: "0.01em", marginBottom: 8 }}>
                 Games (optional)
               </p>
               <ArticleGamePicker selected={games} onChange={setGames} />

@@ -1,7 +1,7 @@
 @layer theme, base, clerk, components, utilities;
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "@binnacle/design-tokens/theme.css";
+@import "./playchive.css";
 
 /* Modern global styles for the web app
  * - Tailwind v4 single import
@@ -13,37 +13,37 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    /* Legacy `--bkl-*` tokens remapped to the canonical HUD palette.
+    /* Legacy `--bkl-*` aliases mapped to the Playchive Shelf palette.
      * These keep existing inline styles/classNames working while the
-     * canonical tokens live in @binnacle/design-tokens/theme.css. */
+     * web theme overrides live in playchive.css. */
 
     /* Primary Palette (Brand & UI) */
-    --bkl-color-bg-primary: #0b0e14;
-    --bkl-color-bg-secondary: #111620;
-    --bkl-color-bg-tertiary: #161b26;
-    --bkl-color-accent-primary: #60a5fa;
-    --bkl-color-accent-hover: #3b82f6;
-    --bkl-color-accent-secondary: #fbbf24;
+    --bkl-color-bg-primary: #080F1F;
+    --bkl-color-bg-secondary: #0E1930;
+    --bkl-color-bg-tertiary: #14213B;
+    --bkl-color-accent-primary: #245CF2;
+    --bkl-color-accent-hover: #1649E8;
+    --bkl-color-accent-secondary: #FFC400;
 
     /* Neutral Palette (UI & Text) */
-    --bkl-color-text-primary: #e2e8f0;
-    --bkl-color-text-secondary: #8494a7;
-    --bkl-color-text-disabled: #4a5568;
-    --bkl-color-border: #1e2636;
+    --bkl-color-text-primary: #FFFFFF;
+    --bkl-color-text-secondary: #B8C4D8;
+    --bkl-color-text-disabled: #9AAFCB;
+    --bkl-color-border: #2D3E59;
     --bkl-color-white: #f8fefb;
 
     /* Semantic Palette (Game Status) */
-    --bkl-color-status-playing: #34d399;
-    --bkl-color-status-completed: #fbbf24;
-    --bkl-color-status-backlog: #60a5fa;
-    --bkl-color-status-onhold: #fbbf24;
+    --bkl-color-status-playing: #FF914D;
+    --bkl-color-status-completed: #FFC400;
+    --bkl-color-status-backlog: #245CF2;
+    --bkl-color-status-onhold: #FFC400;
     --bkl-color-status-dropped: #ef4444;
     --bkl-color-feedback-error: #ef4444;
-    --bkl-color-feedback-success: #34d399;
+    --bkl-color-feedback-success: #FF914D;
 
     /* Font Stacks */
     --bkl-font-sans:
-        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        var(--playchive-body), "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         "Helvetica Neue", Arial, sans-serif;
 
     /* Font Sizes */
@@ -107,13 +107,13 @@
     --popover: var(--bkl-color-bg-secondary);
     --popover-foreground: var(--bkl-color-text-primary);
     --primary: var(--bkl-color-accent-primary);
-    --primary-foreground: var(--bkl-color-bg-primary);
+    --primary-foreground: #FFFFFF;
     --secondary: var(--bkl-color-bg-tertiary);
     --secondary-foreground: var(--bkl-color-text-primary);
     --muted: var(--bkl-color-bg-tertiary);
     --muted-foreground: var(--bkl-color-text-secondary);
     --accent: var(--bkl-color-accent-primary);
-    --accent-foreground: var(--bkl-color-bg-primary);
+    --accent-foreground: #FFFFFF;
     --destructive: var(--bkl-color-feedback-error);
     --destructive-foreground: var(--bkl-color-white);
     --border: var(--bkl-color-border);
@@ -132,7 +132,7 @@
 
     body {
         @apply bg-background text-foreground;
-        font-family: var(--bkl-font-sans);
+        font-family: var(--playchive-body), "DM Sans", sans-serif;
     }
 
     h1,
@@ -141,12 +141,12 @@
     h4,
     h5,
     h6 {
-        font-family: var(--bkl-font-sans);
+        font-family: var(--playchive-display), Outfit, sans-serif;
     }
 }
 
 /**
- * Base typography using Binnacle tokens
+ * Base typography using Playchive compatibility tokens
  */
 @layer base {
     :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {

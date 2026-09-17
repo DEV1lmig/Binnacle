@@ -1,627 +1,128 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useState, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useCurrentUser } from "@/app/context/CurrentUserContext";
-import { GameCard } from "@/app/components/GameCard";
 import { Input } from "@/app/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/app/components/ui/select";
-import {
-  LayoutGrid,
-  List,
-  Search,
-  Clipboard,
-} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select";
+import { LayoutGrid, List, Search, Compass, Library } from "lucide-react";
 import { BacklogPageSkeleton } from "@/app/components/PageSkeleton";
-import {
-  C,
-  FONT_HEADING,
-  FONT_MONO,
-  FONT_BODY,
-  FONT_IMPORT_URL,
-} from "@/app/lib/design-system";
-import {
-  CornerMarkers,
-  GrainOverlay,
-  HudBadge,
-} from "@/app/lib/design-primitives";
-import { useScrollReveal } from "@/app/lib/useScrollReveal";
+import { EmptyState } from "@/app/components/EmptyState";
+import { PageHero, Pill, LibraryCard, LibraryRow, SectionHeading, STATUS_LABEL, STATUS_ORDER, STATUS_COLOR, type LibraryItem, type LibraryStatus } from "@/app/components/playchive";
+import { withViewTransition } from "@/app/lib/viewTransition";
 
-type GameStatus = "all" | "want_to_play" | "playing" | "completed" | "on_hold" | "dropped";
-type ViewMode = "grid" | "list";
+type Filter = "all" | LibraryStatus;
+type View = "grid" | "list";
+type Sort = "recent" | "title-asc" | "title-desc" | "year";
 
-// ---------------------------------------------------------------------------
-// Status config
-// ---------------------------------------------------------------------------
-const STATUS_CONFIG: {
-  id: GameStatus;
-  label: string;
-  color: string;
-}[] = [
-  { id: "all", label: "All Games", color: C.gold },
-  { id: "want_to_play", label: "Backlog", color: C.gold },
-  { id: "playing", label: "Playing", color: C.green },
-  { id: "completed", label: "Completed", color: C.amber },
-  { id: "on_hold", label: "On Hold", color: C.amber },
-  { id: "dropped", label: "Dropped", color: C.red },
-];
+const FILTERS: Filter[] = ["all", ...STATUS_ORDER];
+const isFilter = (value: string | null): value is Filter => !!value && (FILTERS as string[]).includes(value);
 
-export default function BacklogPage() {
+function BacklogContent() {
   const router = useRouter();
+  const params = useSearchParams();
   const { currentUser, isLoading: isUserLoading } = useCurrentUser();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<GameStatus>("all");
-  const [sortBy, setSortBy] = useState("recent");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>(() => (isFilter(params.get("status")) ? (params.get("status") as Filter) : "all"));
+  const [sort, setSort] = useState<Sort>("recent");
+  const [view, setView] = useState<View>("grid");
 
-  const headerRef = useRef<HTMLDivElement>(null);
-  const headerReveal = useScrollReveal(headerRef, "backlog-reveal");
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const sidebarReveal = useScrollReveal(sidebarRef, "backlog-reveal");
-  const gridRef = useRef<HTMLDivElement>(null);
-  const gridReveal = useScrollReveal(gridRef, "backlog-reveal");
-
-  const backlogItems = useQuery(
-    api.backlog.listForUser,
-    currentUser ? { userId: currentUser._id } : "skip"
-  );
-
-  const filteredAndSortedGames = useMemo(() => {
-    if (!backlogItems) return [];
-    let items = [...backlogItems];
-    if (activeFilter !== "all") {
-      items = items.filter((item) => item.status === activeFilter);
+  // Keep the URL shareable: /backlog?status=playing
+  useEffect(() => {
+    const current = params.get("status");
+    if ((filter === "all" && current) || (filter !== "all" && current !== filter)) {
+      router.replace(filter === "all" ? "/backlog" : `/backlog?status=${filter}`, { scroll: false });
     }
-    if (searchQuery) {
-      items = items.filter((item) =>
-        (item.game?.title || "").toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  }, [filter, params, router]);
+
+  const items = useQuery(api.backlog.listForUser, currentUser ? { userId: currentUser._id, limit: 100 } : "skip") as LibraryItem[] | undefined;
+
+  const counts = useMemo(() => {
+    const base: Record<Filter, number> = { all: 0, playing: 0, want_to_play: 0, completed: 0, on_hold: 0, dropped: 0 };
+    for (const item of items ?? []) { base.all += 1; if (item.status in base) base[item.status as LibraryStatus] += 1; }
+    return base;
+  }, [items]);
+
+  const shown = useMemo(() => {
+    let list = (items ?? []).filter(i => i.game);
+    if (filter !== "all") list = list.filter(i => i.status === filter);
+    if (query.trim()) { const q = query.trim().toLowerCase(); list = list.filter(i => i.game!.title.toLowerCase().includes(q)); }
+    const byTitle = (a: LibraryItem, b: LibraryItem) => a.game!.title.localeCompare(b.game!.title);
+    switch (sort) {
+      case "title-asc": list.sort(byTitle); break;
+      case "title-desc": list.sort((a, b) => byTitle(b, a)); break;
+      case "year": list.sort((a, b) => (b.game!.releaseYear ?? 0) - (a.game!.releaseYear ?? 0)); break;
+      default: list.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
     }
-    switch (sortBy) {
-      case "title-asc":
-        items.sort((a, b) => (a.game?.title || "").localeCompare(b.game?.title || ""));
-        break;
-      case "title-desc":
-        items.sort((a, b) => (b.game?.title || "").localeCompare(a.game?.title || ""));
-        break;
-      case "recent":
-      default:
-        items.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-        break;
-    }
-    return items;
-  }, [backlogItems, activeFilter, searchQuery, sortBy]);
+    return list;
+  }, [items, filter, query, sort]);
 
-  const statusCounts = useMemo(() => {
-    if (!backlogItems) return { total: 0, want_to_play: 0, playing: 0, completed: 0, on_hold: 0, dropped: 0 };
-    return {
-      total: backlogItems.length,
-      want_to_play: backlogItems.filter((i) => i.status === "want_to_play").length,
-      playing: backlogItems.filter((i) => i.status === "playing").length,
-      completed: backlogItems.filter((i) => i.status === "completed").length,
-      on_hold: backlogItems.filter((i) => i.status === "on_hold").length,
-      dropped: backlogItems.filter((i) => i.status === "dropped").length,
-    };
-  }, [backlogItems]);
+  if (isUserLoading || !currentUser || items === undefined) return <BacklogPageSkeleton />;
 
-  if (isUserLoading || !currentUser || backlogItems === undefined) {
-    return <BacklogPageSkeleton />;
-  }
-
-  const getCount = (id: GameStatus) => {
-    if (id === "all") return statusCounts.total;
-    return statusCounts[id] ?? 0;
-  };
+  const nowPlaying = filter === "all" && !query ? shown.filter(i => i.status === "playing").slice(0, 8) : [];
+  const finishedShare = counts.all ? Math.round((counts.completed / counts.all) * 100) : 0;
 
   return (
-    <>
-      <style>{`
-        @import url('${FONT_IMPORT_URL}');
-        .backlog-reveal {
-          opacity: 0;
-          transform: translateY(16px);
-          transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-        .backlog-reveal.visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .backlog-reveal { opacity: 1; transform: none; transition: none; }
-        }
-      `}</style>
+    <div className="min-h-screen pb-24 md:pb-12 bg-bg">
+      <PageHero
+        tone="gold"
+        eyebrow="My library"
+        title={counts.all ? <><em>{counts.all}</em> {counts.all === 1 ? "game" : "games"} on your shelf.</> : <>Your shelf, <em>your</em> rules.</>}
+        lede={counts.all ? `${counts.playing} playing, ${counts.want_to_play} waiting, ${finishedShare}% finished. Move games between shelves right from the card.` : "Save what you want to play, mark what you’re playing, and keep a record of what you finished."}
+        aside={<Pill href="/discover" tone="ink"><Compass size={17} />Add games</Pill>}
+        strip={FILTERS.map(f => (
+          <button key={f} type="button" className="pk-stat" aria-pressed={filter === f} onClick={() => withViewTransition(() => setFilter(f))}>
+            <strong>{counts[f]}</strong>
+            <span className="inline-flex items-center gap-1.5">{f !== "all" && <i className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: STATUS_COLOR[f] }} aria-hidden="true" />}{f === "all" ? "All games" : STATUS_LABEL[f]}</span>
+          </button>
+        ))}
+      />
 
-      <div className="min-h-screen pb-20 md:pb-8" style={{ backgroundColor: C.bg }}>
-        {/* Ambient background */}
-        <div
-          className="fixed inset-0 pointer-events-none"
-          style={{ zIndex: 0 }}
-        >
-          <div
-            className="absolute"
-            style={{
-              top: "-20%",
-              left: "-10%",
-              width: "50%",
-              height: "50%",
-              background: `radial-gradient(circle, ${C.goldDim}15 0%, transparent 70%)`,
-              filter: "blur(60px)",
-            }}
-          />
-          <div
-            className="absolute"
-            style={{
-              bottom: "-20%",
-              right: "-10%",
-              width: "40%",
-              height: "40%",
-              background: `radial-gradient(circle, ${C.accentDim}10 0%, transparent 70%)`,
-              filter: "blur(60px)",
-            }}
-          />
-        </div>
-
-        <GrainOverlay id="backlog-grain" />
-
-        <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8">
-          {/* Header bar */}
-          <div
-            ref={headerRef}
-            className={headerReveal}
-            style={{
-              borderBottom: `1px solid ${C.border}`,
-              padding: "24px 0 20px",
-            }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <HudBadge color={C.cyan}>Collection</HudBadge>
-                <h1
-                  className="mt-3"
-                  style={{
-                    fontFamily: FONT_HEADING,
-                    fontSize: "clamp(24px, 4vw, 36px)",
-                    fontWeight: 200,
-                    color: C.text,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Your Backlog
-                </h1>
-                <p
-                  className="mt-1"
-                  style={{
-                    fontFamily: FONT_MONO,
-                    fontSize: 12,
-                    color: C.textMuted,
-                    letterSpacing: "0.08em",
-                  }}
-                >
-                  {statusCounts.total} GAMES TRACKED
-                </p>
-              </div>
-
-              {/* View mode + sort controls */}
-              <div className="hidden md:flex items-center gap-3">
-                <div
-                  className="flex items-center gap-0"
-                  style={{
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 2,
-                    overflow: "hidden",
-                  }}
-                >
-                  {(["grid", "list"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setViewMode(mode)}
-                      className="p-2 transition-colors"
-                      style={{
-                        backgroundColor: viewMode === mode ? C.gold : "transparent",
-                        color: viewMode === mode ? C.bg : C.textMuted,
-                      }}
-                    >
-                      {mode === "grid" ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
-                    </button>
-                  ))}
-                </div>
-
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger
-                    className="w-[160px]"
-                    style={{
-                      backgroundColor: C.surface,
-                      border: `1px solid ${C.border}`,
-                      borderRadius: 2,
-                      color: C.text,
-                      fontFamily: FONT_MONO,
-                      fontSize: 11,
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    style={{
-                      backgroundColor: C.surface,
-                      border: `1px solid ${C.border}`,
-                      borderRadius: 2,
-                    }}
-                  >
-                    <SelectItem value="recent" style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.text }}>
-                      Recently Added
-                    </SelectItem>
-                    <SelectItem value="title-asc" style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.text }}>
-                      Title A-Z
-                    </SelectItem>
-                    <SelectItem value="title-desc" style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.text }}>
-                      Title Z-A
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Search bar */}
-            <div className="relative max-w-md">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ width: 14, height: 14, color: C.textDim }}
-              />
-              <Input
-                type="text"
-                placeholder="Search your games..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-                style={{
-                  backgroundColor: C.surface,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 2,
-                  color: C.text,
-                  fontFamily: FONT_MONO,
-                  fontSize: 12,
-                  letterSpacing: "0.03em",
-                  height: 36,
-                }}
-              />
-            </div>
+      <div className="max-w-[1400px] mx-auto px-5 md:px-8 pt-8">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[220px] max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-textDim" size={16} aria-hidden="true" />
+            <Input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search your games" aria-label="Search your library" className="h-11 rounded-full pl-10 bg-surface border-border" />
           </div>
-
-          {/* 12-column grid: sidebar + game grid (matching Platform Preview) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 py-6">
-            {/* Sidebar */}
-            <aside
-              ref={sidebarRef}
-              className={`lg:col-span-3 ${sidebarReveal}`}
-            >
-              <div
-                className="relative lg:sticky lg:top-24"
-                style={{
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 2,
-                  background: C.surface,
-                  padding: "16px 0",
-                }}
-              >
-                <CornerMarkers />
-
-                {/* Status filters */}
-                <div className="space-y-1">
-                  {STATUS_CONFIG.map((status) => {
-                    const count = getCount(status.id);
-                    const isActive = activeFilter === status.id;
-                    return (
-                      <button
-                        key={status.id}
-                        onClick={() => setActiveFilter(status.id)}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-colors"
-                        style={{
-                          fontFamily: FONT_MONO,
-                          fontSize: 11,
-                          letterSpacing: "0.05em",
-                          color: isActive ? C.text : C.textDim,
-                          backgroundColor: isActive ? C.goldDim + "22" : "transparent",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isActive) e.currentTarget.style.backgroundColor = C.goldDim + "11";
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
-                        }}
-                      >
-                        <span
-                          className="inline-block rounded-full flex-shrink-0"
-                          style={{
-                            width: 6,
-                            height: 6,
-                            backgroundColor: status.color,
-                          }}
-                        />
-                        <span className="flex-1">{status.label}</span>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            color: isActive ? C.textMuted : C.textDim,
-                          }}
-                        >
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="mx-4 my-3" style={{ height: 1, backgroundColor: C.border }} />
-
-                {/* Stats summary */}
-                <div className="px-4 space-y-2">
-                  <div
-                    style={{
-                      fontFamily: FONT_MONO,
-                      fontSize: 10,
-                      color: C.textDim,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Completion
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: C.textDim }}>
-                      Progress
-                    </span>
-                    <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.text }}>
-                      {statusCounts.total > 0
-                        ? Math.round((statusCounts.completed / statusCounts.total) * 100)
-                        : 0}%
-                    </span>
-                  </div>
-                  {/* Progress bar */}
-                  <div
-                    style={{
-                      height: 3,
-                      backgroundColor: C.border,
-                      borderRadius: 1,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: "100%",
-                        width: statusCounts.total > 0
-                          ? `${(statusCounts.completed / statusCounts.total) * 100}%`
-                          : "0%",
-                        backgroundColor: C.green,
-                        transition: "width 0.5s ease",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Mobile sort/view controls (only visible on small screens) */}
-                <div className="lg:hidden px-4 mt-4 space-y-3">
-                  <div className="mx-0 -mx-4" style={{ height: 1, backgroundColor: C.border }} />
-                  <div className="flex items-center gap-2 pt-2">
-                    <div
-                      className="flex items-center gap-0 flex-shrink-0"
-                      style={{
-                        border: `1px solid ${C.border}`,
-                        borderRadius: 2,
-                        overflow: "hidden",
-                      }}
-                    >
-                      {(["grid", "list"] as const).map((mode) => (
-                        <button
-                          key={mode}
-                          onClick={() => setViewMode(mode)}
-                          className="p-2 transition-colors"
-                          style={{
-                            backgroundColor: viewMode === mode ? C.gold : "transparent",
-                            color: viewMode === mode ? C.bg : C.textMuted,
-                          }}
-                        >
-                          {mode === "grid" ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
-                        </button>
-                      ))}
-                    </div>
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger
-                        className="flex-1"
-                        style={{
-                          backgroundColor: C.bg,
-                          border: `1px solid ${C.border}`,
-                          borderRadius: 2,
-                          color: C.text,
-                          fontFamily: FONT_MONO,
-                          fontSize: 11,
-                        }}
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent
-                        style={{
-                          backgroundColor: C.surface,
-                          border: `1px solid ${C.border}`,
-                          borderRadius: 2,
-                        }}
-                      >
-                        <SelectItem value="recent" style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.text }}>
-                          Recently Added
-                        </SelectItem>
-                        <SelectItem value="title-asc" style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.text }}>
-                          Title A-Z
-                        </SelectItem>
-                        <SelectItem value="title-desc" style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.text }}>
-                          Title Z-A
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            </aside>
-
-            {/* Main game grid */}
-            <main
-              ref={gridRef}
-              className={`lg:col-span-9 ${gridReveal}`}
-            >
-              {filteredAndSortedGames.length > 0 ? (
-                viewMode === "grid" ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {filteredAndSortedGames.map((item) =>
-                      item.game ? (
-                        <GameCard
-                          key={item._id}
-                          game={{
-                            id: item.game._id,
-                            title: item.game.title,
-                            cover: item.game.coverUrl,
-                            coverUrl: item.game.coverUrl,
-                            rating: item.game.aggregatedRating,
-                            aggregatedRating: item.game.aggregatedRating,
-                          }}
-                          variant="compact"
-                          onClick={() => item.game && router.push(`/game/${item.game._id}`)}
-                        />
-                      ) : null
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {filteredAndSortedGames.map((item) =>
-                      item.game ? (
-                        <button
-                          key={item._id}
-                          onClick={() => item.game && router.push(`/game/${item.game._id}`)}
-                          className="w-full flex items-center gap-4 p-3 text-left transition-all"
-                          style={{
-                            border: `1px solid ${C.border}`,
-                            borderRadius: 2,
-                            background: C.surface,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = C.gold;
-                            e.currentTarget.style.boxShadow = `0 0 16px ${C.bloom}`;
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = C.border;
-                            e.currentTarget.style.boxShadow = "none";
-                          }}
-                        >
-                          <div
-                            className="relative flex-shrink-0 w-12 h-16 overflow-hidden"
-                            style={{ borderRadius: 2, border: `1px solid ${C.border}` }}
-                          >
-                            {item.game.coverUrl ? (
-                              <Image
-                                src={item.game.coverUrl}
-                                alt={item.game.title}
-                                fill
-                                sizes="48px"
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div
-                                className="w-full h-full"
-                                style={{ background: `linear-gradient(135deg, ${C.surface}, ${C.bg})` }}
-                              />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div
-                              className="truncate"
-                              style={{
-                                fontFamily: FONT_BODY,
-                                fontSize: 14,
-                                fontWeight: 400,
-                                color: C.text,
-                              }}
-                            >
-                              {item.game.title}
-                            </div>
-                            <div
-                              className="flex items-center gap-3 mt-1"
-                              style={{
-                                fontFamily: FONT_MONO,
-                                fontSize: 10,
-                                letterSpacing: "0.05em",
-                              }}
-                            >
-                              <span
-                                className="inline-flex items-center gap-1.5"
-                                style={{ color: STATUS_CONFIG.find(s => s.id === item.status)?.color ?? C.textDim }}
-                              >
-                                <span
-                                  className="inline-block w-1.5 h-1.5 rounded-full"
-                                  style={{ backgroundColor: STATUS_CONFIG.find(s => s.id === item.status)?.color ?? C.textDim }}
-                                />
-                                {STATUS_CONFIG.find(s => s.id === item.status)?.label ?? item.status}
-                              </span>
-                              {item.game.aggregatedRating ? (
-                                <span style={{ color: C.textDim }}>
-                                  {Math.round(item.game.aggregatedRating)}%
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-                        </button>
-                      ) : null
-                    )}
-                  </div>
-                )
-              ) : (
-                /* Empty state */
-                <div
-                  className="relative flex flex-col items-center justify-center py-20"
-                  style={{
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 2,
-                    background: C.surface,
-                  }}
-                >
-                  <CornerMarkers />
-                  <Clipboard
-                    style={{ width: 48, height: 48, color: C.textDim, marginBottom: 16 }}
-                  />
-                  <h3
-                    style={{
-                      fontFamily: FONT_HEADING,
-                      fontSize: 20,
-                      fontWeight: 200,
-                      color: C.text,
-                      marginBottom: 8,
-                    }}
-                  >
-                    No games found
-                  </h3>
-                  <p
-                    style={{
-                      fontFamily: FONT_BODY,
-                      fontSize: 14,
-                      fontWeight: 300,
-                      color: C.textMuted,
-                    }}
-                  >
-                    Try adjusting your filters or add new games to your backlog.
-                  </p>
-                </div>
-              )}
-            </main>
+          <Select value={sort} onValueChange={v => setSort(v as Sort)}>
+            <SelectTrigger className="h-11 w-[170px] rounded-full bg-surface" aria-label="Sort library"><SelectValue /></SelectTrigger>
+            <SelectContent className="rounded-xl bg-surface">
+              <SelectItem value="recent">Recently updated</SelectItem>
+              <SelectItem value="title-asc">Title A–Z</SelectItem>
+              <SelectItem value="title-desc">Title Z–A</SelectItem>
+              <SelectItem value="year">Newest release</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="pk-seg ml-auto" role="group" aria-label="View">
+            <button type="button" aria-pressed={view === "grid"} onClick={() => withViewTransition(() => setView("grid"))} aria-label="Grid view"><LayoutGrid size={16} /></button>
+            <button type="button" aria-pressed={view === "list"} onClick={() => withViewTransition(() => setView("list"))} aria-label="List view"><List size={16} /></button>
           </div>
         </div>
+
+        {nowPlaying.length > 0 && (
+          <section className="pt-10">
+            <SectionHeading eyebrow={<>Now playing <b>{String(nowPlaying.length).padStart(2, "0")}</b></>} title="Back to it." action={{ label: "Only playing", onClick: () => withViewTransition(() => setFilter("playing")) }} />
+            <div className="pk-shelf">{nowPlaying.map(item => <LibraryCard key={item._id} item={item} />)}</div>
+          </section>
+        )}
+
+        <section className="pt-10">
+          <SectionHeading eyebrow={<>{filter === "all" ? "Everything" : STATUS_LABEL[filter]} <b>{shown.length}</b></>} title={query ? `Results for “${query}”` : filter === "all" ? "The whole shelf." : `${STATUS_LABEL[filter]}.`} />
+          {shown.length === 0 ? (
+            <EmptyState icon={<Library size={36} />} title={query ? "No games match" : counts.all ? "Nothing on this shelf yet" : "Your library is empty"} description={query ? "Try another title or clear the search." : counts.all ? "Move a game here from its card menu, or add a new one." : "Find a game and add it to your backlog to get started."} actionLabel="Discover games" actionHref="/discover" />
+          ) : view === "grid" ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-x-4 gap-y-7">{shown.map(item => <LibraryCard key={item._id} item={item} />)}</div>
+          ) : (
+            <div className="space-y-2">{shown.map(item => <LibraryRow key={item._id} item={item} />)}</div>
+          )}
+        </section>
       </div>
-    </>
+    </div>
   );
+}
+
+export default function BacklogPage() {
+  return <Suspense fallback={<BacklogPageSkeleton />}><BacklogContent /></Suspense>;
 }

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="840" height="256" viewBox="0 0 840 256" role="img" aria-labelledby="title desc">
+<title id="title">Playchive — logo con texto editable</title>
+<desc id="desc">Playchive: P con controles de juego sobre carátulas apiladas. Reconstrucción vectorial editable del concepto Shelf.</desc>
+  <g id="symbol" inkscape:groupmode="layer" inkscape:label="01 — Símbolo">
+    <path id="rear-case" fill="#202536" d="M145 24 Q145 18 153 20 L216 37 Q226 40 226 51 V176 Q226 186 216 183 L190 176 V65 Q190 54 180 51 L145 42 Z"/>
+    <path id="middle-case" fill="#FFC400" d="M128 38 Q128 31 136 33 L193 49 Q203 52 203 63 V194 Q203 204 193 201 L169 194 V84 Q169 71 157 68 L128 60 Z"/>
+    <path id="front-case" fill="#1649E8" d="M37 64 L105 31 Q119 24 119 39 V66 L143 73 Q154 76 154 88 V225 Q154 238 141 235 L68 217 L44 234 Q28 241 28 224 V81 Q28 69 37 64 Z"/>
+    <path id="player-p" fill="#FFFFFF" d="M49 225 V129 Q49 106 71 102 L111 95 Q129 92 137 108 Q144 123 134 138 Q128 149 112 152 L70 159 V222 Q70 233 59 233 Q49 233 49 225 Z"/>
+    <g id="controller-controls" fill="#1649E8" inkscape:label="Cruceta y botones">
+      <path id="dpad" d="M78 117 H84 V124 H91 V130 H84 V137 H78 V130 H71 V124 H78 Z"/>
+      <circle id="button-a" cx="109" cy="128" r="5"/>
+      <circle id="button-b" cx="122" cy="117" r="5"/>
+    </g>
+  </g>
+<g id="wordmark" inkscape:groupmode="layer" inkscape:label="02 — Texto editable"><text x="280" y="168" font-family="Outfit, sans-serif" font-size="120" font-weight="800" fill="#101827">playchive</text></g>
+</svg>
+

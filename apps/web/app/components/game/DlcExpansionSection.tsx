@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
+import { ChevronDown } from "lucide-react";
 
 interface DLC {
   id: number;
@@ -11,144 +12,77 @@ interface DLC {
 
 interface DlcExpansionSectionProps {
   dlcsAndExpansions?: string;
-  relatedContent?: Array<{
-    id: number;
-    title: string;
-    releaseDate?: number;
-    category?: string;
-  }>;
+  relatedContent?: Array<{ id: number; title: string; releaseDate?: number; category?: string }>;
 }
 
-const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
-  dlc: { label: "DLC / Add-on", color: "bg-amber-500/20 text-amber-300" },
-  expansion: { label: "Expansion", color: "bg-purple-500/20 text-purple-300" },
-  standalone_expansion: { label: "Standalone Expansion", color: "bg-violet-500/20 text-violet-300" },
-  mod: { label: "Mod", color: "bg-pink-500/20 text-pink-300" },
-  episode: { label: "Episode", color: "bg-blue-500/20 text-blue-300" },
-  season: { label: "Season", color: "bg-cyan-500/20 text-cyan-300" },
-  pack: { label: "Content Pack", color: "bg-indigo-500/20 text-indigo-300" },
-  bundle: { label: "Bundle", color: "bg-orange-500/20 text-orange-300" },
-  remake: { label: "Remake", color: "bg-emerald-500/20 text-emerald-300" },
-  remaster: { label: "Remaster", color: "bg-teal-500/20 text-teal-300" },
-  expanded_game: { label: "Expanded Game", color: "bg-fuchsia-500/20 text-fuchsia-300" },
-  port: { label: "Port", color: "bg-sky-500/20 text-sky-300" },
-  fork: { label: "Fork", color: "bg-rose-500/20 text-rose-300" },
-  update: { label: "Update", color: "bg-lime-500/20 text-lime-300" },
-  related: { label: "Related", color: "bg-stone-800/60 text-stone-300" },
+/** Tone per category, drawn from the three brand families. */
+const CATEGORY: Record<string, { label: string; tone?: "gold" | "orange" | "cobalt" }> = {
+  dlc: { label: "DLC / Add-on", tone: "gold" },
+  expansion: { label: "Expansion", tone: "orange" },
+  standalone_expansion: { label: "Standalone expansion", tone: "orange" },
+  mod: { label: "Mod" },
+  episode: { label: "Episode", tone: "cobalt" },
+  season: { label: "Season", tone: "cobalt" },
+  pack: { label: "Content pack", tone: "gold" },
+  bundle: { label: "Bundle", tone: "gold" },
+  remake: { label: "Remake", tone: "orange" },
+  remaster: { label: "Remaster", tone: "orange" },
+  expanded_game: { label: "Expanded game", tone: "orange" },
+  port: { label: "Port", tone: "cobalt" },
+  fork: { label: "Fork" },
+  update: { label: "Update" },
+  related: { label: "Related" },
 };
 
-/**
- * Displays DLCs, expansions, mods and related content for a game in categorized sections.
- */
+/** Expansions, DLC and related releases, grouped by kind. Collapsed by default. */
 export function DlcExpansionSection({ dlcsAndExpansions, relatedContent }: DlcExpansionSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  // Memoize the parsed DLC list to avoid re-parsing on every render
-  const dlcList = useMemo(() => {
-    // First, try to use the relatedContent prop (from action result)
-    if (relatedContent && relatedContent.length > 0) {
-      return relatedContent;
-    }
-
-    // Otherwise, try to parse the dlcsAndExpansions JSON string (from database)
-    if (!dlcsAndExpansions) {
-      return [];
-    }
+  const dlcList = useMemo<DLC[]>(() => {
+    if (relatedContent && relatedContent.length > 0) return relatedContent;
+    if (!dlcsAndExpansions) return [];
     try {
-      const parsed = JSON.parse(dlcsAndExpansions) as DLC[];
-      return parsed;
+      return JSON.parse(dlcsAndExpansions) as DLC[];
     } catch (error) {
       console.error("[DlcExpansionSection] Failed to parse cached related content", error);
       return [];
     }
   }, [dlcsAndExpansions, relatedContent]);
 
-  // If there's no data, don't render
-  if (!dlcList || dlcList.length === 0) {
-    return null;
-  }
+  if (dlcList.length === 0) return null;
 
-  // Group by category
-  const grouped = dlcList.reduce(
-    (acc, dlc) => {
-      const category = dlc.category?.toLowerCase() || "dlc";
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category].push(dlc);
-      return acc;
-    },
-    {} as Record<string, DLC[]>
-  );
-
-  const totalItems = dlcList.length;
+  const grouped = dlcList.reduce((acc, dlc) => {
+    const key = dlc.category?.toLowerCase() || "dlc";
+    (acc[key] ??= []).push(dlc);
+    return acc;
+  }, {} as Record<string, DLC[]>);
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-stone-900/60 p-6">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between transition hover:opacity-80"
-      >
-        <h2 className="text-2xl font-semibold">Related Content</h2>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-stone-400">
-            {totalItems} {totalItems === 1 ? "item" : "items"}
-          </span>
-          <svg
-            className={`h-6 w-6 text-stone-400 transition ${isExpanded ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </div>
-      </button>
+    <details className="pk-panel group">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+        <h3 className="!mb-0">Related releases</h3>
+        <span className="flex items-center gap-2 text-sm text-textDim">
+          {dlcList.length}
+          <ChevronDown size={18} className="transition-transform group-open:rotate-180" />
+        </span>
+      </summary>
 
-      {isExpanded && (
-        <div className="flex flex-col gap-6">
-          {Object.entries(grouped).map(([category, items]) => {
-            const info = CATEGORY_LABELS[category] || {
-              label: category.charAt(0).toUpperCase() + category.slice(1),
-              color: "bg-stone-800/60 text-stone-300",
-            };
-
-            return (
-              <div key={category} className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-stone-300">
-                    {info.label}
-                  </h3>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${info.color}`}>
-                    {items.length}
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {items.map((dlc) => (
-                    <div
-                      key={dlc.id}
-                      className="flex items-center justify-between rounded-lg border border-white/5 bg-stone-950/50 px-4 py-3 transition hover:border-white/10 hover:bg-stone-950/80"
-                    >
-                      <div className="flex flex-1 flex-col gap-0.5">
-                        <span className="font-medium text-white">{dlc.title}</span>
-                        {dlc.releaseDate && (
-                          <span className="text-xs text-stone-500">{dlc.releaseDate}</span>
-                        )}
-                      </div>
-                      <div
-                        className={`ml-4 flex h-7 items-center rounded-lg px-2 text-xs font-semibold ${info.color}`}
-                      >
-                        {info.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
+      <div className="mt-5 space-y-5">
+        {Object.entries(grouped).map(([key, items]) => {
+          const info = CATEGORY[key] ?? { label: key.charAt(0).toUpperCase() + key.slice(1) };
+          return (
+            <div key={key}>
+              <span className="pk-eyebrow">{info.label} <b>{items.length}</b></span>
+              <ul className="mt-2 space-y-1.5">
+                {items.map(dlc => (
+                  <li key={dlc.id} className="flex items-baseline justify-between gap-3 rounded-lg bg-bgAlt px-3 py-2">
+                    <span className="text-sm font-medium">{dlc.title}</span>
+                    {dlc.releaseDate ? <span className="shrink-0 text-xs text-textDim tabular-nums">{dlc.releaseDate}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </details>
   );
 }

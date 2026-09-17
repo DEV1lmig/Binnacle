@@ -36,8 +36,8 @@ export function ArticleCoverField({ value, onChange, fallbackCoverUrl }: Article
           fontFamily: FONT_MONO,
           fontSize: 12,
           color: C.textMuted,
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
+          textTransform: "none",
+          letterSpacing: "0.01em",
         }}
       >
         Cover image (optional)
@@ -56,7 +56,7 @@ export function ArticleCoverField({ value, onChange, fallbackCoverUrl }: Article
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="https://…"
-            style={{ backgroundColor: C.bgAlt, borderColor: C.border, color: C.text, borderRadius: 2 }}
+            style={{ backgroundColor: C.bgAlt, borderColor: C.border, color: C.text, borderRadius: 12 }}
           />
           {error ? (
             <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.red }}>{error}</p>

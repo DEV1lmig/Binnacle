@@ -1,5 +1,5 @@
 import { ShieldAlert } from "lucide-react";
-import { C, FONT_HEADING, FONT_BODY, FONT_MONO, FONT_IMPORT_URL } from "@/app/lib/design-system";
+import { C, FONT_HEADING, FONT_BODY, FONT_MONO } from "@/app/lib/design-system";
 import { CornerMarkers, GrainOverlay } from "@/app/lib/design-primitives";
 import Link from "next/link";
 
@@ -9,7 +9,7 @@ export default function NotAuthorizedPage() {
       className="min-h-screen flex items-center justify-center"
       style={{ backgroundColor: C.bg }}
     >
-      <style>{`@import url('${FONT_IMPORT_URL}');`}</style>
+      <style>{``}</style>
       <GrainOverlay id="not-auth-grain" />
 
       {/* Ambient orbs */}
@@ -31,7 +31,7 @@ export default function NotAuthorizedPage() {
           height: 350,
           bottom: -80,
           right: -80,
-          background: `radial-gradient(circle, ${C.accent}10 0%, transparent 70%)`,
+          background: "none",
           filter: "blur(60px)",
         }}
       />
@@ -40,7 +40,7 @@ export default function NotAuthorizedPage() {
         className="relative max-w-md w-full mx-4 text-center"
         style={{
           border: `1px solid ${C.border}`,
-          borderRadius: 2,
+          borderRadius: 12,
           background: C.surface,
           padding: "40px 32px",
         }}
@@ -69,7 +69,7 @@ export default function NotAuthorizedPage() {
           style={{
             fontFamily: FONT_HEADING,
             fontSize: 22,
-            fontWeight: 200,
+            fontWeight: 800,
             color: C.text,
             letterSpacing: "-0.01em",
             marginBottom: 8,
@@ -82,7 +82,7 @@ export default function NotAuthorizedPage() {
           style={{
             fontFamily: FONT_BODY,
             fontSize: 14,
-            fontWeight: 300,
+            fontWeight: 400,
             color: C.textMuted,
             marginBottom: 6,
           }}
@@ -94,8 +94,8 @@ export default function NotAuthorizedPage() {
           style={{
             fontFamily: FONT_MONO,
             fontSize: 10,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            letterSpacing: "0.01em",
+            textTransform: "none",
             color: C.textDim,
             marginBottom: 28,
           }}
@@ -108,13 +108,13 @@ export default function NotAuthorizedPage() {
           style={{
             display: "inline-block",
             border: "none",
-            borderRadius: 2,
+            borderRadius: 12,
             background: C.gold,
             color: C.bg,
             fontFamily: FONT_MONO,
             fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            letterSpacing: "0.01em",
+            textTransform: "none",
             fontWeight: 500,
             padding: "8px 24px",
             textDecoration: "none",

@@ -89,7 +89,7 @@ export default clerkMiddleware(async (auth, request) => {
   if (!isPublicRoute(request) || requiresAuthForUserRoute) {
     await auth.protect();
   }
-});
+}, { signInUrl: '/sign-in', signUpUrl: '/sign-up' });
 
 export const config = {
   matcher: [

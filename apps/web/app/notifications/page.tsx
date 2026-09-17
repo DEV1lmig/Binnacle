@@ -14,15 +14,14 @@ import {
   FONT_HEADING,
   FONT_MONO,
   FONT_BODY,
-  FONT_IMPORT_URL,
 } from "@/app/lib/design-system";
 import {
   CornerMarkers,
   GrainOverlay,
-  HudBadge,
   HudDivider,
 } from "@/app/lib/design-primitives";
 import { useScrollReveal } from "@/app/lib/useScrollReveal";
+import { PageHero, Pill } from "@/app/components/playchive";
 
 
 // ---------------------------------------------------------------------------
@@ -52,17 +51,17 @@ function NotificationsPageSkeleton() {
     <div className="min-h-screen pb-20 md:pb-8" style={{ backgroundColor: C.bg }}>
       <div className="max-w-2xl mx-auto px-4 md:px-8 py-8">
         <div className="mb-6">
-          <Skeleton className="h-5 w-28 mb-3" style={{ backgroundColor: C.surface, borderRadius: 2 }} />
+          <Skeleton className="h-5 w-28 mb-3" style={{ backgroundColor: C.surface, borderRadius: 12 }} />
           <Skeleton className="h-9 w-48 mb-2" style={{ backgroundColor: C.surface }} />
           <Skeleton className="h-4 w-32" style={{ backgroundColor: C.surface }} />
         </div>
-        <Skeleton className="h-10 w-48 mb-6" style={{ backgroundColor: C.surface, borderRadius: 2 }} />
+        <Skeleton className="h-10 w-48 mb-6" style={{ backgroundColor: C.surface, borderRadius: 12 }} />
         <div className="space-y-3">
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
               className="flex items-start gap-4 p-4"
-              style={{ border: `1px solid ${C.border}`, borderRadius: 2 }}
+              style={{ border: `1px solid ${C.border}`, borderRadius: 12 }}
             >
               <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" style={{ backgroundColor: C.bgAlt }} />
               <div className="flex-1">
@@ -86,7 +85,7 @@ function EmptyNotifications() {
       className="relative flex flex-col items-center justify-center py-20"
       style={{
         border: `1px solid ${C.border}`,
-        borderRadius: 2,
+        borderRadius: 12,
         background: C.surface,
       }}
     >
@@ -96,7 +95,7 @@ function EmptyNotifications() {
         style={{
           fontFamily: FONT_HEADING,
           fontSize: 18,
-          fontWeight: 300,
+          fontWeight: 400,
           color: C.text,
           marginBottom: 6,
         }}
@@ -107,7 +106,7 @@ function EmptyNotifications() {
         style={{
           fontFamily: FONT_BODY,
           fontSize: 13,
-          fontWeight: 300,
+          fontWeight: 400,
           color: C.textMuted,
           maxWidth: 280,
           textAlign: "center",
@@ -130,9 +129,6 @@ export default function NotificationsPage() {
 
   const [activeTab, setActiveTab] = useState("all");
   const [markingAll, setMarkingAll] = useState(false);
-
-  const headerRef = useRef<HTMLDivElement>(null);
-  const headerReveal = useScrollReveal(headerRef, "notif-reveal");
   const contentRef = useRef<HTMLDivElement>(null);
   const contentReveal = useScrollReveal(contentRef, "notif-reveal");
 
@@ -157,7 +153,7 @@ export default function NotificationsPage() {
   return (
     <>
       <style>{`
-        @import url('${FONT_IMPORT_URL}');
+
         .notif-reveal {
           opacity: 0;
           transform: translateY(16px);
@@ -182,7 +178,7 @@ export default function NotificationsPage() {
               left: "-10%",
               width: "50%",
               height: "50%",
-              background: `radial-gradient(circle, ${C.goldDim}15 0%, transparent 70%)`,
+              background: "none",
               filter: "blur(60px)",
             }}
           />
@@ -193,7 +189,7 @@ export default function NotificationsPage() {
               right: "-10%",
               width: "40%",
               height: "40%",
-              background: `radial-gradient(circle, ${C.accentDim}10 0%, transparent 70%)`,
+              background: "none",
               filter: "blur(60px)",
             }}
           />
@@ -201,85 +197,9 @@ export default function NotificationsPage() {
 
         <GrainOverlay id="notif-grain" />
 
+        <PageHero tone="cobalt" compact eyebrow="Activity" title={unreadCount > 0 ? <><em>{unreadCount}</em> new for you.</> : <>You’re all <em>caught up</em>.</>} lede={`${allNotifs.length} notification${allNotifs.length === 1 ? "" : "s"} in total.`} aside={unreadCount > 0 ? <Pill tone="gold" size="sm" onClick={handleMarkAllRead} disabled={markingAll}><CheckCheck size={16} />Mark all read</Pill> : undefined} />
         <div className="relative z-10 max-w-2xl mx-auto px-4 md:px-8">
           {/* Header */}
-          <div
-            ref={headerRef}
-            className={headerReveal}
-            style={{
-              borderBottom: `1px solid ${C.border}`,
-              padding: "24px 0 20px",
-            }}
-          >
-            <HudBadge color={C.cyan}>Signals</HudBadge>
-            <div className="flex items-center justify-between mt-3">
-              <div>
-                <h1
-                  style={{
-                    fontFamily: FONT_HEADING,
-                    fontSize: "clamp(24px, 4vw, 36px)",
-                    fontWeight: 200,
-                    color: C.text,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Notifications
-                </h1>
-                <p
-                  className="mt-1"
-                  style={{
-                    fontFamily: FONT_MONO,
-                    fontSize: 12,
-                    color: C.textMuted,
-                    letterSpacing: "0.08em",
-                  }}
-                >
-                  {allNotifs.length} TOTAL
-                  {unreadCount > 0 && (
-                    <span style={{ color: C.gold, marginLeft: 12 }}>
-                      {unreadCount} UNREAD
-                    </span>
-                  )}
-                </p>
-              </div>
-
-              {/* Mark all as read */}
-              {unreadCount > 0 && (
-                <button
-                  onClick={handleMarkAllRead}
-                  disabled={markingAll}
-                  className="flex items-center gap-2 transition-all"
-                  style={{
-                    fontFamily: FONT_MONO,
-                    fontSize: 10,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: C.gold,
-                    background: "transparent",
-                    border: `1px solid ${C.gold}44`,
-                    borderRadius: 2,
-                    padding: "6px 14px",
-                    cursor: markingAll ? "not-allowed" : "pointer",
-                    opacity: markingAll ? 0.5 : 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!markingAll) {
-                      e.currentTarget.style.backgroundColor = C.gold + "15";
-                      e.currentTarget.style.boxShadow = `0 0 12px ${C.bloom}`;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                >
-                  <CheckCheck style={{ width: 14, height: 14 }} />
-                  Mark all read
-                </button>
-              )}
-            </div>
-          </div>
-
           {/* Tabs + Content */}
           <div
             ref={contentRef}
@@ -290,7 +210,7 @@ export default function NotificationsPage() {
                 style={{
                   backgroundColor: C.surface,
                   border: `1px solid ${C.border}`,
-                  borderRadius: 2,
+                  borderRadius: 12,
                   padding: 3,
                 }}
               >
@@ -305,9 +225,9 @@ export default function NotificationsPage() {
                     style={{
                       fontFamily: FONT_MONO,
                       fontSize: 11,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      borderRadius: 2,
+                      letterSpacing: "0.01em",
+                      textTransform: "none",
+                      borderRadius: 12,
                       color: activeTab === tab.value ? C.bg : C.textMuted,
                       backgroundColor: activeTab === tab.value ? C.gold : "transparent",
                     }}
@@ -340,7 +260,7 @@ export default function NotificationsPage() {
                       <div
                         key={i}
                         className="flex items-start gap-4 p-4"
-                        style={{ border: `1px solid ${C.border}`, borderRadius: 2 }}
+                        style={{ border: `1px solid ${C.border}`, borderRadius: 12 }}
                       >
                         <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" style={{ backgroundColor: C.bgAlt }} />
                         <div className="flex-1">
@@ -368,7 +288,7 @@ export default function NotificationsPage() {
                       <div
                         key={i}
                         className="flex items-start gap-4 p-4"
-                        style={{ border: `1px solid ${C.border}`, borderRadius: 2 }}
+                        style={{ border: `1px solid ${C.border}`, borderRadius: 12 }}
                       >
                         <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" style={{ backgroundColor: C.bgAlt }} />
                         <div className="flex-1">
@@ -383,7 +303,7 @@ export default function NotificationsPage() {
                     className="relative flex flex-col items-center justify-center py-16"
                     style={{
                       border: `1px solid ${C.border}`,
-                      borderRadius: 2,
+                      borderRadius: 12,
                       background: C.surface,
                     }}
                   >
@@ -393,7 +313,7 @@ export default function NotificationsPage() {
                       style={{
                         fontFamily: FONT_BODY,
                         fontSize: 14,
-                        fontWeight: 300,
+                        fontWeight: 400,
                         color: C.textMuted,
                       }}
                     >

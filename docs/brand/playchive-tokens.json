@@ -1,0 +1,297 @@
+{
+  "status": "Shelf palette: cobalt, gold and landing orange; revision 03",
+  "shades": [
+    {
+      "token": "cobalt-50",
+      "family": "cobalt",
+      "level": 50,
+      "hex": "#DCE5FF",
+      "on": "#101827",
+      "contrast": 14.124455659207667
+    },
+    {
+      "token": "cobalt-100",
+      "family": "cobalt",
+      "level": 100,
+      "hex": "#B8CCFF",
+      "on": "#101827",
+      "contrast": 11.099335606944159
+    },
+    {
+      "token": "cobalt-200",
+      "family": "cobalt",
+      "level": 200,
+      "hex": "#8DAEFF",
+      "on": "#101827",
+      "contrast": 8.148147953843367
+    },
+    {
+      "token": "cobalt-300",
+      "family": "cobalt",
+      "level": 300,
+      "hex": "#6390FF",
+      "on": "#101827",
+      "contrast": 5.891657319744234
+    },
+    {
+      "token": "cobalt-400",
+      "family": "cobalt",
+      "level": 400,
+      "hex": "#3972FF",
+      "on": "#000000",
+      "contrast": 5.024896917561275
+    },
+    {
+      "token": "cobalt-500",
+      "family": "cobalt",
+      "level": 500,
+      "hex": "#245CF2",
+      "on": "#FFFFFF",
+      "contrast": 5.401188672096074
+    },
+    {
+      "token": "cobalt-600",
+      "family": "cobalt",
+      "level": 600,
+      "hex": "#1649E8",
+      "on": "#FFFFFF",
+      "contrast": 6.661652233760336
+    },
+    {
+      "token": "cobalt-700",
+      "family": "cobalt",
+      "level": 700,
+      "hex": "#123BC4",
+      "on": "#FFFFFF",
+      "contrast": 8.576995005169623
+    },
+    {
+      "token": "cobalt-800",
+      "family": "cobalt",
+      "level": 800,
+      "hex": "#102F9F",
+      "on": "#FFFFFF",
+      "contrast": 10.88489796260809
+    },
+    {
+      "token": "cobalt-900",
+      "family": "cobalt",
+      "level": 900,
+      "hex": "#0C247A",
+      "on": "#FFFFFF",
+      "contrast": 13.557035844514752
+    },
+    {
+      "token": "cobalt-950",
+      "family": "cobalt",
+      "level": 950,
+      "hex": "#08174D",
+      "on": "#FFFFFF",
+      "contrast": 16.934833307680357
+    },
+    {
+      "token": "butter-50",
+      "family": "butter",
+      "level": 50,
+      "hex": "#FFF2BD",
+      "on": "#101827",
+      "contrast": 15.810457183560409
+    },
+    {
+      "token": "butter-100",
+      "family": "butter",
+      "level": 100,
+      "hex": "#FFE486",
+      "on": "#101827",
+      "contrast": 14.123401305864432
+    },
+    {
+      "token": "butter-200",
+      "family": "butter",
+      "level": 200,
+      "hex": "#FFD64D",
+      "on": "#101827",
+      "contrast": 12.671758475192371
+    },
+    {
+      "token": "butter-300",
+      "family": "butter",
+      "level": 300,
+      "hex": "#FFCA24",
+      "on": "#101827",
+      "contrast": 11.61243239984973
+    },
+    {
+      "token": "butter-400",
+      "family": "butter",
+      "level": 400,
+      "hex": "#FFC400",
+      "on": "#101827",
+      "contrast": 11.123663737152002
+    },
+    {
+      "token": "butter-500",
+      "family": "butter",
+      "level": 500,
+      "hex": "#D99D00",
+      "on": "#101827",
+      "contrast": 7.422389309619556
+    },
+    {
+      "token": "butter-600",
+      "family": "butter",
+      "level": 600,
+      "hex": "#A66F00",
+      "on": "#000000",
+      "contrast": 4.895173985321951
+    },
+    {
+      "token": "butter-700",
+      "family": "butter",
+      "level": 700,
+      "hex": "#805100",
+      "on": "#FFFFFF",
+      "contrast": 6.7855523676503395
+    },
+    {
+      "token": "butter-800",
+      "family": "butter",
+      "level": 800,
+      "hex": "#623B00",
+      "on": "#FFFFFF",
+      "contrast": 9.790575314095415
+    },
+    {
+      "token": "butter-900",
+      "family": "butter",
+      "level": 900,
+      "hex": "#472A00",
+      "on": "#FFFFFF",
+      "contrast": 13.132351286099677
+    },
+    {
+      "token": "butter-950",
+      "family": "butter",
+      "level": 950,
+      "hex": "#2D1900",
+      "on": "#FFFFFF",
+      "contrast": 16.791537494353864
+    },
+    {
+      "token": "orange-50",
+      "family": "orange",
+      "level": 50,
+      "hex": "#FFF0E5",
+      "on": "#101827",
+      "contrast": 15.945642769344479
+    },
+    {
+      "token": "orange-100",
+      "family": "orange",
+      "level": 100,
+      "hex": "#FFDFC7",
+      "on": "#101827",
+      "contrast": 14.071088865475152
+    },
+    {
+      "token": "orange-200",
+      "family": "orange",
+      "level": 200,
+      "hex": "#FFC39B",
+      "on": "#101827",
+      "contrast": 11.448019911088425
+    },
+    {
+      "token": "orange-300",
+      "family": "orange",
+      "level": 300,
+      "hex": "#FFA66B",
+      "on": "#101827",
+      "contrast": 9.237699047900728
+    },
+    {
+      "token": "orange-400",
+      "family": "orange",
+      "level": 400,
+      "hex": "#FF914D",
+      "on": "#101827",
+      "contrast": 7.9606317360228065
+    },
+    {
+      "token": "orange-500",
+      "family": "orange",
+      "level": 500,
+      "hex": "#F27426",
+      "on": "#101827",
+      "contrast": 6.177414933119684
+    },
+    {
+      "token": "orange-600",
+      "family": "orange",
+      "level": 600,
+      "hex": "#D24D00",
+      "on": "#000000",
+      "contrast": 4.801878489848575
+    },
+    {
+      "token": "orange-700",
+      "family": "orange",
+      "level": 700,
+      "hex": "#A83C00",
+      "on": "#FFFFFF",
+      "contrast": 6.341901623386976
+    },
+    {
+      "token": "orange-800",
+      "family": "orange",
+      "level": 800,
+      "hex": "#822E00",
+      "on": "#FFFFFF",
+      "contrast": 8.974499695601892
+    },
+    {
+      "token": "orange-900",
+      "family": "orange",
+      "level": 900,
+      "hex": "#5E2100",
+      "on": "#FFFFFF",
+      "contrast": 12.400506064061066
+    },
+    {
+      "token": "orange-950",
+      "family": "orange",
+      "level": 950,
+      "hex": "#3B1500",
+      "on": "#FFFFFF",
+      "contrast": 16.23844220784622
+    }
+  ],
+  "themes": {
+    "light": {
+      "background": "#FFFFFF",
+      "surface": "#F5F7FC",
+      "text": "#101827",
+      "muted": "#526078",
+      "primary": "#1649E8",
+      "onPrimary": "#FFFFFF",
+      "secondary": "#FFC400",
+      "onSecondary": "#101827",
+      "tertiary": "#D24D00",
+      "onTertiary": "#000000",
+      "border": "#64748B"
+    },
+    "dark": {
+      "background": "#080F1F",
+      "surface": "#14213B",
+      "text": "#FFFFFF",
+      "muted": "#B8C4D8",
+      "primary": "#245CF2",
+      "onPrimary": "#FFFFFF",
+      "secondary": "#FFC400",
+      "onSecondary": "#101827",
+      "tertiary": "#FF914D",
+      "onTertiary": "#101827",
+      "border": "#8494AB"
+    }
+  }
+}

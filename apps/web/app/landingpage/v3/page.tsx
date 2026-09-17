@@ -314,7 +314,7 @@ export default function ArcadeMarqueeLanding() {
 
           {/* Content */}
           <div className="relative z-20 flex flex-col items-center gap-6 text-center">
-            {/* BINNACLE */}
+            {/* PLAYCHIVE */}
             <h1
               className="font-display text-7xl font-black uppercase leading-none tracking-tight md:text-9xl"
               style={{
@@ -322,7 +322,7 @@ export default function ArcadeMarqueeLanding() {
                 textShadow: glowText(NEON.cyan, 16),
               }}
             >
-              Binnacle
+              Playchive
             </h1>
 
             {/* Tagline */}
@@ -504,7 +504,7 @@ export default function ArcadeMarqueeLanding() {
               className="font-display text-sm font-black uppercase tracking-[0.4em]"
               style={{ color: "#3f3f46" }}
             >
-              Binnacle // 2025
+              Playchive // 2025
             </span>
             <div className="flex gap-6">
               <Link
