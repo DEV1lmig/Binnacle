@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { Heart, MessageCircle, MoreHorizontal, Clock, Gamepad2, ArrowUpRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -11,6 +10,7 @@ import { CommentSection } from "./CommentSection";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu";
 import { ReportDialog } from "@/app/components/ReportDialog";
 import { Cover, OpenCaseLink, ScoreMark } from "@/app/components/playchive";
+import { useOpenFromCover } from "@/app/components/playchive/OpenCaseLink";
 
 type ReviewAuthor = { _id: Id<"users">; name: string; username: string; avatarUrl?: string };
 type ReviewGame = { _id: Id<"games">; title: string; coverUrl?: string; releaseYear?: number };
@@ -46,7 +46,6 @@ export function relativeTime(timestamp?: number): string {
 
 /** Editorial review tile: cover spine, big score, quoted text, like / comment rail. Clicking opens the review. */
 export function ReviewCard({ review, clampText = true }: { review: ReviewCardData; clampText?: boolean }) {
-  const router = useRouter();
   const toggleLike = useMutation(api.likes.toggle);
 
   const [liked, setLiked] = useState(review.viewerHasLiked ?? false);
@@ -56,6 +55,7 @@ export function ReviewCard({ review, clampText = true }: { review: ReviewCardDat
   const [isBusy, setIsBusy] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
+  const card = useRef<HTMLElement>(null);
   const snapshot = useRef({ id: review._id, viewerHasLiked: review.viewerHasLiked, likeCount: review.likeCount, commentCount: review.commentCount });
   useEffect(() => {
     const s = snapshot.current;
@@ -87,11 +87,13 @@ export function ReviewCard({ review, clampText = true }: { review: ReviewCardDat
     }
   };
 
-  const open = () => router.push(`/review/${review._id}`);
+  // Wherever the card is activated, it is the case on its spine that opens.
+  const openFrom = useOpenFromCover();
+  const open = () => openFrom(card.current?.querySelector<HTMLElement>(".pk-cover") ?? null, { href: `/review/${review._id}`, gameId: review.gameId, coverUrl: review.game.coverUrl, title: review.game.title });
   const stop = (event: React.SyntheticEvent) => event.stopPropagation();
 
   return (
-    <article className="pk-review" onClick={open} onKeyDown={event => { if (event.key === "Enter" && event.target === event.currentTarget) open(); }} tabIndex={0} aria-label={`${review.author.name} reviewed ${review.game.title}`}>
+    <article ref={card} className="pk-review" onClick={open} onKeyDown={event => { if (event.key === "Enter" && event.target === event.currentTarget) open(); }} tabIndex={0} aria-label={`${review.author.name} reviewed ${review.game.title}`}>
       <div className="pk-review-spine" onClick={stop}>
         <OpenCaseLink href={`/review/${review._id}`} gameId={review.gameId} coverUrl={review.game.coverUrl} title={review.game.title} aria-label={`Open ${review.author.name}’s review of ${review.game.title}`}>
           <Cover src={review.game.coverUrl} title={review.game.title} sizes="96px" gameId={review.gameId} />
