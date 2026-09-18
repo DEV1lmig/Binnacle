@@ -579,10 +579,18 @@ body[data-case-held] .pk-inside {
     translate3d(var(--case-tx, 0px), var(--case-ty, 0px), var(--case-tz, 0px)) rotateX(var(--case-lean, 0rad)) rotateY(var(--case-tilt, 0rad)) scale(var(--case-sx, 1), var(--case-sy, 1));
   clip-path: inset(var(--case-clip, 100%));
   will-change: transform;
-  opacity: 0;
   position: relative;
   z-index: 6;
 }
 /* The still copy of the page being left: under the case, over whatever is loading. */
 .pk-ghost { position: fixed; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
-body[data-case-held] .pk-inside[data-case-in] { opacity: 1; transition: opacity .18s linear; }
+/* A page arriving is revealed top to bottom inside the open case, over its own
+   tray floor, before the case comes in. A page being put away is already there. */
+body[data-case-held] .pk-inside[data-case-in="1"] .pk-page {
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 44%, transparent 56%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 44%, transparent 56%);
+  -webkit-mask-size: 100% 240%;
+  mask-size: 100% 240%;
+  animation: pk-page-reveal .56s cubic-bezier(.4, 0, .2, 1) both;
+}
+@keyframes pk-page-reveal { from { -webkit-mask-position: 0 100%; mask-position: 0 100%; } to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
