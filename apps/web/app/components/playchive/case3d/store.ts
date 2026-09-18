@@ -13,6 +13,11 @@ export type CaseSlot = {
   coverUrl?: string | null;
   title: string;
   gameId?: string;
+  /**
+   * The open case a detail page rests in: drawn lid-open and leaned back, fitted to
+   * the element, behind the page's content rather than over it.
+   */
+  open?: boolean;
   /** Inside the viewport, so worth drawing. */
   visible: boolean;
 };
@@ -64,7 +69,26 @@ export function subscribeCases(listener: () => void) {
 }
 
 export function visibleCases(): CaseSlot[] {
-  return [...slots.values()].filter(slot => slot.visible && slot.el.isConnected);
+  // An open case is always drawn: while its page is being carried the page is
+  // clipped away, and the observer would call the tray hidden.
+  return [...slots.values()].filter(slot => (slot.visible || slot.open) && slot.el.isConnected);
+}
+
+/** What identifies a case across slots: the game, failing that the artwork. */
+export function slotKey(slot: Pick<CaseSlot, "id" | "coverUrl" | "gameId">) {
+  return slot.gameId ?? slot.coverUrl ?? slot.id;
+}
+
+/** Whether the page has any case on a shelf — the sign a list page has its data. */
+export function hasShelfCase() {
+  for (const slot of slots.values()) if (!slot.open && slot.el.isConnected) return true;
+  return false;
+}
+
+/** The open case the current page rests in, if the stage is drawing one. */
+export function findOpenSlot(): CaseSlot | undefined {
+  for (const slot of slots.values()) if (slot.open && slot.el.isConnected) return slot;
+  return undefined;
 }
 
 /** The slot drawn over a given cover element, so a click can name the case to open. */

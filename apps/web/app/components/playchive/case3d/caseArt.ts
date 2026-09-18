@@ -7,6 +7,7 @@
  * what is shared here is the part every cover needs: the front face and the spine.
  */
 import * as THREE from "three";
+import { alpha, blend, type CoverTone } from "@/app/lib/coverColor";
 
 /** Case proportions, in the landing's world units. */
 export const CASE = { w: 1.2, h: 1.7, tray: 0.12, lid: 0.03 } as const;
@@ -157,4 +158,106 @@ export function insideTexture() {
   insideMap = new THREE.CanvasTexture(canvas);
   insideMap.colorSpace = THREE.SRGBColorSpace;
   return insideMap;
+}
+
+/**
+ * The inside of the open case at page size: what a detail page rests on. Painted
+ * once per opened game, at the aspect of the tray it will fill, so the print is
+ * never stretched. Same recipe as the DOM fallback (`.pk-case-inside`): moulded
+ * plastic in the cover's tone, the cover fading into it, the spine's band along
+ * the far edge, one sweep of gloss, and the walls' shadow at the edges.
+ */
+export function insideArtCanvas(art: HTMLImageElement | null, symbol: HTMLImageElement | null, tone: CoverTone, aspect: number, fonts: { body: string }, visible = 1) {
+  const W = 1024;
+  const H = Math.max(256, Math.round(W / Math.max(0.3, aspect)));
+  /** The case keeps its proportions and runs past the fold; only this much shows. */
+  const V = H * Math.min(1, Math.max(0.2, visible));
+  const [canvas, ctx] = paper(W, H);
+
+  // The plastic, lit at the far corner and falling into shadow at the near edge.
+  const base = ctx.createLinearGradient(0, 0, W * 0.2, V);
+  base.addColorStop(0, blend(tone.deep, "#FFFFFF", 0.22));
+  base.addColorStop(0.38, tone.deep);
+  base.addColorStop(1, blend(tone.deep, "#000000", 0.4));
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, W, H);
+
+  // Light coming in through the opening, carrying the cover's own colour.
+  const glow = ctx.createRadialGradient(W * 0.24, -V * 0.14, 0, W * 0.24, -V * 0.14, W * 0.9);
+  glow.addColorStop(0, alpha(tone.tint, 0.32));
+  glow.addColorStop(0.6, alpha(tone.tint, 0));
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Mould lines down and across the tray.
+  ctx.globalAlpha = 0.6;
+  for (let x = 94; x < W; x += 94) {
+    ctx.fillStyle = "#FFFFFF14"; ctx.fillRect(x, 0, 1, H);
+    ctx.fillStyle = "#00000038"; ctx.fillRect(x + 1, 0, 2, H);
+  }
+  for (let y = 120; y < H; y += 120) {
+    ctx.fillStyle = "#FFFFFF0A"; ctx.fillRect(0, y, W, 1);
+    ctx.fillStyle = "#00000024"; ctx.fillRect(0, y + 1, W, 1);
+  }
+  ctx.globalAlpha = 1;
+
+  // The cover, left in the tray: faded, and fading further towards the near edge.
+  if (art) {
+    const [sheet, sctx] = paper(W, H);
+    drawCover(sctx, art, W, V);
+    sctx.globalCompositeOperation = "destination-out";
+    const fade = sctx.createLinearGradient(0, 0, 0, V);
+    fade.addColorStop(0.18, "#00000000");
+    fade.addColorStop(0.48, "#00000099");
+    fade.addColorStop(0.84, "#000000FF");
+    sctx.fillStyle = fade;
+    sctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.36;
+    ctx.filter = "saturate(.85)";
+    ctx.drawImage(sheet, 0, 0);
+    ctx.filter = "none";
+    ctx.globalAlpha = 1;
+  }
+
+  // One broad sweep of gloss: the part the eye reads as plastic.
+  const sheen = ctx.createLinearGradient(0, V, W, 0);
+  sheen.addColorStop(0.2, "#FFFFFF00");
+  sheen.addColorStop(0.36, "#FFFFFF0D");
+  sheen.addColorStop(0.44, "#FFFFFF1A");
+  sheen.addColorStop(0.53, "#FFFFFF08");
+  sheen.addColorStop(0.68, "#FFFFFF00");
+  ctx.fillStyle = sheen;
+  ctx.fillRect(0, 0, W, H);
+
+  // The walls closing in: shadow at every edge, deepest at the near one.
+  const edge = (x0: number, y0: number, x1: number, y1: number, depth: number) => {
+    const g = ctx.createLinearGradient(x0, y0, x1, y1);
+    g.addColorStop(0, `rgba(0,0,0,${depth})`);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  };
+  edge(0, 0, 0, V * 0.18, 0.5);
+  edge(0, V, 0, V * 0.78, 0.6);
+  edge(0, 0, W * 0.16, 0, 0.45);
+  edge(W, 0, W * 0.84, 0, 0.45);
+
+  // The spine along the far edge, where the lid folds away.
+  const band = Math.round(V * 0.044);
+  ctx.fillStyle = tone.tint;
+  ctx.fillRect(0, 0, W, band);
+  ctx.fillStyle = "#00000066";
+  ctx.fillRect(0, band, W, 2);
+  ctx.fillStyle = tone.ink;
+  ctx.font = `600 ${Math.round(band * 0.42)}px ${fonts.body}`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  const label = "playchive";
+  const labelW = ctx.measureText(label).width;
+  const mark = band * 0.5;
+  const start = W / 2 - (labelW + mark + 7) / 2;
+  if (symbol) ctx.drawImage(symbol, start, (band - mark) / 2, mark, mark);
+  ctx.fillText(label, start + mark + 7 + labelW / 2, band / 2 + 1);
+
+  return canvas;
 }

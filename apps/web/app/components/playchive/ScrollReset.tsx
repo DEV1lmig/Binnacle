@@ -20,22 +20,34 @@ export function ScrollReset() {
   const pathname = usePathname();
   const first = useRef(true);
   const popped = useRef(false);
+  const index = useRef<number | null>(null);
 
   useEffect(() => {
-    const onPop = () => { popped.current = true; };
+    // Where the Navigation API exists, history position is read directly; elsewhere
+    // a popstate marks the next route change as a traversal, for a short while only,
+    // so a stray event at load can never swallow the first real navigation.
+    let timer = 0;
+    const onPop = () => {
+      popped.current = true;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => { popped.current = false; }, 1500);
+    };
     window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
+    return () => { window.removeEventListener("popstate", onPop); window.clearTimeout(timer); };
   }, []);
 
   useLayoutEffect(() => {
+    const entry = (window as Window & { navigation?: { currentEntry?: { index: number } } }).navigation?.currentEntry;
+    const at = entry?.index ?? null;
+    const before = index.current;
+    index.current = at;
     if (first.current) {
       first.current = false;
       return;
     }
-    if (popped.current) {
-      popped.current = false;
-      return;
-    }
+    const traversal = at !== null && before !== null ? at <= before : popped.current;
+    popped.current = false;
+    if (traversal) return;
     // Anchoring is suppressed at offset zero, so one honest reset is enough: the page
     // stays put while the rest of its content arrives.
     window.scrollTo(0, 0);
