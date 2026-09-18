@@ -406,38 +406,6 @@ button.pk-stat[aria-pressed="true"] span { color: inherit; opacity: .75; }
   .pk-hero .pk-cover, .pk-hero .pk-cover[data-tilt="true"] { animation: none; }
 }
 
-/* ==========================================================================
-   Opening a case. The lid swings on its left hinge, the tray behind it shows the
-   booklet, and the inside colour floods the screen so the page swap is never seen.
-   ========================================================================== */
-.pk-opening { position: fixed; inset: 0; z-index: 90; pointer-events: none; perspective: 1400px; perspective-origin: var(--case-left) var(--case-top); }
-.pk-opening-flood { position: fixed; top: calc(var(--case-top) + var(--case-h) / 2); left: calc(var(--case-left) + var(--case-w) / 2); width: var(--case-w); height: var(--case-w); margin: calc(var(--case-w) / -2); border-radius: 50%; background: var(--case-deep); transform: scale(0); animation: pk-flood 420ms cubic-bezier(.6, 0, .35, 1) 130ms forwards; }
-.pk-opening-case { position: fixed; top: var(--case-top); left: var(--case-left); width: var(--case-w); height: var(--case-h); transform-style: preserve-3d; animation: pk-case-lift 640ms var(--pk-ease) forwards; }
-.pk-opening-tray, .pk-opening-lid, .pk-opening-front, .pk-opening-back { position: absolute; inset: 0; border-radius: 10px; overflow: hidden; }
-.pk-opening-tray { background: var(--case-shade); box-shadow: inset 0 0 0 2px #00000040; }
-.pk-opening-booklet { position: absolute; inset: 7% 8%; display: flex; flex-direction: column; gap: 5%; padding: 8%; border-radius: 4px; background: #F7F4EA; }
-.pk-opening-booklet b { font-family: var(--playchive-display), Outfit, sans-serif; font-size: 11cqw; font-size: clamp(11px, calc(var(--case-w) * .1), 26px); font-weight: 800; line-height: 1.1; color: #101827; }
-.pk-opening-booklet i { display: block; height: 4px; border-radius: 2px; background: #C9CFDB; }
-.pk-opening-booklet i:nth-of-type(2) { width: 72%; }
-.pk-opening-booklet i:nth-of-type(3) { width: 48%; }
-.pk-opening-lid { transform-origin: left center; transform-style: preserve-3d; animation: pk-lid-open 460ms cubic-bezier(.34, .8, .3, 1) forwards; box-shadow: 0 18px 50px #050b17a0; }
-.pk-opening-front, .pk-opening-back { backface-visibility: hidden; }
-.pk-opening-front { background: #14213B; }
-.pk-opening-front img { width: 100%; height: calc(100% - 13%); position: absolute; top: 13%; left: 0; object-fit: cover; }
-.pk-opening-back { transform: rotateY(180deg); background: var(--case-tint); box-shadow: inset 0 0 0 2px #00000030; }
-.pk-opening-band { position: absolute; top: 0; left: 0; right: 0; height: 13%; display: flex; align-items: center; gap: 6px; padding-inline: 8px; background: var(--case-tint); color: var(--case-ink); font-family: var(--playchive-body), sans-serif; font-weight: 600; font-size: clamp(8px, calc(var(--case-w) * .05), 15px); }
-.pk-opening-band .pk-case-mark { width: 1.7em; height: 1.7em; }
-.pk-opening[data-phase="leave"] .pk-opening-case { animation: pk-case-gone 380ms var(--pk-ease) forwards; }
-/* While the route is still arriving the open case rests on the flooded screen. */
-.pk-opening[data-phase="open"] .pk-opening-case { animation: pk-case-lift 640ms var(--pk-ease) forwards, pk-case-breathe 3.2s ease-in-out 900ms infinite; }
-.pk-opening[data-phase="leave"] .pk-opening-flood { animation: pk-flood-out 380ms linear forwards; }
-
-@keyframes pk-lid-open { to { transform: rotateY(-152deg); } }
-@keyframes pk-case-lift { 60% { transform: translate3d(0, -2%, 90px) scale(1.06); } to { transform: translate3d(0, -4%, 140px) scale(1.1); } }
-@keyframes pk-case-gone { to { opacity: 0; transform: translate3d(0, -4%, 260px) scale(1.2); } }
-@keyframes pk-flood { to { transform: scale(var(--flood-scale, 42)); } }
-@keyframes pk-flood-out { to { opacity: 0; } }
-@keyframes pk-case-breathe { 0%, 100% { transform: translate3d(0, -4%, 140px) scale(1.1); } 50% { transform: translate3d(0, -5.2%, 148px) scale(1.104); } }
 
 /* ==========================================================================
    The inside of the case. Not a tinted screen: moulded polypropylene, which means
@@ -480,23 +448,79 @@ button.pk-stat[aria-pressed="true"] span { color: inherit; opacity: .75; }
     inset 0 22px 44px -28px #FFFFFF2B,
     inset 0 -70px 100px -70px #00000099;
 }
-/* Looking down into the open case, resting on a dark surface. The view is a fixed
-   window with perspective; the tray inside it is leaned back on its near edge, so
-   the far edge recedes and narrows — the way a case looks when you bend over it —
-   and the surface shows in the far corners. As a page background it sits behind
-   everything; as the veil that ends the dive it sits over everything. */
-.pk-case-view { position: fixed; inset: 0; pointer-events: none; overflow: hidden; perspective: 1100px; perspective-origin: 50% 30%; background: radial-gradient(120% 70% at 50% 110%, #121a30, #05070e 70%); }
-.pk-case-backdrop { z-index: -1; }
-/* The tray starts just under the header — its far edge is where the lid folds
-   away — and the lean pivots on the near edge so the bottom stays close. */
-.pk-case-open { position: absolute; top: max(64px, 11vh); right: 1.6%; left: 1.6%; aspect-ratio: 1.2 / 1.7; border-radius: 18px; overflow: hidden; transform-origin: 50% 50%; transform: rotateX(.19rad); box-shadow: 0 30px 60px -20px #000000c0, 0 2px 0 #FFFFFF12; }
+/* ==========================================================================
+   The case, in DOM planes. A box W × H with its floor at z = 0, four walls running
+   towards the viewer, a lip where they end, and a lid hinged on the left wall. The
+   same planes make the case a detail page rests in and the case that flies between
+   a shelf cover and that page; the one becomes the other by a change of layer.
+
+   Every case is posed by one transform, read from three factors the driver sets on
+   the root and CSS transitions carry: `rise` (shelf → held at the centre), `open`
+   (the lid) and `dive` (held → lying open in the page). A page being carried takes
+   the same transform, so its content sits on the floor the whole way.
+   ========================================================================== */
+@property --fl-rise { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --fl-open { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --fl-dive { syntax: "<number>"; inherits: true; initial-value: 0; }
+:root {
+  --fl-s: calc((var(--a-s, 1) * (1 - var(--fl-rise)) + var(--h-s, 1) * var(--fl-rise)) * (1 - var(--fl-dive)) + var(--fl-dive));
+  --fl-tx: calc((var(--a-x, 0px) * (1 - var(--fl-rise)) + var(--h-x, 0px) * var(--fl-rise) - var(--l-x, 0px)) * (1 - var(--fl-dive)));
+  --fl-ty: calc((var(--a-y, 0px) * (1 - var(--fl-rise)) + var(--h-y, 0px) * var(--fl-rise) - var(--l-y, 0px)) * (1 - var(--fl-dive)));
+  --fl-tz: calc(220px * var(--fl-rise) * (1 - var(--fl-dive)));
+  --fl-lean: calc(.19rad * var(--fl-dive));
+  --fl-tilt: calc(-.34rad * var(--fl-open) * var(--fl-rise) * (1 - var(--fl-dive)));
+  --lid: calc(var(--fl-open) * (143deg + 26deg * var(--fl-dive)));
+}
+/* Opening: up off the shelf and open on one clock, then in once the page is inside.
+   Putting away: down out of the page and shut, then home onto its cover. */
+html[data-case-state="opening"] { transition: --fl-rise .52s cubic-bezier(.33, 1, .68, 1), --fl-open .58s cubic-bezier(.33, 1, .68, 1) .1s, --fl-dive .44s cubic-bezier(.32, 0, .67, 0); }
+html[data-case-state="closing"] { transition: --fl-dive .52s cubic-bezier(.33, 1, .68, 1), --fl-open .48s cubic-bezier(.33, 1, .68, 1) .16s, --fl-rise .52s cubic-bezier(.33, 1, .68, 1); }
+html[data-case-state="return"] { transition: --fl-rise .38s cubic-bezier(.33, 1, .68, 1), --fl-open .3s, --fl-dive .3s; }
+html[data-case-anim="off"] { transition: none !important; }
+
+/* The one transform. The vanishing point is moved to the same screen point for
+   every element that carries it, so a case and the page inside it are projected by
+   the same camera whatever their own boxes are. The scale is 3D on purpose: a 2D
+   scale would leave the walls and lid at full depth under a shelf-sized case, and
+   a lid swinging through 90° would pass the camera. */
+.pk-carry, body[data-case-held] .pk-inside {
+  transform-origin: var(--ox) var(--oy);
+  transform:
+    translate(calc(var(--vx) - var(--ox)), calc(var(--vy) - var(--oy))) perspective(1100px) translate(calc(var(--ox) - var(--vx)), calc(var(--oy) - var(--vy)))
+    translate3d(var(--fl-tx), var(--fl-ty), var(--fl-tz)) rotateX(var(--fl-lean)) rotateY(var(--fl-tilt)) scale3d(var(--fl-s), var(--fl-s), var(--fl-s));
+  will-change: transform;
+}
+.pk-case3 { position: absolute; transform-style: preserve-3d; pointer-events: none; --d: calc(var(--W) * .085); --t: calc(var(--W) * .02); --lidz: calc(var(--W) * .02); --r: calc(var(--W) * .012); }
+.pk-c-floor { position: absolute; inset: 0; border-radius: var(--r); overflow: hidden; box-shadow: 0 30px 60px -20px #000000c0; }
+.pk-c-shell { position: absolute; inset: 0; transform-style: preserve-3d; }
+/* Walls, double-sided plastic; the left one is the spine on the outside. */
+.pk-c-wall { position: absolute; background: linear-gradient(180deg, var(--case-shade, #141C36), var(--case-dim, #060A16)); box-shadow: inset 0 0 0 1px #FFFFFF0A; }
+.pk-c-wall-l { left: 0; top: 0; width: var(--d); height: 100%; transform-origin: left center; transform: rotateY(-90deg); }
+.pk-c-wall-in { left: var(--t); }
+.pk-c-spine { display: flex; flex-direction: column; align-items: center; gap: .6em; padding-top: .5em; background: var(--case-tint, #245CF2); color: var(--case-ink, #FFFFFF); backface-visibility: hidden; font-family: var(--playchive-display), Outfit, sans-serif; font-weight: 800; font-size: calc(var(--d) * .5); line-height: 1; overflow: hidden; }
+.pk-c-spine .pk-case-mark { width: 1.2em; height: 1.2em; }
+.pk-c-spine b { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; max-height: 80%; overflow: hidden; text-overflow: ellipsis; }
+.pk-c-wall-r { right: 0; top: 0; width: var(--d); height: 100%; transform-origin: right center; transform: rotateY(90deg); }
+.pk-c-wall-t { left: 0; top: 0; width: 100%; height: var(--d); transform-origin: center top; transform: rotateX(90deg); }
+.pk-c-wall-b { left: 0; bottom: 0; width: 100%; height: var(--d); transform-origin: center bottom; transform: rotateX(-90deg); }
+/* The walls' top faces, catching the light. */
+.pk-c-lip { position: absolute; inset: 0; box-sizing: border-box; border: var(--t) solid var(--case-shade, #141C36); border-bottom-color: var(--case-lit, #1A2340); border-radius: var(--r); transform: translateZ(var(--d)); box-shadow: inset 0 0 0 1px #FFFFFF14, 0 0 0 1px #00000040; }
+/* The lid: a slab hinged on the left wall's top edge, its front the cover. */
+.pk-c-hinge { position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: left center; transform: translateZ(var(--d)) rotateY(calc(-1 * var(--lid))); }
+.pk-c-hinge > * { position: absolute; inset: 0; backface-visibility: hidden; }
+.pk-c-lid-back { transform: rotateY(180deg); border-radius: var(--front-r, 10px); background: linear-gradient(200deg, var(--case-shade, #141C36), var(--case-deep, #0A1024) 60%, var(--case-dim, #060A16)); box-shadow: inset 0 0 0 1px #FFFFFF12, inset 0 0 60px #00000060; }
+.pk-c-lid-edge { left: auto; width: var(--lidz); transform-origin: right center; transform: rotateY(90deg); background: var(--case-shade, #141C36); }
+.pk-c-hinge > .pk-c-lid-front { transform: translateZ(var(--lidz)); border-radius: var(--front-r, 10px); transition: border-radius .4s; aspect-ratio: auto; }
+.pk-c-lid-front img { position: absolute; inset: 0; }
+
+/* A detail page's background: looking down into the open case, resting on a dark
+   surface. The case lies at the page's tray, leaned back, lid folded away left. */
+.pk-case-view { position: fixed; inset: 0; pointer-events: none; overflow: hidden; background: radial-gradient(120% 70% at 50% 110%, #121a30, #05070e 70%); }
+.pk-case-backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.pk-case-rest { --fl-s: 1; --fl-tx: 0px; --fl-ty: 0px; --fl-tz: 0px; --fl-lean: .19rad; --fl-tilt: 0rad; --lid: 169deg; --front-r: 24px; }
 /* The cover, left in the tray: a print fading into the plastic, under its gloss. */
 .pk-case-print { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 14%; opacity: .36; filter: saturate(.85); -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 8%, #00000066 22%, transparent 40%); mask-image: linear-gradient(180deg, #000 0%, #000 8%, #00000066 22%, transparent 40%); }
-/* The walls: the lit top face of each wall as a lip, and the wall's own shadow
-   falling into the tray. The near wall is the thickest, because it is closest. */
-.pk-case-rim { position: absolute; inset: 0; border-radius: inherit; border-style: solid; border-width: 7px 9px 16px; border-color: #FFFFFF0E #FFFFFF0B #FFFFFF16 #FFFFFF0B; box-shadow: inset 0 0 0 1px #00000070, inset 0 10px 24px -6px #00000080, inset 0 -6px 16px -8px #00000060; }
-/* The spine, seen edge-on along the far edge, in the case's band colour with the
-   mark on it — the one line that says "case" before anything else does. */
+/* The band along the far edge, in the case's colour with the mark on it. */
 .pk-case-hinge { position: absolute; top: 0; left: 0; right: 0; height: 30px; display: flex; align-items: center; justify-content: center; gap: 7px; background: linear-gradient(180deg, var(--case-tint, #245CF2) 0%, var(--case-tint, #245CF2) 82%, #00000066); box-shadow: 0 1px 0 #00000080, 0 4px 10px #00000050; color: var(--case-ink, #FFFFFF); font-family: var(--playchive-body), "DM Sans", sans-serif; font-size: 12px; font-weight: 600; letter-spacing: .14em; }
 .pk-case-hinge .pk-case-mark { width: 14px; height: 14px; }
 
@@ -523,7 +547,6 @@ button.pk-stat[aria-pressed="true"] span { color: inherit; opacity: .75; }
 @keyframes pk-disc-in { from { opacity: 0; transform: translate3d(0, 18px, 0) rotate(-16deg) scale(.94); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .pk-opening, .pk-opening-case, .pk-opening-lid, .pk-opening-flood { animation: none !important; }
   .pk-case-print { opacity: .3; }
   .pk-disc { animation: none; transition: none; }
 }
@@ -544,48 +567,26 @@ button.pk-stat[aria-pressed="true"] span { color: inherit; opacity: .75; }
   ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 260ms; }
 }
 
-/* One WebGL surface for every case in the app. It never takes the pointer, so all
-   links, menus and scrolling stay with the DOM underneath. */
-/* react-three-fiber writes `pointer-events: auto` onto its own canvas, which would
-   make this full-screen layer swallow every click in the app. It must never take a
-   pointer: the DOM underneath owns all interaction. */
-.pk-stage { position: fixed; inset: 0; z-index: 10; pointer-events: none !important; }
-.pk-stage *, .pk-stage canvas { pointer-events: none !important; }
-.pk-stage canvas { width: 100% !important; height: 100% !important; }
-/* Anything that sits on top of a cover has to stay on top of the case drawn over it. */
-.pk-lib-cover .pk-chip, .pk-rank { z-index: 11; }
-/* Once a case is painted in 3D its flat artwork steps aside, but stays in the DOM
-   for screen readers, for copy and for browsers without WebGL. */
-.pk-cover[data-case3d="on"] img,
-.pk-cover[data-case3d="on"] .pk-case-band,
-.pk-cover[data-case3d="on"] .pk-case-spine,
-.pk-cover[data-case3d="on"] .pk-case-gloss,
-.pk-cover[data-case3d="on"] .pk-cover-empty { opacity: 0; transition: opacity .25s linear; }
-.pk-cover[data-case3d="on"] { background: transparent; box-shadow: none; }
-
-/* While a page rests in its open case the stage drops behind the content: the case
-   is the page's background, and the page's own flat tray fades out underneath it. */
-.pk-stage[data-behind="true"] { z-index: -1; }
-.pk-case-open[data-case3d="on"] { opacity: 0; transition: opacity .25s linear; }
-/* A page carried by its case. The wrapper takes the case's own transform — the
-   stage writes these each frame: same perspective (vanishing point at the viewport
-   centre), same centre, lean, tilt and scale — so the content is projected by the
-   same camera as the walls and lid drawn over it, and clipped to the tray floor.
-   Until the first frame lands the clip hides everything, so nothing flashes. */
-body[data-case-held] .pk-inside {
-  transform-origin: var(--case-ox, 50%) var(--case-oy, 50%);
-  transform:
-    translate(var(--case-vx, 0px), var(--case-vy, 0px)) perspective(var(--case-p, 1100px)) translate(calc(-1 * var(--case-vx, 0px)), calc(-1 * var(--case-vy, 0px)))
-    translate3d(var(--case-tx, 0px), var(--case-ty, 0px), var(--case-tz, 0px)) rotateX(var(--case-lean, 0rad)) rotateY(var(--case-tilt, 0rad)) scale(var(--case-sx, 1), var(--case-sy, 1));
-  clip-path: inset(var(--case-clip, 100%));
-  will-change: transform;
-  position: relative;
-  z-index: 6;
-}
-/* The still copy of the page being left: under the case, over whatever is loading. */
-.pk-ghost { position: fixed; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
-/* A page arriving is revealed top to bottom inside the open case, over its own
-   tray floor, before the case comes in. A page being put away is already there. */
+/* ==========================================================================
+   The flight. Two fixed layers carry the two halves of the moving case — the floor
+   under the page, the walls and lid over it — with the page itself between them,
+   and a still copy of the page being left under all three. Everything stays under
+   the site header, as the cases on the shelf do.
+   ========================================================================== */
+.pk-flight { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.pk-flight[data-layer="floor"] { z-index: 21; }
+.pk-flight[data-layer="shell"] { z-index: 23; }
+.pk-flight[data-fade] { opacity: 0; transition: opacity .24s linear; }
+.pk-ghost { position: fixed; inset: 0; z-index: 20; overflow: hidden; pointer-events: none; }
+/* The shelf cover under the flight keeps its place and nothing else. */
+.pk-cover[data-case-flight] { visibility: hidden; }
+/* A page carried by its case: clipped to the tray floor, its own backdrop stepping
+   aside for the flight's. Until it is seated the clip hides everything, so nothing
+   flashes. */
+body[data-case-held] .pk-inside { position: relative; z-index: 22; clip-path: inset(var(--case-clip, 100%)); }
+body[data-case-held] .pk-case-backdrop { visibility: hidden; }
+/* A page arriving is revealed top to bottom inside the open case before the case
+   comes in. A page being put away is already there. */
 body[data-case-held] .pk-inside[data-case-in="1"] .pk-page {
   -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 44%, transparent 56%);
   mask-image: linear-gradient(180deg, #000 0%, #000 44%, transparent 56%);
