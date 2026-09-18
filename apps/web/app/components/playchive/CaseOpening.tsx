@@ -28,9 +28,10 @@ export function useCloseCase() {
 }
 
 /* ------------------------------------------------------------------------------------
-   Timing. The poses themselves are interpolated by CSS transitions on three registered
-   custom properties (`--fl-rise`, `--fl-open`, `--fl-dive`); the durations below only
-   tell the driver when to ask for the route and how long to wait before giving up.
+   Timing. The pose is three factors (`--fl-rise`, `--fl-open`, `--fl-dive`) written to
+   the root each frame by the tween below and read by the stylesheet; the durations
+   here only tell the driver when to ask for the route and how long to wait before
+   giving up.
    ------------------------------------------------------------------------------------ */
 /** The route is asked for as the lid starts to swing: usually there before the dive. */
 const ASK = 300;
@@ -50,8 +51,85 @@ const LANDED: Pose = { rise: 1, open: 1, dive: 1 };
 /** Lid shut at the centre: where a case being put away waits for the route. */
 const SHUT: Pose = { rise: 1, open: 0, dive: 0 };
 
-/** Which set of transitions the stylesheet applies. */
+/** Which choreography moves the factors. */
 type Timing = "opening" | "closing" | "return";
+
+const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+const easeIn = (t: number) => t * t * t;
+type Leg = { duration: number; delay?: number; ease: (t: number) => number };
+/**
+ * Opening: up off the shelf and open on one clock, then in once the page is inside.
+ * Putting away: down out of the page and shut, then home onto its cover.
+ */
+const TIMINGS: Record<Timing, Record<keyof Pose, Leg>> = {
+  opening: { rise: { duration: 520, ease: easeOut }, open: { duration: 580, delay: 100, ease: easeOut }, dive: { duration: 440, ease: easeIn } },
+  closing: { dive: { duration: 520, ease: easeOut }, open: { duration: 480, delay: 160, ease: easeOut }, rise: { duration: 520, ease: easeOut } },
+  return: { rise: { duration: 380, ease: easeOut }, open: { duration: 300, ease: easeOut }, dive: { duration: 300, ease: easeOut } },
+};
+
+/**
+ * Moves the three factors and writes them to the root. Plain JavaScript on purpose:
+ * transitions on registered custom properties are still uneven across browsers
+ * (Safari on iOS among them), and this is the same cost either way — one style
+ * recalc per frame. A new target starts from wherever the factor is now, so
+ * reversing a gesture mid-flight is the same call as starting one.
+ */
+class Tween {
+  private value: Pose = { ...SHELF };
+  private legs: Partial<Record<keyof Pose, { from: number; to: number; start: number } & Leg>> = {};
+  private frame = 0;
+
+  read(name: keyof Pose) {
+    return this.value[name];
+  }
+
+  /** Sets the factors outright, with nothing in motion. */
+  jump(pose: Pose) {
+    this.legs = {};
+    this.value = { ...pose };
+    this.write();
+  }
+
+  /** Moves the factors to `pose` with the given choreography. */
+  go(pose: Pose, timing: Timing) {
+    const now = performance.now();
+    for (const name of Object.keys(pose) as (keyof Pose)[]) {
+      if (Math.abs(this.value[name] - pose[name]) < 1e-4) { delete this.legs[name]; continue; }
+      this.legs[name] = { ...TIMINGS[timing][name], from: this.value[name], to: pose[name], start: now };
+    }
+    if (!this.frame) this.frame = requestAnimationFrame(this.step);
+  }
+
+  stop() {
+    cancelAnimationFrame(this.frame);
+    this.frame = 0;
+    this.legs = {};
+    this.value = { ...SHELF };
+    for (const name of ["rise", "open", "dive"]) root().style.removeProperty(`--fl-${name}`);
+  }
+
+  private step = () => {
+    this.frame = 0;
+    const now = performance.now();
+    let moving = false;
+    for (const name of Object.keys(this.legs) as (keyof Pose)[]) {
+      const leg = this.legs[name];
+      if (!leg) continue;
+      const t = Math.min(1, Math.max(0, (now - leg.start - (leg.delay ?? 0)) / leg.duration));
+      this.value[name] = leg.from + (leg.to - leg.from) * leg.ease(t);
+      if (t < 1) moving = true; else delete this.legs[name];
+    }
+    this.write();
+    if (moving) this.frame = requestAnimationFrame(this.step);
+  };
+
+  private write() {
+    const s = root().style;
+    s.setProperty("--fl-rise", String(this.value.rise));
+    s.setProperty("--fl-open", String(this.value.open));
+    s.setProperty("--fl-dive", String(this.value.dive));
+  }
+}
 
 /**
  * A still copy of the page being left, kept under the moving case until the next
@@ -95,13 +173,10 @@ const viewport = (): View => ({ width: document.documentElement.clientWidth, hei
 
 const root = () => document.documentElement;
 
-/** Reads one of the animated factors as the browser currently has it. */
-function factor(name: keyof Pose) {
-  return parseFloat(getComputedStyle(root()).getPropertyValue(`--fl-${name}`)) || 0;
-}
+const tween = new Tween();
 
 function atPose(pose: Pose) {
-  return (Object.keys(pose) as (keyof Pose)[]).every(name => Math.abs(factor(name) - pose[name]) < 0.003);
+  return (Object.keys(pose) as (keyof Pose)[]).every(name => Math.abs(tween.read(name) - pose[name]) < 0.003);
 }
 
 /**
@@ -123,12 +198,14 @@ function seatPage(page: HTMLElement, tray: Rect, view: View) {
   s.setProperty("--oy", `${cy - pageTop}px`);
   s.setProperty("--vx", `${v.x - pageLeft}px`);
   s.setProperty("--vy", `${v.y - pageTop}px`);
-  s.setProperty("--case-clip", [
-    `${tray.top - pageTop + wall}px`,
-    `${pageLeft + page.offsetWidth - (tray.left + tray.width) + wall}px`,
-    `${Math.max(0, pageTop + page.offsetHeight - (tray.top + tray.height) + wall)}px`,
-    `${tray.left - pageLeft + wall}px`,
-  ].join(" "));
+  // Anchored to the page's top-left corner rather than inset from its edges: the
+  // page keeps growing and shrinking while it waits (data arrives, sections
+  // mount), and an inset from the bottom would slide the window off the content.
+  const l = tray.left - pageLeft + wall;
+  const t = tray.top - pageTop + wall;
+  const r = tray.left + tray.width - pageLeft - wall;
+  const b = tray.top + tray.height - pageTop - wall;
+  s.setProperty("--case-clip", `polygon(${l}px ${t}px, ${r}px ${t}px, ${r}px ${b}px, ${l}px ${b}px)`);
 }
 
 function unseatPage(page: HTMLElement) {
@@ -211,14 +288,9 @@ class CaseMachine {
   }
 
   private pose(pose: Pose, timing: Timing | "instant") {
-    const s = root().style;
-    if (timing === "instant") root().dataset.caseAnim = "off";
-    else { root().dataset.caseState = timing; delete root().dataset.caseAnim; }
-    s.setProperty("--fl-rise", String(pose.rise));
-    s.setProperty("--fl-open", String(pose.open));
-    s.setProperty("--fl-dive", String(pose.dive));
-    // Flush, so an instant pose is the "before" of whatever transition comes next.
-    if (timing === "instant") { factor("rise"); }
+    if (timing === "instant") { tween.jump(pose); return; }
+    root().dataset.caseState = timing;
+    tween.go(pose, timing);
   }
 
   /** The three rest poses the transform mixes between: shelf cover, centre, page tray. */
@@ -271,8 +343,7 @@ class CaseMachine {
     delete document.body.dataset.caseHeld;
     const r = root();
     delete r.dataset.caseState;
-    delete r.dataset.caseAnim;
-    for (const name of ["rise", "open", "dive"]) r.style.removeProperty(`--fl-${name}`);
+    tween.stop();
     for (const name of ["a-x", "a-y", "a-s", "h-x", "h-y", "h-s", "l-x", "l-y", "front-r"]) r.style.removeProperty(`--${name}`);
     if (process.env.NODE_ENV !== "production") {
       console.assert(!document.querySelector(".pk-flight, .pk-ghost, [data-case-flight]"), "case transition: something was left behind");
