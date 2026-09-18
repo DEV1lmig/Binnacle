@@ -545,10 +545,16 @@ button.pk-stat[aria-pressed="true"] span { color: inherit; opacity: .75; }
 .pk-disc-ring::before { content: ""; position: absolute; inset: 15.5%; border-radius: 50%; box-shadow: 0 0 0 1px #00000070, 0 0 0 4.5cqw #FFFFFF14, 0 0 0 5cqw #FFFFFF2E, inset 0 0 0 1px #FFFFFF40; }
 @keyframes pk-disc-in { from { opacity: 0; transform: translate3d(0, 18px, 0) rotate(-16deg) scale(.94); } to { opacity: 1; transform: none; } }
 
+/* With reduced motion the case never flies: the page arrives already lying in
+   its open case and its content fades in over the tray. A fade is the one
+   movement that preference is meant to allow, so it is the one this keeps —
+   and it has to outrank the site-wide rule that shortens every animation. */
 @media (prefers-reduced-motion: reduce) {
   .pk-case-print { opacity: .3; }
   .pk-disc { animation: none; transition: none; }
+  .pk-inside .pk-page { animation: pk-case-fade .42s ease-out both !important; animation-duration: .42s !important; }
 }
+@keyframes pk-case-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* A page rendered inside the case: the hero goes transparent so the tinted backdrop
    shows through, and surfaces take the cover's own shade instead of the shelf navy. */
