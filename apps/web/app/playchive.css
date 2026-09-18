@@ -261,6 +261,50 @@
   .pk-cover[data-tilt="true"]:hover, a:hover > .pk-cover[data-tilt="true"], button:hover > .pk-cover[data-tilt="true"] { transform: perspective(850px) rotateY(6deg) translateY(-6px); box-shadow: -6px 8px 0 #2D3E59, 0 22px 32px #050B1780; }
 }
 
+/* ==========================================================================
+   Cartridges and cassettes. A game whose original platform did not take discs
+   is drawn as what it came on, inside the same 2:3 slot: the shell of its
+   platform's cartridge (or the tape itself), the artwork as the label. Each
+   family sets a width, proportions, shell colour, grip and label area; the
+   drawing is one set of rules. Sizes are in container units of the slot.
+   ========================================================================== */
+.pk-cover[data-medium]:not([data-medium="case"]) { background: transparent; box-shadow: none; overflow: visible; border-radius: 0; }
+.pk-cart { position: absolute; left: 50%; top: 50%; width: var(--cw); aspect-ratio: var(--ca); transform: translate(-50%, -50%); border-radius: var(--cr, 3cqw); background: var(--cbody); box-shadow: 0 3cqw 0 #050B17, 0 8cqw 14cqw #050B1750, inset 0 1px 0 #FFFFFF2E, inset 0 -2px 0 #00000066, inset 1px 0 0 #FFFFFF12, inset -1px 0 0 #00000040; overflow: hidden; clip-path: var(--cclip, none); }
+.pk-cart-grip { position: absolute; inset: 0 0 auto 0; height: var(--cgrip, 0); background: repeating-linear-gradient(180deg, #FFFFFF12 0 1.6cqw, #00000038 1.6cqw 3.4cqw); box-shadow: inset 0 -1px 0 #00000060; }
+.pk-cart-label { position: absolute; inset: var(--clabel); border-radius: 1.6cqw; overflow: hidden; background: #14213B; box-shadow: inset 0 0 0 1px #00000070, 0 0 0 1px #FFFFFF0E; }
+.pk-cart-label img { position: absolute; inset: 0; }
+.pk-cart-label .pk-cover-empty { font-size: 6cqw; padding: 6cqw; }
+.pk-cart-brand { position: absolute; left: 0; right: 0; bottom: var(--cbrand, 2.4cqw); display: flex; justify-content: center; align-items: center; gap: 1.4cqw; font-family: var(--playchive-body), sans-serif; font-weight: 600; font-size: 3.6cqw; line-height: 1; letter-spacing: .08em; color: var(--cink, #FFFFFF8C); }
+.pk-cart-brand .pk-case-mark { width: 4.4cqw; height: 4.4cqw; opacity: .85; }
+.pk-cart-gloss { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(112deg, transparent 42%, #FFFFFF12 50%, transparent 58%); }
+/* Nintendo: the grey NES brick with its ribbed top; the Famicom's small, coloured
+   shell with the label to the left; the wide SNES and N64 with rounded shoulders;
+   the Game Boy with its notched corner; the squat GBA; DS, 3DS, Switch cards. */
+.pk-cover[data-medium="nes"] { --cw: 90cqw; --ca: 12 / 13.4; --cbody: linear-gradient(180deg, #CFCEC9, #B1B0AB); --cr: 2.4cqw; --cgrip: 22%; --clabel: 28% 9% 9% 9%; --cink: #3A3A38; }
+.pk-cover[data-medium="famicom"] { --cw: 86cqw; --ca: 1.42; --cbody: linear-gradient(180deg, #FFFFFF1A, #00000045), var(--case-tint); --cr: 3cqw; --clabel: 13% 40% 13% 8%; --cbrand: 3cqw; --cink: var(--case-ink); }
+.pk-cover[data-medium="snes"] { --cw: 96cqw; --ca: 1.55; --cbody: linear-gradient(180deg, #DADAD6, #BABAB5); --cr: 6cqw 6cqw 3cqw 3cqw; --cgrip: 24%; --clabel: 31% 7% 10% 7%; --cink: #3A3A38; }
+.pk-cover[data-medium="n64"] { --cw: 96cqw; --ca: 1.6; --cbody: linear-gradient(180deg, #969694, #6E6E6C); --cr: 9cqw 9cqw 3cqw 3cqw; --cgrip: 20%; --clabel: 27% 8% 11% 8%; --cink: #E8E8E6; }
+.pk-cover[data-medium="gb"] { --cw: 74cqw; --ca: .88; --cbody: linear-gradient(180deg, #C9C8C1, #ABAAA3); --cr: 2cqw; --cgrip: 15%; --clabel: 25% 8% 10% 8%; --cclip: polygon(0 0, 80% 0, 80% 11%, 100% 11%, 100% 100%, 0 100%); --cink: #3A3A38; }
+.pk-cover[data-medium="gba"] { --cw: 84cqw; --ca: 1.7; --cbody: linear-gradient(180deg, #C2C2BC, #A3A39D); --cr: 3cqw; --clabel: 13% 10% 16% 10%; --cbrand: 2cqw; --cink: #3A3A38; }
+.pk-cover[data-medium="card"] { --cw: 54cqw; --ca: .95; --cbody: linear-gradient(180deg, #34363D, #1D1F25); --cr: 3cqw; --clabel: 8% 8% 20% 8%; --cbrand: 4cqw; }
+/* Sega: black shells; the Mega Drive's rounded crown, the Master System's plain
+   slab, the small Game Gear (the Lynx shares its size). */
+.pk-cover[data-medium="megadrive"] { --cw: 80cqw; --ca: .7; --cbody: linear-gradient(180deg, #2A2B2E, #111214); --cr: 7cqw 7cqw 2cqw 2cqw; --cgrip: 11%; --clabel: 15% 8% 21% 8%; --cbrand: 5cqw; }
+.pk-cover[data-medium="mastersystem"] { --cw: 78cqw; --ca: .74; --cbody: linear-gradient(180deg, #232427, #0E0F11); --cr: 2cqw; --clabel: 8% 8% 28% 8%; --cbrand: 7cqw; }
+.pk-cover[data-medium="gamegear"] { --cw: 70cqw; --ca: .72; --cbody: linear-gradient(180deg, #222326, #0F1012); --cr: 3cqw; --cgrip: 12%; --clabel: 18% 9% 17% 9%; --cbrand: 4cqw; }
+/* Atari and its contemporaries: the tall black cartridge with the heavy ribbing
+   across its top. Neo Geo's huge slab. The pocket consoles. The PC Engine's card. */
+.pk-cover[data-medium="atari"] { --cw: 64cqw; --ca: .7; --cbody: linear-gradient(180deg, #2A2622, #100E0C); --cr: 2cqw; --cgrip: 26%; --clabel: 32% 8% 9% 8%; --cbrand: 2cqw; }
+.pk-cover[data-medium="neogeo"] { --cw: 96cqw; --ca: .8; --cbody: linear-gradient(180deg, #202124, #0C0D0F); --cr: 2.4cqw; --cgrip: 8%; --clabel: 13% 7% 15% 7%; --cbrand: 4cqw; }
+.pk-cover[data-medium="ngp"] { --cw: 62cqw; --ca: .72; --cbody: linear-gradient(180deg, #24262C, #101216); --cr: 3cqw; --clabel: 10% 8% 23% 8%; --cbrand: 5cqw; }
+.pk-cover[data-medium="hucard"] { --cw: 66cqw; --ca: .63; --cbody: linear-gradient(180deg, #F4F2EB, #DAD7CC); --cr: 2cqw; --clabel: 5% 5% 23% 5%; --cbrand: 6cqw; --cink: #4A4842; }
+/* Home computers: the tape itself. Artwork on the paper label, the two reels
+   showing through the window below it. */
+.pk-cover[data-medium="cassette"] { --cw: 96cqw; --ca: 1.58; --cbody: linear-gradient(180deg, #2C2D33, #16171B); --cr: 3cqw; --clabel: 5% 4% 47% 4%; --cbrand: 2cqw; }
+.pk-cover[data-medium="cassette"] .pk-cart-grip { inset: auto 20% 13% 20%; height: 27%; border-radius: 999px; background: radial-gradient(circle at 24% 50%, #0B0C10 0 9%, #3A3B42 9.5% 12%, #0B0C10 12.5% 14%, #6B6C74 14.5% 15.5%, transparent 16%), radial-gradient(circle at 76% 50%, #0B0C10 0 9%, #3A3B42 9.5% 12%, #0B0C10 12.5% 14%, #6B6C74 14.5% 15.5%, transparent 16%), linear-gradient(180deg, #45464D, #2A2B31); box-shadow: inset 0 1px 0 #FFFFFF22, inset 0 0 0 1px #00000080; }
+/* In a hero, the cartridge is the object the case holds, drawn large. */
+.pk-hero-cart { width: 100%; }
+
 /* Detail heroes (game, review): back link spans the top row, cover centres on small screens.
    The tilt is hover-only, so touch devices get an entrance + a slow float instead. */
 .pk-detail-hero { grid-template-columns: minmax(0, 1fr); align-items: start; row-gap: 20px; }
@@ -512,6 +556,13 @@ button.pk-stat[aria-pressed="true"] span { color: inherit; opacity: .75; }
 .pk-c-lid-front .pk-c-hi { opacity: 0; transition: opacity .2s linear; }
 .pk-c-lid-front .pk-c-hi[data-ready] { opacity: 1; }
 
+/* A cartridge or cassette has no walls and no lid to swing. Its face is the
+   cover itself; as the case "opens" it lifts up out of frame, the way a game is
+   pulled from its slot, and the page comes in on the tray beneath it. */
+.pk-case3[data-medium]:not([data-medium="case"]) :is(.pk-c-wall, .pk-c-lip, .pk-c-lid-back, .pk-c-lid-edge) { display: none; }
+.pk-case3[data-medium]:not([data-medium="case"]) .pk-c-hinge { transform-origin: center top; transform: translateZ(var(--d)) translateY(calc(var(--fl-open) * -125%)) rotateX(calc(var(--fl-open) * 50deg)); }
+.pk-case3[data-medium]:not([data-medium="case"]) .pk-c-hinge > .pk-c-lid-front { transform: none; border-radius: 0; box-shadow: none; background: transparent; overflow: visible; }
+
 /* A detail page's background: looking down into the open case, resting on a dark
    surface. The case lies at the page's tray, leaned back, lid folded away left. */
 .pk-case-view { position: fixed; inset: 0; pointer-events: none; overflow: hidden; background: radial-gradient(120% 70% at 50% 110%, #121a30, #05070e 70%); }
@@ -583,8 +634,6 @@ button.pk-stat[aria-pressed="true"] span { color: inherit; opacity: .75; }
 .pk-flight[data-layer="shell"] { z-index: 23; }
 .pk-flight[data-fade] { opacity: 0; transition: opacity .24s linear; }
 .pk-ghost { position: fixed; inset: 0; z-index: 20; overflow: hidden; pointer-events: none; }
-/* The on-screen trace (`?casedebug`), above everything, never in the way of a tap. */
-.pk-case-debug { position: fixed; left: 8px; right: 8px; bottom: 80px; z-index: 200; margin: 0; padding: 8px 10px; border-radius: 8px; background: #000000CC; color: #9FE870; font: 11px/1.35 ui-monospace, Menlo, monospace; white-space: pre-wrap; pointer-events: none; }
 /* The shelf cover under the flight keeps its place and nothing else. */
 .pk-cover[data-case-flight] { visibility: hidden; }
 /* A page carried by its case: clipped to the tray floor, its own backdrop stepping

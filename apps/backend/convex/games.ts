@@ -1498,6 +1498,7 @@ export const searchOptimized = query({
           title: g.title,
           coverUrl: g.coverUrl,
           releaseYear: g.releaseYear,
+          platforms: g.platforms,
           aggregatedRating: g.aggregatedRating,
           aggregatedRatingCount: g.aggregatedRatingCount,
           category: g.category,
@@ -1768,6 +1769,7 @@ export const getTrendingGames = query({
         title: s.game.title,
         coverUrl: s.game.coverUrl,
         releaseYear: s.game.releaseYear,
+        platforms: s.game.platforms,
         aggregatedRating: s.game.aggregatedRating ?? s.game.rating ?? s.game.totalRating,
         aggregatedRatingCount: Math.max(s.game.aggregatedRatingCount ?? 0, s.game.ratingCount ?? 0),
       })),
@@ -1846,6 +1848,7 @@ export const getTopRatedGames = query({
       title: game.title,
       coverUrl: game.coverUrl,
       releaseYear: game.releaseYear,
+      platforms: game.platforms,
       aggregatedRating: Math.max(
         game.aggregatedRating ?? 0,
         game.rating ?? 0,
@@ -1932,6 +1935,7 @@ export const getNewReleases = query({
         title: game.title,
         coverUrl: game.coverUrl,
         releaseYear: game.releaseYear,
+        platforms: game.platforms,
         aggregatedRating: game.aggregatedRating ?? game.rating,
         aggregatedRatingCount: game.aggregatedRatingCount ?? game.ratingCount,
       }));

@@ -312,6 +312,7 @@ export const listForUser = query({
                 title: game.title,
                 coverUrl: game.coverUrl,
                 releaseYear: game.releaseYear,
+                platforms: game.platforms,
                 aggregatedRating: game.aggregatedRating,
               }
             : null,

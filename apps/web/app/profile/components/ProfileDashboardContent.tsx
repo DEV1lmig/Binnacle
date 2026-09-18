@@ -8,6 +8,7 @@ import { Trophy, PenLine, BookOpen, ArrowRight, Clock, Gamepad2 } from "lucide-r
 import type { Id } from "@/convex/_generated/dataModel";
 import { Cover, OpenCaseLink, PageHero, Pill, ScoreMark, SectionHeading, StatusChip, STATUS_COLOR, STATUS_LABEL, STATUS_ORDER } from "@/app/components/playchive";
 import { relativeTime } from "@/app/components/ReviewCard";
+import { mediumOf } from "@/app/lib/medium";
 
 export interface ProfileDashboardData {
   user: { _id: Id<"users">; _creationTime: number; name: string; username: string; bio?: string; avatarUrl?: string };
@@ -17,8 +18,8 @@ export interface ProfileDashboardData {
   viewerIsSelf: boolean;
   reviewStats: { reviewCount: number; averageRating?: number; totalPlaytimeHours: number; topPlatforms: Array<{ name: string; count: number }> };
   backlogStats: { total: number; want_to_play: number; playing: number; completed: number; dropped: number; on_hold: number };
-  topGames: Array<{ rank: number; note?: string; game: { _id: Id<"games">; title: string; coverUrl?: string; releaseYear?: number; aggregatedRating?: number } }>;
-  recentReviews: Array<{ _id: Id<"reviews">; _creationTime: number; rating: number; text?: string; playtimeHours?: number; platform?: string; game: { _id: Id<"games">; title: string; coverUrl?: string; releaseYear?: number } }>;
+  topGames: Array<{ rank: number; note?: string; game: { _id: Id<"games">; title: string; coverUrl?: string; releaseYear?: number; platforms?: string; aggregatedRating?: number } }>;
+  recentReviews: Array<{ _id: Id<"reviews">; _creationTime: number; rating: number; text?: string; playtimeHours?: number; platform?: string; game: { _id: Id<"games">; title: string; coverUrl?: string; releaseYear?: number; platforms?: string } }>;
   recentArticles: Array<{ _id: Id<"articles">; _creationTime: number; title: string; excerpt?: string; type?: string; coverUrl?: string; publishedAt?: number }>;
   draftArticleCount: number;
 }
@@ -69,7 +70,7 @@ export function ProfileDashboardContent({ data, headerAction, socialActions, err
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-4 gap-y-6">
               {data.topGames.map(entry => (
                 <OpenCaseLink key={entry.game._id} href={`/game/${entry.game._id}`} gameId={entry.game._id} coverUrl={entry.game.coverUrl} title={entry.game.title} className="pk-lib" aria-label={`#${entry.rank} ${entry.game.title}`}>
-                  <span className="pk-lib-cover"><span className="pk-rank">#{entry.rank}</span><Cover src={entry.game.coverUrl} title={entry.game.title} sizes="(max-width: 767px) 45vw, 240px" gameId={entry.game._id} /></span>
+                  <span className="pk-lib-cover"><span className="pk-rank">#{entry.rank}</span><Cover src={entry.game.coverUrl} title={entry.game.title} sizes="(max-width: 767px) 45vw, 240px" gameId={entry.game._id} medium={mediumOf(entry.game)} /></span>
                   <p className="pk-lib-title">{entry.game.title}</p>
                   {entry.note && <p className="text-xs italic text-textDim line-clamp-2">“{entry.note}”</p>}
                 </OpenCaseLink>
@@ -90,7 +91,7 @@ export function ProfileDashboardContent({ data, headerAction, socialActions, err
                 <div className="space-y-3">
                   {data.recentReviews.map(review => (
                     <OpenCaseLink key={review._id} href={`/review/${review._id}`} gameId={review.game._id} coverUrl={review.game.coverUrl} title={review.game.title} className="pk-lib-row !grid-cols-[56px_minmax(0,1fr)_auto]">
-                      <Cover src={review.game.coverUrl} title={review.game.title} sizes="56px" tilt={false} gameId={review.game._id} />
+                      <Cover src={review.game.coverUrl} title={review.game.title} sizes="56px" tilt={false} gameId={review.game._id} medium={mediumOf(review.game)} />
                       <span className="min-w-0">
                         <span className="pk-lib-title">{review.game.title}</span>
                         {review.text && <span className="mt-1 block text-sm text-textMuted line-clamp-2">{review.text}</span>}

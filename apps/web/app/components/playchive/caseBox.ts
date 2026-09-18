@@ -14,6 +14,7 @@
  */
 import type { CoverTone } from "@/app/lib/coverColor";
 import { toneVars } from "@/app/lib/coverColor";
+import type { Medium } from "@/app/lib/medium";
 
 export type Rect = { left: number; top: number; width: number; height: number };
 export type View = { width: number; height: number };
@@ -38,6 +39,14 @@ export type CaseLook = {
   print?: string;
   title: string;
   tone: CoverTone;
+  /** A case, or the cartridge / cassette drawn in its place. */
+  medium?: Medium;
+  /**
+   * The shelf cover the flight leaves from. When given it is cloned as the front,
+   * so whatever the cover is — case, cartridge, cassette — the flight is the same
+   * picture from its first frame.
+   */
+  from?: HTMLElement | null;
 };
 
 /**
@@ -87,8 +96,19 @@ function buildFloor(look: CaseLook) {
 
 /** The lid's front: the same anatomy as a shelf cover, so the two are one picture. */
 function buildFront(look: CaseLook) {
+  if (look.from) {
+    const front = look.from.cloneNode(true) as HTMLElement;
+    front.classList.add("pk-c-lid-front");
+    delete front.dataset.caseFlight;
+    delete front.dataset.tilt;
+    front.removeAttribute("id");
+    // The clone is many times the shelf's size: let the browser pick a sharper candidate.
+    for (const img of front.querySelectorAll("img")) { if (img.sizes) img.sizes = "1080px"; }
+    return front;
+  }
   const front = el("div", "pk-c-lid-front pk-cover");
   front.dataset.case = "true";
+  front.dataset.medium = look.medium ?? "case";
   // `.pk-cover` carries the brand blue as its own fallback tone; a shelf cover
   // overrides it inline once its art is read, and so must this one.
   front.style.setProperty("--case-tint", look.tone.tint);
@@ -162,6 +182,7 @@ export function buildCase(look: CaseLook, rect: Rect, view: View): CaseHalves {
   const shell = el("div", "pk-case3 pk-carry");
   shell.appendChild(buildShell(look));
   for (const box of [floor, shell]) {
+    box.dataset.medium = look.medium ?? "case";
     applyTone(box, look.tone);
     placeBox(box, rect, view);
   }

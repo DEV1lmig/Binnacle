@@ -33,6 +33,7 @@ const gameSummaryValidator = v.object({
   title: v.string(),
   coverUrl: v.optional(v.string()),
   releaseYear: v.optional(v.number()),
+  platforms: v.optional(v.string()),
 });
 
 const detailedArticleValidator = v.object({
@@ -583,6 +584,7 @@ async function hydrateArticleGames(ctx: QueryCtx, articleId: Id<"articles">) {
     title: string;
     coverUrl?: string;
     releaseYear?: number;
+    platforms?: string;
   }> = [];
 
   for (const link of links) {
@@ -593,6 +595,7 @@ async function hydrateArticleGames(ctx: QueryCtx, articleId: Id<"articles">) {
         title: game.title,
         coverUrl: game.coverUrl ?? undefined,
         releaseYear: game.releaseYear ?? undefined,
+        platforms: game.platforms ?? undefined,
       });
     }
   }

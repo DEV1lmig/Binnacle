@@ -15,6 +15,7 @@ import { toneVars } from "@/app/lib/coverColor";
 import { CaseBackdrop, Disc, Pill, useCloseCase, SectionHeading, ScoreMark, StatusChip, STATUS_LABEL, STATUS_ORDER, useCaseTone, type LibraryStatus } from "@/app/components/playchive";
 import { GameReviewsSection } from "@/app/components/game/GameReviewsSection";
 import { GameArticlesSection } from "@/app/components/game/GameArticlesSection";
+import { mediumOf } from "@/app/lib/medium";
 
 type CreditEntry = {
   id?: number | string;
@@ -258,17 +259,18 @@ export default function GameDetailPage() {
   }
 
   const hasRelatedContent = relatedContentEntries.length > 0;
+  const medium = mediumOf(game);
   const current = (status ?? null) as LibraryStatus | null;
   return (
     <div className="pk-inside min-h-screen pb-24 md:pb-12" style={toneVars(tone)}>
-      <CaseBackdrop src={game.coverUrl} gameId={gameId} title={game.title} />
+      <CaseBackdrop src={game.coverUrl} gameId={gameId} title={game.title} medium={medium} />
       <div className="pk-page">
       {/* You are inside the case: the cover's own colour behind the artwork. */}
       <section className="pk-hero pk-hero-inside">
         <div className="pk-hero-inner pk-detail-hero">
           <button type="button" onClick={() => closeCase()} className="pk-hero-back pk-textlink text-textMuted"><ChevronLeft size={16} />Back</button>
           <div className="pk-detail-cover">
-            <Disc src={game.coverUrl} title={game.title} sizes="(max-width: 767px) 60vw, 280px" priority gameId={gameId} onTone={setTone} />
+            <Disc src={game.coverUrl} title={game.title} sizes="(max-width: 767px) 60vw, 280px" priority gameId={gameId} onTone={setTone} medium={medium} />
           </div>
           <div>
             {current ? <StatusChip status={current} size="lg" /> : <span className="pk-eyebrow">Not on your shelf yet</span>}

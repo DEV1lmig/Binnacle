@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { DEFAULT_TONE, rememberTone, type CoverTone } from "@/app/lib/coverColor";
 import { buildCase, trayRect, vanishingPoint, type CaseHalves, type CaseLook, type Rect, type View } from "./caseBox";
+import type { Medium } from "@/app/lib/medium";
 import { textureUrl } from "./caseUrl";
 
 type OpenRequest = { href: string; gameId?: string; tone: CoverTone; rect: DOMRect; src?: string; title: string; el?: HTMLElement };
@@ -288,7 +289,6 @@ class CaseMachine {
   }
 
   private pose(pose: Pose, timing: Timing | "instant") {
-    debug.log(`pose ${timing} r${pose.rise} o${pose.open} d${pose.dive}`);
     if (timing === "instant") { tween.jump(pose); return; }
     root().dataset.caseState = timing;
     tween.go(pose, timing);
@@ -333,7 +333,6 @@ class CaseMachine {
     const g = this.g;
     this.serial++;
     if (!g) return;
-    debug.log(`release ${g.kind}`);
     this.g = null;
     g.timers.forEach(clearTimeout);
     g.frames.forEach(cancelAnimationFrame);
@@ -355,11 +354,10 @@ class CaseMachine {
   /* ---- gestures ---- */
 
   open(request: OpenRequest) {
-    debug.log(`open ${request.href}`);
     try {
       this.openCase(request);
-    } catch (error) {
-      debug.log(`open failed: ${error instanceof Error ? error.message : String(error)}`);
+    } catch {
+      // Whatever the browser could not do, the reader still gets the page.
       this.cancel();
       this.router.push(request.href);
     }
@@ -376,10 +374,9 @@ class CaseMachine {
     const view = viewport();
     const tray = trayRect(view);
     const rect = cover.getBoundingClientRect();
-    const img = cover.querySelector("img");
     const look: CaseLook = {
-      front: (img?.currentSrc || img?.src) || textureUrl(request.src, 828),
-      frontHi: textureUrl(request.src, 828),
+      from: cover,
+      medium: (cover.dataset.medium as Medium | undefined) ?? "case",
       print: textureUrl(request.src, 1080),
       title: request.title,
       tone: request.tone,
@@ -403,11 +400,9 @@ class CaseMachine {
   }
 
   close() {
-    debug.log("close");
     try {
       this.closeCase();
-    } catch (error) {
-      debug.log(`close failed: ${error instanceof Error ? error.message : String(error)}`);
+    } catch {
       this.cancel();
       this.router.back();
     }
@@ -453,7 +448,7 @@ class CaseMachine {
       deep: style.getPropertyValue("--case-deep").trim() || DEFAULT_TONE.deep,
       shade: style.getPropertyValue("--case-shade").trim() || DEFAULT_TONE.shade,
     };
-    const look: CaseLook = { front: rest.dataset.print, print: rest.dataset.print, title: rest.dataset.title ?? "", tone };
+    const look: CaseLook = { front: rest.dataset.print, frontHi: rest.dataset.print, print: rest.dataset.print, title: rest.dataset.title ?? "", tone, medium: (rest.dataset.medium as Medium | undefined) ?? "case" };
     this.geometry(null, tray, view);
     this.pose(LANDED, "instant");
     const { flight, layers } = this.mount(look, tray, view);
@@ -489,7 +484,6 @@ class CaseMachine {
 
   route(pathname: string) {
     const g = this.g;
-    debug.log(`route ${pathname} ${g ? `${g.kind} arrived=${g.arrived} back=${g.wentBack}` : "idle"}`);
     if (!g) return;
     if (g.kind === "open") {
       if (pathname === g.target) {
@@ -539,7 +533,6 @@ class CaseMachine {
   /** The page is there: seat it inside the case, reveal it, and once the case is open, dive. */
   private pageIn() {
     const g = this.g;
-    debug.log("page in");
     if (!g || g.kind !== "open") return;
     const page = document.querySelector<HTMLElement>(".pk-inside");
     if (page) {
@@ -558,7 +551,6 @@ class CaseMachine {
     const g = this.g;
     if (!g || g.kind !== "close") return;
     const cover = findCover(g.key);
-    debug.log(`land on shelf cover=${Boolean(cover)}`);
     g.ghost?.remove();
     g.ghost = null;
     if (!cover) {
@@ -577,39 +569,6 @@ class CaseMachine {
 
 const machine = new CaseMachine();
 
-/**
- * A trace of the machine, on screen, for devices without a console. Turned on
- * with `?casedebug` (remembered in sessionStorage for the pages that follow), it
- * lists every step and every error the transition hits.
- */
-const debug = {
-  on: false,
-  armed: false,
-  panel: null as HTMLElement | null,
-  arm() {
-    if (typeof window === "undefined" || this.armed) return;
-    this.armed = true;
-    try {
-      if (new URLSearchParams(location.search).has("casedebug")) sessionStorage.setItem("casedebug", "1");
-      this.on = sessionStorage.getItem("casedebug") === "1";
-    } catch { this.on = false; }
-    if (!this.on) return;
-    window.addEventListener("error", e => this.log(`error: ${e.message} @${(e.filename || "").split("/").pop()}:${e.lineno}`));
-    window.addEventListener("unhandledrejection", e => this.log(`rejection: ${String((e as PromiseRejectionEvent).reason).slice(0, 120)}`));
-    const ua = navigator.userAgent.match(/(iPhone|iPad|Android|CriOS|FxiOS|Version\/[\d.]+ .*Safari)/g)?.join(" ") ?? "";
-    this.log(`ready ${ua} ${window.innerWidth}x${window.innerHeight} rm=${window.matchMedia("(prefers-reduced-motion: reduce)").matches}`);
-  },
-  log(line: string) {
-    if (!this.on) return;
-    if (!this.panel || !this.panel.isConnected) {
-      this.panel = document.createElement("pre");
-      this.panel.className = "pk-case-debug";
-      document.body.appendChild(this.panel);
-    }
-    const stamp = (performance.now() / 1000).toFixed(2);
-    this.panel.textContent = `${this.panel.textContent}${stamp} ${line}\n`.split("\n").slice(-14).join("\n");
-  },
-};
 
 /**
  * Drives the case between a shelf and the page inside it. The machine above owns
@@ -621,7 +580,6 @@ export function CaseTransitionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => { machine.router = router; }, [router]);
-  useEffect(() => { debug.arm(); }, []);
   useEffect(() => { machine.route(pathname); }, [pathname]);
   useEffect(() => () => machine.cancel(), []);
 
