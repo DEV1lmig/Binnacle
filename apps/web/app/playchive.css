@@ -585,6 +585,4 @@ body[data-case-held] .pk-inside {
 }
 /* The still copy of the page being left: under the case, over whatever is loading. */
 .pk-ghost { position: fixed; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
-.pk-ghost-sheet { position: absolute; inset: 0 0 auto; }
-.pk-ghost--out { opacity: 0; transition: opacity .24s linear; }
 body[data-case-held] .pk-inside[data-case-in] { opacity: 1; transition: opacity .18s linear; }
