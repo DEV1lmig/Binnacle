@@ -157,9 +157,12 @@ export function CaseTransitionProvider({ children }: { children: ReactNode }) {
   const settled = useRef(false);
   const readyCheck = useRef<(() => boolean) | null>(null);
   const ghost = useRef<HTMLElement | null>(null);
+  /** The route this gesture is heading to; `null` means "wherever back leads". */
+  const target = useRef<string | null>(null);
 
   const dismiss = useCallback(() => {
     from.current = null;
+    target.current = null;
     arrived.current = false;
     ready.current = false;
     settled.current = false;
@@ -174,6 +177,20 @@ export function CaseTransitionProvider({ children }: { children: ReactNode }) {
     timers.current.push(window.setTimeout(() => setOverlay(null), FADE));
   }, []);
 
+  /**
+   * A gesture started on top of another one — open, then close before the open
+   * has settled, or the browser's own back button mid-move — cancels the first
+   * outright: its timers, its copy of the page, its hold on the case. The case
+   * eases back to wherever it now belongs; nothing is left half-way.
+   */
+  const abort = useCallback(() => {
+    if (!from.current) return;
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    setOverlay(null);
+    dismiss();
+  }, [dismiss]);
+
   const settle = useCallback(() => {
     if (arrived.current && ready.current && settled.current) dismiss();
   }, [dismiss]);
@@ -183,6 +200,10 @@ export function CaseTransitionProvider({ children }: { children: ReactNode }) {
   // answers, and the case must not be let go — nor the ghost lifted — in between.
   useEffect(() => {
     if (!from.current || from.current === pathname) return;
+    if (target.current && pathname !== target.current) {
+      const frame = requestAnimationFrame(abort);
+      return () => cancelAnimationFrame(frame);
+    }
     arrived.current = true;
     const check = readyCheck.current;
     const began = performance.now();
@@ -199,11 +220,13 @@ export function CaseTransitionProvider({ children }: { children: ReactNode }) {
     };
     poll();
     return () => cancelAnimationFrame(frame);
-  }, [pathname, settle]);
+  }, [pathname, settle, abort]);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
+
   const open = useCallback((request: OpenRequest) => {
+    abort();
     if (request.gameId) rememberTone(request.gameId, request.tone);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       router.push(request.href);
@@ -263,15 +286,17 @@ export function CaseTransitionProvider({ children }: { children: ReactNode }) {
     );
 
     from.current = window.location.pathname;
+    target.current = request.href.split(/[?#]/)[0];
     setPhase("open");
     // The real case needs no overlay: it is its own veil, and then its own page.
     if (solid) settled.current = false;
     else setOverlay({ ...request, rect: { top, left, width, height }, flood: (reach * 2) / Math.max(width, 1) + 0.4, solid });
     timers.current.push(window.setTimeout(() => router.push(request.href), solid ? CASE_ASK : COVERED));
     timers.current.push(window.setTimeout(() => { if (from.current) dismiss(); }, PATIENCE));
-  }, [router, dismiss, settle]);
+  }, [router, dismiss, settle, abort]);
 
   const close = useCallback(() => {
+    abort();
     const slot = findOpenSlot();
     const drawn = Boolean(slot && slot.el.dataset.case3d === "on");
     if (!slot || !drawn || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -305,7 +330,7 @@ export function CaseTransitionProvider({ children }: { children: ReactNode }) {
     const canGoBack = nav?.canGoBack ?? window.history.length > 1;
     timers.current.push(window.setTimeout(() => { if (canGoBack) router.back(); else router.push("/backlog"); }, CASE_AWAY));
     timers.current.push(window.setTimeout(() => { if (from.current) dismiss(); }, PATIENCE));
-  }, [router, dismiss, settle]);
+  }, [router, dismiss, settle, abort]);
 
   return (
     <CaseTransitionContext.Provider value={open}>
