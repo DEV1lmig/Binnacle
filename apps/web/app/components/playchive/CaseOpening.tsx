@@ -82,28 +82,30 @@ function ghostPage(kind: "page" | "surface") {
     surface.className = "pk-case-view";
     ghost.appendChild(surface);
   } else {
-    const sheet = document.createElement("div");
-    sheet.className = "pk-ghost-sheet";
-    sheet.style.transform = `translateY(${-window.scrollY}px)`;
     for (const node of Array.from(document.body.children)) {
       if (!(node instanceof HTMLElement)) continue;
       if (node.matches("header, script, style, nextjs-portal, .pk-stage, .pk-opening, .pk-ghost, [data-radix-popper-content-wrapper], [data-sonner-toaster]")) continue;
+      const rect = node.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) continue;
       const copy = node.cloneNode(true) as HTMLElement;
       for (const el of copy.querySelectorAll<HTMLElement>("[data-case3d]")) delete el.dataset.case3d;
       for (const el of copy.querySelectorAll<HTMLElement>("[id]")) el.removeAttribute("id");
       for (const el of copy.querySelectorAll("canvas, video, iframe, script")) el.remove();
-      sheet.appendChild(copy);
+      // Pinned exactly where the original is on screen, header and scroll included.
+      copy.style.position = "absolute";
+      copy.style.top = `${rect.top}px`;
+      copy.style.left = `${rect.left}px`;
+      copy.style.width = `${rect.width}px`;
+      copy.style.margin = "0";
+      ghost.appendChild(copy);
     }
-    ghost.appendChild(sheet);
   }
   document.body.appendChild(ghost);
   return ghost;
 }
 
 function dropGhost(ghost: HTMLElement | null) {
-  if (!ghost) return;
-  ghost.classList.add("pk-ghost--out");
-  window.setTimeout(() => ghost.remove(), 260);
+  ghost?.remove();
 }
 
 /** What "the destination is ready" means, for each direction. */
@@ -272,6 +274,8 @@ export function CaseTransitionProvider({ children }: { children: ReactNode }) {
       router.back();
       return;
     }
+    const page = document.querySelector<HTMLElement>(".pk-inside");
+    if (page) page.dataset.caseIn = "1";
     holdPage(true);
     ghost.current = ghostPage("surface");
     readyCheck.current = READY.shelf;
