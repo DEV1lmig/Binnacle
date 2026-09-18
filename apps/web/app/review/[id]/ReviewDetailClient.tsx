@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
@@ -13,12 +13,12 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import { Heart, MessageCircle, ChevronLeft, Share2, Twitter, Facebook, Link as LinkIcon, Check, ImageIcon, Clock, Gamepad2, ArrowRight } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu";
 import { toneVars } from "@/app/lib/coverColor";
-import { CaseBackdrop, Cover, ScoreMark, SectionHeading, useCaseTone } from "@/app/components/playchive";
+import { CaseBackdrop, Disc, ScoreMark, useCloseCase, SectionHeading, useCaseTone } from "@/app/components/playchive";
 import { relativeTime } from "@/app/components/ReviewCard";
 
 export default function ReviewDetailClient() {
   const params = useParams();
-  const router = useRouter();
+  const closeCase = useCloseCase();
   const reviewId = params.id as string;
   const review = useQuery(api.reviews.get, reviewId ? { reviewId: reviewId as Id<"reviews"> } : "skip");
   const comments = useQuery(api.comments.listForReview, { reviewId: reviewId as Id<"reviews">, limit: 50 });
@@ -52,12 +52,12 @@ export default function ReviewDetailClient() {
 
   return (
     <div className="pk-inside min-h-screen pb-24 md:pb-12" style={toneVars(tone)}>
-      <CaseBackdrop />
+      <CaseBackdrop src={game?.coverUrl} gameId={review.gameId} title={game?.title} />
       <section className="pk-hero pk-hero-inside">
         <div className="pk-hero-inner pk-detail-hero" data-size="sm">
-          <button type="button" onClick={() => router.back()} className="pk-hero-back pk-textlink !text-white/80"><ChevronLeft size={16} />Back</button>
+          <button type="button" onClick={() => closeCase()} className="pk-hero-back pk-textlink !text-white/80"><ChevronLeft size={16} />Back</button>
           <Link href={`/game/${review.gameId}`} className="pk-detail-cover block" aria-label={game?.title ?? "Game"}>
-            <Cover src={game?.coverUrl} title={game?.title ?? "Game"} sizes="(max-width: 767px) 48vw, 200px" gameId={review.gameId} onTone={setTone} />
+            <Disc src={game?.coverUrl} title={game?.title ?? "Game"} sizes="(max-width: 767px) 48vw, 200px" gameId={review.gameId} onTone={setTone} />
           </Link>
           <div>
             <div className="flex flex-wrap items-start justify-between gap-4">

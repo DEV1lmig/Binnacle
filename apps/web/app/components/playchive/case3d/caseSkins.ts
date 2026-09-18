@@ -7,12 +7,14 @@
  * reader scrolls through hundreds of games.
  */
 import * as THREE from "three";
-import { canvasTexture, frontCanvas, insideTexture, loadImage, spineCanvas } from "./caseArt";
+import { canvasTexture, frontCanvas, insideArtCanvas, insideTexture, loadImage, spineCanvas } from "./caseArt";
 import { DEFAULT_TONE, readCoverTone, type CoverTone } from "@/app/lib/coverColor";
 
 export type CaseSkin = {
   /** Six-face material arrays, in the order three.js expects for a box. */
   tray: THREE.Material[];
+  /** Plain plastic on every face: the walls whose inside shows once the case lies open. */
+  walls: THREE.Material[];
   lid: THREE.Material[];
   tone: CoverTone;
   dispose: () => void;
@@ -89,6 +91,7 @@ export async function buildSkin(key: string, coverUrl: string | undefined | null
     const skin: CaseSkin = {
       // Box faces: +x, -x, +y, -y, +z, -z.
       tray: [edge, spineMat, edge, edge, inside, edge],
+      walls: [edge, edge, edge, edge, edge, edge],
       lid: [edge, edge, edge, edge, cover, back],
       tone,
       dispose: () => owned.forEach(item => item.dispose()),
@@ -107,4 +110,52 @@ export function disposeSkins() {
   for (const skin of cache.values()) skin.dispose();
   cache.clear();
   pending.clear();
+}
+
+/**
+ * The inside of an open case at page size. Only the case a page rests in needs one,
+ * so two are kept: the page being read and the one it came from.
+ */
+const insides = new Map<string, THREE.Material>();
+const insidesPending = new Map<string, Promise<THREE.Material>>();
+const INSIDE_LIMIT = 2;
+
+export function peekInsideArt(key: string) {
+  const hit = insides.get(key);
+  if (hit) {
+    insides.delete(key);
+    insides.set(key, hit);
+  }
+  return hit;
+}
+
+export async function buildInsideArt(key: string, coverUrl: string | undefined | null, aspect: number, anisotropy: number, visible = 1): Promise<THREE.Material> {
+  const hit = peekInsideArt(key);
+  if (hit) return hit;
+  const inFlight = insidesPending.get(key);
+  if (inFlight) return inFlight;
+
+  const work = (async () => {
+    const [mark, art] = await Promise.all([
+      brandSymbol(),
+      coverUrl ? loadImage(coverUrl).catch(() => null) : Promise.resolve(null),
+    ]);
+    const tone = art ? readCoverTone(art, key) : DEFAULT_TONE;
+    const map = canvasTexture(insideArtCanvas(art, mark, tone, aspect, FONTS, visible), anisotropy);
+    const material = new THREE.MeshStandardMaterial({ map, roughness: 0.34, metalness: 0 });
+    insides.set(key, material);
+    insidesPending.delete(key);
+    while (insides.size > INSIDE_LIMIT) {
+      const oldest = insides.keys().next().value;
+      if (!oldest) break;
+      const old = insides.get(oldest) as THREE.MeshStandardMaterial | undefined;
+      old?.map?.dispose();
+      old?.dispose();
+      insides.delete(oldest);
+    }
+    return material;
+  })();
+
+  insidesPending.set(key, work);
+  return work;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useAction, useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -12,7 +12,7 @@ import { normalizeRatingToTen } from "@binnacle/shared-types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { toneVars } from "@/app/lib/coverColor";
-import { CaseBackdrop, Cover, Pill, SectionHeading, ScoreMark, StatusChip, STATUS_LABEL, STATUS_ORDER, useCaseTone, type LibraryStatus } from "@/app/components/playchive";
+import { CaseBackdrop, Disc, Pill, useCloseCase, SectionHeading, ScoreMark, StatusChip, STATUS_LABEL, STATUS_ORDER, useCaseTone, type LibraryStatus } from "@/app/components/playchive";
 import { GameReviewsSection } from "@/app/components/game/GameReviewsSection";
 import { GameArticlesSection } from "@/app/components/game/GameArticlesSection";
 
@@ -98,7 +98,7 @@ function parseCreditField(raw: unknown): CreditEntry[] {
 }
 
 export default function GameDetailPage() {
-  const router = useRouter();
+  const closeCase = useCloseCase();
   const params = useParams();
   const gameId = params.id as string;
 
@@ -261,13 +261,13 @@ export default function GameDetailPage() {
   const current = (status ?? null) as LibraryStatus | null;
   return (
     <div className="pk-inside min-h-screen pb-24 md:pb-12" style={toneVars(tone)}>
-      <CaseBackdrop />
+      <CaseBackdrop src={game.coverUrl} gameId={gameId} title={game.title} />
       {/* You are inside the case: the cover's own colour behind the artwork. */}
       <section className="pk-hero pk-hero-inside">
         <div className="pk-hero-inner pk-detail-hero">
-          <button type="button" onClick={() => router.back()} className="pk-hero-back pk-textlink text-textMuted"><ChevronLeft size={16} />Back</button>
+          <button type="button" onClick={() => closeCase()} className="pk-hero-back pk-textlink text-textMuted"><ChevronLeft size={16} />Back</button>
           <div className="pk-detail-cover">
-            <Cover src={game.coverUrl} title={game.title} sizes="(max-width: 767px) 60vw, 280px" priority gameId={gameId} onTone={setTone} />
+            <Disc src={game.coverUrl} title={game.title} sizes="(max-width: 767px) 60vw, 280px" priority gameId={gameId} onTone={setTone} />
           </div>
           <div>
             {current ? <StatusChip status={current} size="lg" /> : <span className="pk-eyebrow">Not on your shelf yet</span>}

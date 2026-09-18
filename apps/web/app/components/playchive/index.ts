@@ -8,10 +8,11 @@ export { StatusChip, STATUS_LABEL, STATUS_ORDER, STATUS_COLOR, normalizeStatus }
 export type { LibraryStatus } from "./StatusChip";
 export { ScoreMark } from "./ScoreMark";
 export { Cover } from "./Cover";
+export { Disc } from "./Disc";
 export { LibraryCard, LibraryRow, MoveMenu } from "./LibraryCard";
 export type { LibraryItem } from "./LibraryCard";
 export { Prompt } from "./Prompt";
-export { CaseTransitionProvider, useOpenCase } from "./CaseOpening";
+export { CaseTransitionProvider, useOpenCase, useCloseCase } from "./CaseOpening";
 export { OpenCaseLink } from "./OpenCaseLink";
-export { CaseBackdrop, useCaseTone } from "./CaseBackdrop";
+export { CaseBackdrop, CaseInside, useCaseTone } from "./CaseBackdrop";
 export { ScrollReset } from "./ScrollReset";

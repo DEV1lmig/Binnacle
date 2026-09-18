@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { getStandardCoverUrl } from "@/lib/igdb-images";
 import { DEFAULT_TONE, readCoverTone, recallTone } from "@/app/lib/coverColor";
 import { useOpenCase } from "./CaseOpening";
@@ -21,7 +22,12 @@ export function OpenCaseLink({ href, gameId, coverUrl, title, className = "", ch
   "aria-label"?: string;
 }) {
   const open = useOpenCase();
+  const router = useRouter();
   const ref = useRef<HTMLAnchorElement>(null);
+
+  // The page should be on its way before the case is even touched: the dive waits
+  // for it, and every millisecond saved here is a shorter wait with the lid open.
+  const warm = () => router.prefetch(href);
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (!open || event.defaultPrevented) return;
@@ -36,7 +42,7 @@ export function OpenCaseLink({ href, gameId, coverUrl, title, className = "", ch
   };
 
   return (
-    <Link ref={ref} href={href} className={className} onClick={handleClick} {...rest}>
+    <Link ref={ref} href={href} className={className} onClick={handleClick} onPointerEnter={warm} onFocus={warm} {...rest}>
       {children}
     </Link>
   );

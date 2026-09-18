@@ -264,7 +264,16 @@
 /* Detail heroes (game, review): back link spans the top row, cover centres on small screens.
    The tilt is hover-only, so touch devices get an entrance + a slow float instead. */
 .pk-detail-hero { grid-template-columns: minmax(0, 1fr); align-items: start; row-gap: 20px; }
-.pk-detail-hero .pk-hero-back { grid-column: 1 / -1; justify-self: start; margin: -4px 0 0; }
+.pk-detail-hero .pk-hero-back { grid-column: 1 / -1; justify-self: start; margin: -4px 0 0; padding: 7px 14px 7px 10px; border-radius: 999px; background: #0B1020D9; color: #FFFFFF !important; box-shadow: 0 1px 0 #FFFFFF1A inset, 0 6px 16px #00000066; backdrop-filter: blur(6px); }
+/* A pill has no business with the text link's underline. */
+.pk-detail-hero .pk-hero-back::after { display: none; }
+/* Text over a cover: white, and lifted off the artwork with a shadow. The muted
+   blue-grey of the shelf has no contrast against most covers. */
+.pk-hero-inside { --tone-muted: #F1F4FA; }
+.pk-hero-inside .text-textMuted { color: #F1F4FA; }
+.pk-hero-inside .pk-detail-hero { text-shadow: 0 1px 2px #000000B3, 0 2px 14px #00000073; }
+.pk-hero-inside .pk-tag, .pk-hero-inside .pk-pill { text-shadow: none; }
+.pk-hero-inside .pk-tag { background: #0B1020A6; border-color: #FFFFFF33; color: #FFFFFF; }
 .pk-detail-cover { width: min(220px, 58vw); margin-inline: auto; }
 @media (min-width: 768px) {
   .pk-detail-hero { grid-template-columns: 240px minmax(0, 1fr); column-gap: 40px; }
@@ -471,19 +480,60 @@ button.pk-stat[aria-pressed="true"] span { color: inherit; opacity: .75; }
     inset 0 22px 44px -28px #FFFFFF2B,
     inset 0 -70px 100px -70px #00000099;
 }
-/* As a page background it sits behind everything; as a veil it sits over everything. */
-.pk-case-backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-.pk-opening-inside { position: fixed; inset: 0; opacity: 0; }
+/* Looking down into the open case, resting on a dark surface. The view is a fixed
+   window with perspective; the tray inside it is leaned back on its near edge, so
+   the far edge recedes and narrows — the way a case looks when you bend over it —
+   and the surface shows in the far corners. As a page background it sits behind
+   everything; as the veil that ends the dive it sits over everything. */
+.pk-case-view { position: fixed; inset: 0; pointer-events: none; overflow: hidden; perspective: 1100px; perspective-origin: 50% 30%; background: radial-gradient(120% 70% at 50% 110%, #121a30, #05070e 70%); }
+.pk-case-backdrop { z-index: -1; }
+/* The tray starts just under the header — its far edge is where the lid folds
+   away — and the lean pivots on the near edge so the bottom stays close. */
+.pk-case-open { position: absolute; top: max(64px, 11vh); right: 1.6%; left: 1.6%; aspect-ratio: 1.2 / 1.7; border-radius: 18px; overflow: hidden; transform-origin: 50% 50%; transform: rotateX(.19rad); box-shadow: 0 30px 60px -20px #000000c0, 0 2px 0 #FFFFFF12; }
+/* The cover, left in the tray: a print fading into the plastic, under its gloss. */
+.pk-case-print { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 14%; opacity: .36; filter: saturate(.85); -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 8%, #00000066 22%, transparent 40%); mask-image: linear-gradient(180deg, #000 0%, #000 8%, #00000066 22%, transparent 40%); }
+/* The walls: the lit top face of each wall as a lip, and the wall's own shadow
+   falling into the tray. The near wall is the thickest, because it is closest. */
+.pk-case-rim { position: absolute; inset: 0; border-radius: inherit; border-style: solid; border-width: 7px 9px 16px; border-color: #FFFFFF0E #FFFFFF0B #FFFFFF16 #FFFFFF0B; box-shadow: inset 0 0 0 1px #00000070, inset 0 10px 24px -6px #00000080, inset 0 -6px 16px -8px #00000060; }
+/* The spine, seen edge-on along the far edge, in the case's band colour with the
+   mark on it — the one line that says "case" before anything else does. */
+.pk-case-hinge { position: absolute; top: 0; left: 0; right: 0; height: 30px; display: flex; align-items: center; justify-content: center; gap: 7px; background: linear-gradient(180deg, var(--case-tint, #245CF2) 0%, var(--case-tint, #245CF2) 82%, #00000066); box-shadow: 0 1px 0 #00000080, 0 4px 10px #00000050; color: var(--case-ink, #FFFFFF); font-family: var(--playchive-body), "DM Sans", sans-serif; font-size: 12px; font-weight: 600; letter-spacing: .14em; }
+.pk-case-hinge .pk-case-mark { width: 14px; height: 14px; }
+
+/* ==========================================================================
+   The disc. A detail page is already the open case, so instead of a second case
+   in the hero it shows what a case holds: the disc, seated in the tray's hub,
+   with the cover printed on it as the label.
+   ========================================================================== */
+.pk-disc-seat { position: relative; display: block; width: 100%; aspect-ratio: 1; container-type: inline-size; }
+/* The hub moulded into the tray: a recess with the clip prongs and the centre pin.
+   Only the middle shows, through the hole in the disc. */
+.pk-hub { position: absolute; inset: 31%; border-radius: 50%; background: repeating-conic-gradient(#FFFFFF12 0 9deg, transparent 9deg 60deg), radial-gradient(circle, #FFFFFF2A 0 24%, #00000070 26% 33%, var(--case-shade, #141C36) 35% 100%); box-shadow: inset 0 0 0 1px #FFFFFF14, inset 0 3px 8px #00000080; }
+.pk-disc { position: absolute; inset: 0; border-radius: 50%; filter: drop-shadow(0 16px 22px #00000075); transition: transform .5s var(--pk-ease); animation: pk-disc-in .9s var(--pk-ease) both; }
+.pk-disc-seat:hover .pk-disc { transform: rotate(9deg); }
+.pk-disc-label, .pk-disc-sheen { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; -webkit-mask-image: radial-gradient(circle, transparent 0 15.5%, #000 16.5% 97.5%, transparent 98.5%); mask-image: radial-gradient(circle, transparent 0 15.5%, #000 16.5% 97.5%, transparent 98.5%); }
+.pk-disc-label { background: var(--case-shade, #141C36); }
+.pk-disc-label img { object-fit: cover; object-position: 50% 30%; }
+.pk-disc-empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 22%; text-align: center; font-family: var(--playchive-display), Outfit, sans-serif; font-weight: 800; font-size: 9cqw; line-height: 1.05; color: #FFFFFFCC; }
+/* Printed labels are glossy: one sweep of light across it, and a faint second one. */
+.pk-disc-sheen { background: conic-gradient(from 205deg, #FFFFFF00 0deg, #FFFFFF38 28deg, #FFFFFF00 66deg, #FFFFFF12 150deg, #FFFFFF00 196deg, #FFFFFF2A 296deg, #FFFFFF00 360deg); mix-blend-mode: screen; }
+/* The clear ring around the hole, where the polycarbonate shows, and the edge. */
+.pk-disc-ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px #FFFFFF3D, inset 0 0 0 3px #00000030; }
+.pk-disc-ring::before { content: ""; position: absolute; inset: 15.5%; border-radius: 50%; box-shadow: 0 0 0 1px #00000070, 0 0 0 4.5cqw #FFFFFF14, 0 0 0 5cqw #FFFFFF2E, inset 0 0 0 1px #FFFFFF40; }
+@keyframes pk-disc-in { from { opacity: 0; transform: translate3d(0, 18px, 0) rotate(-16deg) scale(.94); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   .pk-opening, .pk-opening-case, .pk-opening-lid, .pk-opening-flood { animation: none !important; }
-  .pk-opening-inside { animation: none !important; opacity: 1; }
+  .pk-case-print { opacity: .3; }
+  .pk-disc { animation: none; transition: none; }
 }
 
 /* A page rendered inside the case: the hero goes transparent so the tinted backdrop
    shows through, and surfaces take the cover's own shade instead of the shelf navy. */
 .pk-hero-inside { background: transparent; --tone-bg: transparent; --tone-bg-2: transparent; --tone-ink: #FFFFFF; --tone-muted: #C9D4E6; --tone-accent: var(--case-tint, #FFC400); --tone-cta: #FFC400; --tone-cta-ink: #101827; --tone-line: #FFFFFF33; --tone-wash: #FFFFFF1A; --tone-wash-2: #FFFFFF2E; }
 .pk-hero-inside::before { display: none; }
+/* Clear the spine along the tray's far edge. */
+.pk-hero-inside .pk-hero-inner { padding-top: clamp(44px, 5vw, 72px); }
 .pk-inside .pk-panel, .pk-inside .pk-review, .pk-inside .pk-article { background: var(--case-panel, #141C36); border-color: #FFFFFF1F; }
 .pk-inside .pk-seg { background: #00000038; border-color: #FFFFFF24; }
 .pk-inside .pk-empty { border-color: #FFFFFF26; }
@@ -513,13 +563,28 @@ button.pk-stat[aria-pressed="true"] span { color: inherit; opacity: .75; }
 .pk-cover[data-case3d="on"] .pk-cover-empty { opacity: 0; transition: opacity .25s linear; }
 .pk-cover[data-case3d="on"] { background: transparent; box-shadow: none; }
 
-/* When the real case is opening in 3D the flat stand-in steps aside entirely, and
-   so does the colour wipe: nothing may be drawn over the case until it has finished
-   opening. The plastic only closes in once the dive is already under way. */
-.pk-opening[data-solid="true"] .pk-opening-case,
-.pk-opening[data-solid="true"] .pk-opening-flood { display: none; }
-.pk-opening[data-solid="true"][data-phase="open"] .pk-opening-inside { animation: pk-inside-in 260ms linear 760ms forwards; }
-.pk-opening[data-solid="true"][data-phase="leave"] .pk-opening-inside { opacity: 1; animation: pk-flood-out 380ms linear forwards; }
-.pk-opening:not([data-solid="true"]) .pk-opening-inside { display: none; }
-
-@keyframes pk-inside-in { to { opacity: 1; } }
+/* While a page rests in its open case the stage drops behind the content: the case
+   is the page's background, and the page's own flat tray fades out underneath it. */
+.pk-stage[data-behind="true"] { z-index: -1; }
+.pk-case-open[data-case3d="on"] { opacity: 0; transition: opacity .25s linear; }
+/* A page carried by its case. The wrapper takes the case's own transform — the
+   stage writes these each frame: same perspective (vanishing point at the viewport
+   centre), same centre, lean, tilt and scale — so the content is projected by the
+   same camera as the walls and lid drawn over it, and clipped to the tray floor.
+   Until the first frame lands the clip hides everything, so nothing flashes. */
+body[data-case-held] .pk-inside {
+  transform-origin: var(--case-ox, 50%) var(--case-oy, 50%);
+  transform:
+    translate(var(--case-vx, 0px), var(--case-vy, 0px)) perspective(var(--case-p, 1100px)) translate(calc(-1 * var(--case-vx, 0px)), calc(-1 * var(--case-vy, 0px)))
+    translate3d(var(--case-tx, 0px), var(--case-ty, 0px), var(--case-tz, 0px)) rotateX(var(--case-lean, 0rad)) rotateY(var(--case-tilt, 0rad)) scale(var(--case-sx, 1), var(--case-sy, 1));
+  clip-path: inset(var(--case-clip, 100%));
+  will-change: transform;
+  opacity: 0;
+  position: relative;
+  z-index: 6;
+}
+/* The still copy of the page being left: under the case, over whatever is loading. */
+.pk-ghost { position: fixed; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
+.pk-ghost-sheet { position: absolute; inset: 0 0 auto; }
+.pk-ghost--out { opacity: 0; transition: opacity .24s linear; }
+body[data-case-held] .pk-inside[data-case-in] { opacity: 1; transition: opacity .18s linear; }

@@ -25,13 +25,13 @@ const rgbOf = (hex: string) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 
 const hexOf = (n: number) => Math.round(Math.min(255, Math.max(0, n))).toString(16).padStart(2, "0");
 
 /** Mixes `from` towards `to`. */
-function blend(from: string, to: string, amount: number) {
+export function blend(from: string, to: string, amount: number) {
   const a = rgbOf(from);
   const b = rgbOf(to);
   return `#${a.map((value, i) => hexOf(value + (b[i] - value) * amount)).join("")}`;
 }
 
-function alpha(hex: string, amount: number) {
+export function alpha(hex: string, amount: number) {
   const [r, g, b] = rgbOf(hex);
   return `rgba(${r}, ${g}, ${b}, ${amount})`;
 }

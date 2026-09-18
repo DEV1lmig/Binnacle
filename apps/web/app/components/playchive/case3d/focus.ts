@@ -7,7 +7,8 @@
  * where it should on every frame instead of trailing behind the animation.
  */
 export type FocusState = {
-  id: string;
+  /** The case's key (`slotKey`): the same game keeps the focus across the route swap. */
+  key: string;
   /** 0 on its shelf, 1 centred and enlarged. */
   rise: number;
   /** 0 shut, 1 with the lid swung fully off its hinge. */
