@@ -294,8 +294,9 @@ class CaseMachine {
     const rect = cover.getBoundingClientRect();
     const img = cover.querySelector("img");
     const look: CaseLook = {
-      front: (img?.currentSrc || img?.src) || textureUrl(request.src),
-      print: textureUrl(request.src, 828),
+      front: (img?.currentSrc || img?.src) || textureUrl(request.src, 828),
+      frontHi: textureUrl(request.src, 828),
+      print: textureUrl(request.src, 1080),
       title: request.title,
       tone: request.tone,
     };

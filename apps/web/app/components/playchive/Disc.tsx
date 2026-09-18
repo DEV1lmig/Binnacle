@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, type SyntheticEvent } from "react";
-import { getStandardCoverUrl } from "@/lib/igdb-images";
+import { getHighResCoverUrl } from "@/lib/igdb-images";
 import { readCoverTone, rememberTone, type CoverTone } from "@/app/lib/coverColor";
 
 /**
@@ -22,7 +22,7 @@ export function Disc({ src, title, sizes = "280px", priority, gameId, onTone }: 
   onTone?: (tone: CoverTone) => void;
 }) {
   const [failed, setFailed] = useState(false);
-  const url = getStandardCoverUrl(src);
+  const url = getHighResCoverUrl(src);
 
   const handleLoad = (event: SyntheticEvent<HTMLImageElement>) => {
     const tone = readCoverTone(event.currentTarget, url);
