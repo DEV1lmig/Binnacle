@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toneVars } from "@/app/lib/coverColor";
 import { CaseBackdrop, Disc, ScoreMark, useCloseCase, SectionHeading, useCaseTone } from "@/app/components/playchive";
 import { relativeTime } from "@/app/components/ReviewCard";
+import { mediumOf } from "@/app/lib/medium";
 
 export default function ReviewDetailClient() {
   const params = useParams();
@@ -52,13 +53,13 @@ export default function ReviewDetailClient() {
 
   return (
     <div className="pk-inside min-h-screen pb-24 md:pb-12" style={toneVars(tone)}>
-      <CaseBackdrop src={game?.coverUrl} gameId={review.gameId} title={game?.title} />
+      <CaseBackdrop src={game?.coverUrl} gameId={review.gameId} title={game?.title} medium={mediumOf(game)} />
       <div className="pk-page">
       <section className="pk-hero pk-hero-inside">
         <div className="pk-hero-inner pk-detail-hero" data-size="sm">
           <button type="button" onClick={() => closeCase()} className="pk-hero-back pk-textlink !text-white/80"><ChevronLeft size={16} />Back</button>
           <Link href={`/game/${review.gameId}`} className="pk-detail-cover block" aria-label={game?.title ?? "Game"}>
-            <Disc src={game?.coverUrl} title={game?.title ?? "Game"} sizes="(max-width: 767px) 48vw, 200px" gameId={review.gameId} onTone={setTone} />
+            <Disc src={game?.coverUrl} title={game?.title ?? "Game"} sizes="(max-width: 767px) 48vw, 200px" gameId={review.gameId} onTone={setTone} medium={mediumOf(game)} />
           </Link>
           <div>
             <div className="flex flex-wrap items-start justify-between gap-4">

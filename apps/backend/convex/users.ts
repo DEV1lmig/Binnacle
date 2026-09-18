@@ -545,6 +545,7 @@ export const dashboard = query({
             title: v.string(),
             coverUrl: v.optional(v.string()),
             releaseYear: v.optional(v.number()),
+            platforms: v.optional(v.string()),
             aggregatedRating: v.optional(v.number()),
           }),
         })
@@ -562,6 +563,7 @@ export const dashboard = query({
             title: v.string(),
             coverUrl: v.optional(v.string()),
             releaseYear: v.optional(v.number()),
+            platforms: v.optional(v.string()),
           }),
         })
       ),
@@ -754,6 +756,7 @@ async function hydrateTopGames(
         title: string;
         coverUrl?: string;
         releaseYear?: number;
+        platforms?: string;
         aggregatedRating?: number;
       };
     }>;
@@ -771,6 +774,7 @@ async function hydrateTopGames(
       title: string;
       coverUrl?: string;
       releaseYear?: number;
+      platforms?: string;
       aggregatedRating?: number;
     };
   }> = [];
@@ -789,6 +793,7 @@ async function hydrateTopGames(
         title: game.title,
         coverUrl: game.coverUrl ?? undefined,
         releaseYear: game.releaseYear ?? undefined,
+        platforms: game.platforms ?? undefined,
         aggregatedRating: game.aggregatedRating ?? undefined,
       },
     });
@@ -848,6 +853,7 @@ async function fetchRecentReviews(ctx: QueryCtx, userId: Id<"users">, limit: num
       title: string;
       coverUrl?: string;
       releaseYear?: number;
+      platforms?: string;
     };
   }> = [];
 
@@ -869,6 +875,7 @@ async function fetchRecentReviews(ctx: QueryCtx, userId: Id<"users">, limit: num
         title: game.title,
         coverUrl: game.coverUrl ?? undefined,
         releaseYear: game.releaseYear ?? undefined,
+        platforms: game.platforms ?? undefined,
       },
     });
   }

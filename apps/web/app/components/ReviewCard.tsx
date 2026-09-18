@@ -11,9 +11,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ReportDialog } from "@/app/components/ReportDialog";
 import { Cover, OpenCaseLink, ScoreMark } from "@/app/components/playchive";
 import { useOpenFromCover } from "@/app/components/playchive/OpenCaseLink";
+import { mediumOf } from "@/app/lib/medium";
 
 type ReviewAuthor = { _id: Id<"users">; name: string; username: string; avatarUrl?: string };
-type ReviewGame = { _id: Id<"games">; title: string; coverUrl?: string; releaseYear?: number };
+type ReviewGame = { _id: Id<"games">; title: string; coverUrl?: string; releaseYear?: number; platforms?: string };
 
 export type ReviewCardData = {
   _id: Id<"reviews">;
@@ -96,7 +97,7 @@ export function ReviewCard({ review, clampText = true }: { review: ReviewCardDat
     <article ref={card} className="pk-review" onClick={open} onKeyDown={event => { if (event.key === "Enter" && event.target === event.currentTarget) open(); }} tabIndex={0} aria-label={`${review.author.name} reviewed ${review.game.title}`}>
       <div className="pk-review-spine" onClick={stop}>
         <OpenCaseLink href={`/review/${review._id}`} gameId={review.gameId} coverUrl={review.game.coverUrl} title={review.game.title} aria-label={`Open ${review.author.name}’s review of ${review.game.title}`}>
-          <Cover src={review.game.coverUrl} title={review.game.title} sizes="96px" gameId={review.gameId} />
+          <Cover src={review.game.coverUrl} title={review.game.title} sizes="96px" gameId={review.gameId} medium={mediumOf(review.game)} />
         </OpenCaseLink>
       </div>
 
