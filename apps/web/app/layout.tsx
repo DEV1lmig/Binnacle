@@ -7,7 +7,6 @@ import { ConditionalNavigation } from "@/app/components/ConditionalNavigation";
 import { AuthGuard } from "@/app/components/AuthGuard";
 import { Toaster } from "@/app/components/ui/sonner";
 import { CaseTransitionProvider, ScrollReset } from "@/app/components/playchive";
-import { CaseStageRoot } from "@/app/components/playchive/case3d/CaseStageRoot";
 
 const display = Outfit({ subsets: ["latin"], weight: ["700", "800"], variable: "--playchive-display" });
 const body = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--playchive-body" });
@@ -34,7 +33,6 @@ export default function RootLayout({
                 <ConditionalNavigation />
                 {children}
                 <Toaster />
-                <CaseStageRoot />
               </CaseTransitionProvider>
             </AuthGuard>
           </CurrentUserProvider>

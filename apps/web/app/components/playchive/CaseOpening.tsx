@@ -1,23 +1,15 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { rememberTone, toneVars, type CoverTone } from "@/app/lib/coverColor";
-import { findOpenSlot, findSlotByElement, hasShelfCase, slotKey } from "./case3d/store";
-import { buildInsideArt } from "./case3d/caseSkins";
-import { focusStore } from "./case3d/focus";
+import { DEFAULT_TONE, rememberTone, type CoverTone } from "@/app/lib/coverColor";
+import { buildCase, trayRect, vanishingPoint, type CaseHalves, type CaseLook, type Rect, type View } from "./caseBox";
+import { textureUrl } from "./caseUrl";
 
 type OpenRequest = { href: string; gameId?: string; tone: CoverTone; rect: DOMRect; src?: string; title: string; el?: HTMLElement };
-type Overlay = Omit<OpenRequest, "rect"> & { rect: { top: number; left: number; width: number; height: number }; flood: number; solid: boolean };
 
 const CaseTransitionContext = createContext<((request: OpenRequest) => void) | null>(null);
 const CaseCloseContext = createContext<(() => void) | null>(null);
-
-const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
-/** How far one leg of the gesture has run at `now`, on the driver's single clock. */
-const phaseOf = (now: number, from: number, to: number) => clamp01((now - from) / (to - from));
-const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
-const easeIn = (t: number) => t * t * t;
 
 /** Opens a game case: the lid swings on its hinge and the reader is taken inside. */
 export function useOpenCase() {
@@ -27,7 +19,7 @@ export function useOpenCase() {
 /**
  * Puts the case a page rests in away: it rises out of the page, the lid closes, and
  * the route goes back — where the case lands on the cover it came from. Falls back
- * to a plain `router.back()` when no case is drawn.
+ * to a plain `router.back()` when there is no case on the page.
  */
 export function useCloseCase() {
   const close = useContext(CaseCloseContext);
@@ -35,43 +27,36 @@ export function useCloseCase() {
   return close ?? (() => router.back());
 }
 
-/** The flat stand-in's inside covers the screen at 560ms; the page swaps once it does. */
-const COVERED = 560;
-/**
- * The real case takes longer on purpose, and nothing is ever drawn over it. It
- * rises off its shelf, swings open, and rushes the camera until its inside fills
- * the screen; the route changes under that, and the same case — still moving —
- * settles into the pose the new page rests in, with the content already on top.
- */
-const CASE_RISE = 520;
-const CASE_OPEN_FROM = 100;
-const CASE_OPEN_TO = 680;
-/**
- * The dive — the open case coming in with the page inside it — only starts once
- * the page is actually there. Until then the case waits, open, at the centre. It is
- * the mirror of putting a case away, where the page shrinks inside it as it closes;
- * and it means a slow route (a first visit in dev compiles for seconds) can never
- * leave the reader looking at a case that opened onto nothing.
- */
-const CASE_DIVE = 440;
+/* ------------------------------------------------------------------------------------
+   Timing. The poses themselves are interpolated by CSS transitions on three registered
+   custom properties (`--fl-rise`, `--fl-open`, `--fl-dive`); the durations below only
+   tell the driver when to ask for the route and how long to wait before giving up.
+   ------------------------------------------------------------------------------------ */
+/** The route is asked for as the lid starts to swing: usually there before the dive. */
+const ASK = 300;
 /** The page is revealed top to bottom inside the open case before the case comes in. */
-const CASE_REVEAL = 560;
-/**
- * The route is asked for as the lid starts to swing, so the page is usually there,
- * drawn inside the case, before the dive begins. Asking at the click would take the
- * shelf away under a case that has barely moved.
- */
-const CASE_ASK = 300;
-/** Putting it away: up out of the page and shut, then back to the shelf. */
-const CASE_AWAY = 640;
+const REVEAL = 560;
+/** Never hold the reader hostage to a slow destination. */
+const READY_PATIENCE = 2500;
+/** If the route never commits at all, stop waiting rather than trapping the reader. */
+const PATIENCE = 15000;
+/** How long a pose may take to settle before it is taken as settled anyway. */
+const SETTLE_PATIENCE = 2000;
+
+type Pose = { rise: number; open: number; dive: number };
+const SHELF: Pose = { rise: 0, open: 0, dive: 0 };
+const HELD: Pose = { rise: 1, open: 1, dive: 0 };
+const LANDED: Pose = { rise: 1, open: 1, dive: 1 };
+/** Lid shut at the centre: where a case being put away waits for the route. */
+const SHUT: Pose = { rise: 1, open: 0, dive: 0 };
+
+/** Which set of transitions the stylesheet applies. */
+type Timing = "opening" | "closing" | "return";
 
 /**
  * A still copy of the page being left, kept under the moving case until the next
- * page is ready. Routes swap in the middle of the move — the destination is asked
- * for while the lid is still swinging — and without this the reader would see the
- * shelf vanish, then a loading skeleton, then the page: three frames that should
- * not exist. The copy is inert, opaque, and shows the flat artwork of every cover,
- * since the cases drawn over them in 3D leave with the route.
+ * page is ready. Routes swap in the middle of the move, and without this the reader
+ * would see the shelf vanish, then a loading skeleton, then the page.
  */
 function ghostPage(kind: "page" | "surface") {
   const ghost = document.createElement("div");
@@ -86,11 +71,11 @@ function ghostPage(kind: "page" | "surface") {
   } else {
     for (const node of Array.from(document.body.children)) {
       if (!(node instanceof HTMLElement)) continue;
-      if (node.matches("header, script, style, nextjs-portal, .pk-stage, .pk-opening, .pk-ghost, [data-radix-popper-content-wrapper], [data-sonner-toaster]")) continue;
+      if (node.matches("header, script, style, nextjs-portal, .pk-flight, .pk-ghost, [data-radix-popper-content-wrapper], [data-sonner-toaster]")) continue;
       const rect = node.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) continue;
       const copy = node.cloneNode(true) as HTMLElement;
-      for (const el of copy.querySelectorAll<HTMLElement>("[data-case3d]")) delete el.dataset.case3d;
+      for (const el of copy.querySelectorAll<HTMLElement>("[data-case-flight]")) delete el.dataset.caseFlight;
       for (const el of copy.querySelectorAll<HTMLElement>("[id]")) el.removeAttribute("id");
       for (const el of copy.querySelectorAll("canvas, video, iframe, script")) el.remove();
       // Pinned exactly where the original is on screen, header and scroll included.
@@ -106,273 +91,414 @@ function ghostPage(kind: "page" | "surface") {
   return ghost;
 }
 
-function dropGhost(ghost: HTMLElement | null) {
-  ghost?.remove();
+const viewport = (): View => ({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
+
+const root = () => document.documentElement;
+
+/** Reads one of the animated factors as the browser currently has it. */
+function factor(name: keyof Pose) {
+  return parseFloat(getComputedStyle(root()).getPropertyValue(`--fl-${name}`)) || 0;
 }
 
-/** What "the destination is ready" means, for each direction. */
-const READY = {
-  /** A detail page renders its wrapper only once it has its data. */
-  page: () => Boolean(document.querySelector(".pk-inside")),
-  /** A list page has covers on the shelf once its data is in. */
-  shelf: () => hasShelfCase(),
-};
-/** Never hold the reader hostage to a slow page. */
-const READY_PATIENCE = 2500;
-
-/** Page-in-case custom properties: reset so a page never flashes before its first frame. */
-function holdPage(held: boolean) {
-  const style = document.documentElement.style;
-  if (held) {
-    document.body.dataset.caseHeld = "1";
-    style.setProperty("--case-clip", "100%");
-  } else {
-    delete document.body.dataset.caseHeld;
-    for (const name of ["p", "ox", "oy", "vx", "vy", "tx", "ty", "tz", "lean", "tilt", "sx", "sy", "clip"]) style.removeProperty(`--case-${name}`);
-  }
+function atPose(pose: Pose) {
+  return (Object.keys(pose) as (keyof Pose)[]).every(name => Math.abs(factor(name) - pose[name]) < 0.003);
 }
-/** If the route never commits at all, stop waiting rather than trapping the reader. */
-const PATIENCE = 15000;
-const FADE = 380;
 
 /**
- * Drives the opening animation and the page swap.
- *
- * The hinge is a real element rather than a view-transition pseudo: the destination
- * loads its data asynchronously, so a snapshot would freeze on a skeleton and, worse,
- * a view transition awaiting the route would suppress painting for the whole fetch.
- * Here the flood covers the screen first, the route is pushed underneath it, and the
- * overlay only lifts once the new page has actually committed.
+ * Puts the page inside the case: its wrapper takes the same transform as the case
+ * (the vanishing point and origin expressed in its own coordinates) and is clipped
+ * to the tray floor. Laid out from the page's untransformed geometry, never
+ * measured, because the page is the thing being moved.
+ */
+function seatPage(page: HTMLElement, tray: Rect, view: View) {
+  const v = vanishingPoint(view);
+  const pageTop = page.offsetTop - window.scrollY;
+  const pageLeft = page.offsetLeft;
+  const cx = tray.left + tray.width / 2;
+  const cy = tray.top + tray.height / 2;
+  // The floor is inset from the case's edge by the wall.
+  const wall = tray.width * 0.02;
+  const s = page.style;
+  s.setProperty("--ox", `${cx - pageLeft}px`);
+  s.setProperty("--oy", `${cy - pageTop}px`);
+  s.setProperty("--vx", `${v.x - pageLeft}px`);
+  s.setProperty("--vy", `${v.y - pageTop}px`);
+  s.setProperty("--case-clip", [
+    `${tray.top - pageTop + wall}px`,
+    `${pageLeft + page.offsetWidth - (tray.left + tray.width) + wall}px`,
+    `${Math.max(0, pageTop + page.offsetHeight - (tray.top + tray.height) + wall)}px`,
+    `${tray.left - pageLeft + wall}px`,
+  ].join(" "));
+}
+
+function unseatPage(page: HTMLElement) {
+  for (const name of ["--ox", "--oy", "--vx", "--vy", "--case-clip"]) page.style.removeProperty(name);
+  delete page.dataset.caseIn;
+}
+
+/** The shelf cover this case belongs on, if the page shows one. */
+function findCover(key: string | undefined) {
+  if (!key) return null;
+  // Only a cover that is laid out counts — a list can render its tiles a frame
+  // before they have a size — and never the still copy of one in the ghost.
+  const all = Array.from(document.querySelectorAll<HTMLElement>(`.pk-cover[data-game-id="${CSS.escape(key)}"]`))
+    .filter(el => !el.closest(".pk-ghost") && el.getBoundingClientRect().width > 8);
+  const view = viewport();
+  return all.find(el => { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < view.height; }) ?? all[0] ?? null;
+}
+
+type Gesture = {
+  id: number;
+  kind: "open" | "close";
+  /** The game, for finding its cover again. */
+  key?: string;
+  from: string;
+  /** Where an opening is headed; `null` while putting away (back leads wherever it leads). */
+  target: string | null;
+  flight: CaseHalves;
+  layers: [HTMLElement, HTMLElement];
+  ghost: HTMLElement | null;
+  /** The shelf cover hidden under the flight, to be shown again when it is released. */
+  cover: HTMLElement | null;
+  look: CaseLook;
+  tray: Rect;
+  /** `router.push` has been issued: from here on the route will move. */
+  pushed: boolean;
+  /** The new route has committed. */
+  arrived: boolean;
+  /** The lid is shut at the centre: a case being put away can go back now. */
+  shut: boolean;
+  wentBack: boolean;
+  timers: number[];
+  frames: number[];
+};
+
+/**
+ * The transition's state machine. Everything asynchronous — timers, frame polls,
+ * route changes — carries the id of the gesture that started it and is ignored the
+ * moment a newer gesture exists. A gesture is either opening (shelf → page) or
+ * closing (page → shelf); closing an opening that is still in flight re-aims the
+ * same flight instead of starting another, so nothing is ever drawn twice.
+ */
+class CaseMachine {
+  private serial = 0;
+  private g: Gesture | null = null;
+  router: { push: (href: string) => void; back: () => void } = { push: () => undefined, back: () => undefined };
+
+  /* ---- plumbing ---- */
+
+  private later(id: number, ms: number, fn: () => void) {
+    const g = this.g;
+    if (!g || g.id !== id) return;
+    g.timers.push(window.setTimeout(() => { if (this.g?.id === id) fn(); }, ms));
+  }
+
+  /** Runs `fn` once the animated factors have reached `pose`, polled per frame. */
+  private settle(id: number, pose: Pose, fn: () => void, extra?: () => boolean) {
+    const began = performance.now();
+    const tick = () => {
+      const g = this.g;
+      if (!g || g.id !== id) return;
+      const overdue = performance.now() - began > SETTLE_PATIENCE;
+      if ((atPose(pose) || overdue) && (!extra || extra() || overdue)) {
+        // One more painted frame, so the final pose is on screen before anything changes.
+        g.frames.push(requestAnimationFrame(() => { if (this.g?.id === id) fn(); }));
+        return;
+      }
+      g.frames.push(requestAnimationFrame(tick));
+    };
+    tick();
+  }
+
+  private pose(pose: Pose, timing: Timing | "instant") {
+    const s = root().style;
+    if (timing === "instant") root().dataset.caseAnim = "off";
+    else { root().dataset.caseState = timing; delete root().dataset.caseAnim; }
+    s.setProperty("--fl-rise", String(pose.rise));
+    s.setProperty("--fl-open", String(pose.open));
+    s.setProperty("--fl-dive", String(pose.dive));
+    // Flush, so an instant pose is the "before" of whatever transition comes next.
+    if (timing === "instant") { factor("rise"); }
+  }
+
+  /** The three rest poses the transform mixes between: shelf cover, centre, page tray. */
+  private geometry(shelf: Rect | null, tray: Rect, view: View) {
+    const s = root().style;
+    const held = Math.min(view.width, view.height) * 0.42;
+    const a = shelf ?? { left: view.width / 2 - held / 2, top: view.height / 2 - held / (2 * (2 / 3)), width: held, height: held / (2 / 3) };
+    s.setProperty("--a-x", `${a.left + a.width / 2}px`);
+    s.setProperty("--a-y", `${a.top + a.height / 2}px`);
+    s.setProperty("--a-s", String(a.width / tray.width));
+    s.setProperty("--h-x", `${view.width / 2}px`);
+    s.setProperty("--h-y", `${view.height / 2}px`);
+    s.setProperty("--h-s", String(held / tray.width));
+    s.setProperty("--l-x", `${tray.left + tray.width / 2}px`);
+    s.setProperty("--l-y", `${tray.top + tray.height / 2}px`);
+    // The lid's corners match the cover's at shelf size, and grow with it.
+    s.setProperty("--front-r", `${10 / (a.width / tray.width)}px`);
+  }
+
+  private mount(look: CaseLook, tray: Rect, view: View): { flight: CaseHalves; layers: [HTMLElement, HTMLElement] } {
+    const flight = buildCase(look, tray, view);
+    const floor = document.createElement("div");
+    floor.className = "pk-flight";
+    floor.dataset.layer = "floor";
+    floor.setAttribute("aria-hidden", "true");
+    floor.appendChild(flight.floor);
+    const shell = floor.cloneNode(false) as HTMLElement;
+    shell.dataset.layer = "shell";
+    shell.appendChild(flight.shell);
+    document.body.append(floor, shell);
+    return { flight, layers: [floor, shell] };
+  }
+
+  /**
+   * Lets go of whatever is in flight, all in one task so it is one frame: the flight
+   * and the copy of the old page go, the page and the cover are their own again.
+   */
+  cancel() {
+    const g = this.g;
+    this.serial++;
+    if (!g) return;
+    this.g = null;
+    g.timers.forEach(clearTimeout);
+    g.frames.forEach(cancelAnimationFrame);
+    for (const layer of g.layers) layer.remove();
+    g.ghost?.remove();
+    if (g.cover) delete g.cover.dataset.caseFlight;
+    const page = document.querySelector<HTMLElement>(".pk-inside");
+    if (page) unseatPage(page);
+    delete document.body.dataset.caseHeld;
+    const r = root();
+    delete r.dataset.caseState;
+    delete r.dataset.caseAnim;
+    for (const name of ["rise", "open", "dive"]) r.style.removeProperty(`--fl-${name}`);
+    for (const name of ["a-x", "a-y", "a-s", "h-x", "h-y", "h-s", "l-x", "l-y", "front-r"]) r.style.removeProperty(`--${name}`);
+    if (process.env.NODE_ENV !== "production") {
+      console.assert(!document.querySelector(".pk-flight, .pk-ghost, [data-case-flight]"), "case transition: something was left behind");
+    }
+  }
+
+  /* ---- gestures ---- */
+
+  open(request: OpenRequest) {
+    this.cancel();
+    if (request.gameId) rememberTone(request.gameId, request.tone);
+    const cover = request.el;
+    if (!cover || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.router.push(request.href);
+      return;
+    }
+    const view = viewport();
+    const tray = trayRect(view);
+    const rect = cover.getBoundingClientRect();
+    const img = cover.querySelector("img");
+    const look: CaseLook = {
+      front: (img?.currentSrc || img?.src) || textureUrl(request.src),
+      print: textureUrl(request.src, 828),
+      title: request.title,
+      tone: request.tone,
+    };
+    this.geometry(rect, tray, view);
+    this.pose(SHELF, "instant");
+    const { flight, layers } = this.mount(look, tray, view);
+    cover.dataset.caseFlight = "1";
+    const id = this.serial;
+    const g: Gesture = {
+      id, kind: "open", key: request.gameId, from: window.location.pathname, target: request.href.split(/[?#]/)[0],
+      flight, layers, ghost: ghostPage("page"), cover, look, tray,
+      pushed: false, arrived: false, shut: false, wentBack: false, timers: [], frames: [],
+    };
+    this.g = g;
+    document.body.dataset.caseHeld = "1";
+    // The flight is painted once where the cover was; then it rises and opens.
+    g.frames.push(requestAnimationFrame(() => { if (this.g?.id === id) this.pose(HELD, "opening"); }));
+    this.later(id, ASK, () => { g.pushed = true; this.router.push(request.href); });
+    this.later(id, PATIENCE, () => this.cancel());
+  }
+
+  close() {
+    const g = this.g;
+    if (g?.kind === "close") return;
+    if (g?.kind === "open") {
+      // Re-aim the flight that is already up. Before the route was asked for, the
+      // shelf is still under it and the case simply goes home; after, the lid shuts
+      // at the centre and the route goes back once it has somewhere to go back from.
+      g.kind = "close";
+      g.timers.forEach(clearTimeout);
+      g.frames.forEach(cancelAnimationFrame);
+      g.timers = [];
+      g.frames = [];
+      const page = document.querySelector<HTMLElement>(".pk-inside");
+      if (page) page.dataset.caseIn = "away";
+      this.later(g.id, PATIENCE, () => this.cancel());
+      if (!g.pushed) {
+        this.pose(SHELF, "closing");
+        this.settle(g.id, SHELF, () => this.cancel());
+      } else {
+        this.pose(SHUT, "closing");
+        this.settle(g.id, SHUT, () => { g.shut = true; this.maybeGoBack(); });
+      }
+      return;
+    }
+    const page = document.querySelector<HTMLElement>(".pk-inside");
+    const rest = page?.querySelector<HTMLElement>(".pk-case-rest");
+    if (!page || !rest || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.router.back();
+      return;
+    }
+    this.cancel();
+    const view = viewport();
+    const tray = trayRect(view);
+    const style = getComputedStyle(page);
+    const tone: CoverTone = {
+      tint: style.getPropertyValue("--case-tint").trim() || DEFAULT_TONE.tint,
+      ink: style.getPropertyValue("--case-ink").trim() || DEFAULT_TONE.ink,
+      deep: style.getPropertyValue("--case-deep").trim() || DEFAULT_TONE.deep,
+      shade: style.getPropertyValue("--case-shade").trim() || DEFAULT_TONE.shade,
+    };
+    const look: CaseLook = { front: rest.dataset.print, print: rest.dataset.print, title: rest.dataset.title ?? "", tone };
+    this.geometry(null, tray, view);
+    this.pose(LANDED, "instant");
+    const { flight, layers } = this.mount(look, tray, view);
+    const id = this.serial;
+    const g2: Gesture = {
+      id, kind: "close", key: rest.dataset.gameId, from: window.location.pathname, target: null,
+      flight, layers, ghost: null, cover: null, look, tray,
+      pushed: true, arrived: true, shut: false, wentBack: false, timers: [], frames: [],
+    };
+    this.g = g2;
+    seatPage(page, tray, view);
+    page.dataset.caseIn = "away";
+    document.body.dataset.caseHeld = "1";
+    g2.ghost = ghostPage("surface");
+    g2.frames.push(requestAnimationFrame(() => { if (this.g?.id === id) this.pose(SHUT, "closing"); }));
+    this.settle(id, SHUT, () => { g2.shut = true; this.maybeGoBack(); });
+    this.later(id, PATIENCE, () => this.cancel());
+  }
+
+  /** A case being put away goes back once the lid is shut and the route is settled. */
+  private maybeGoBack() {
+    const g = this.g;
+    if (!g || g.kind !== "close" || !g.shut || !g.arrived || g.wentBack) return;
+    g.wentBack = true;
+    g.arrived = false;
+    g.from = window.location.pathname;
+    const nav = (window as Window & { navigation?: { canGoBack?: boolean } }).navigation;
+    const canGoBack = nav?.canGoBack ?? window.history.length > 1;
+    if (canGoBack) this.router.back(); else this.router.push("/backlog");
+  }
+
+  /* ---- the route moving under the flight ---- */
+
+  route(pathname: string) {
+    const g = this.g;
+    if (!g) return;
+    if (g.kind === "open") {
+      if (pathname === g.target) {
+        g.arrived = true;
+        this.whenReady(g.id, () => Boolean(document.querySelector(".pk-inside .pk-case-rest")), () => this.pageIn());
+        return;
+      }
+      if (pathname !== g.from) { this.cancel(); return; }
+      if (!g.arrived) return;
+      // The browser's own back button, mid-opening: the shelf is live again under
+      // the copy of it, so the case shuts and goes home in one move.
+      g.kind = "close";
+      g.wentBack = true;
+      g.timers.forEach(clearTimeout);
+      g.frames.forEach(cancelAnimationFrame);
+      g.timers = [];
+      g.frames = [];
+      this.later(g.id, PATIENCE, () => this.cancel());
+      this.whenReady(g.id, () => Boolean(findCover(g.key)), () => this.landOnShelf());
+      return;
+    }
+    if (pathname === g.from) return;
+    // Closing: the route has moved. Either the detail page arrived late (an opening
+    // re-aimed while its push was pending) and back can go now, or back has landed.
+    if (!g.wentBack) {
+      if (pathname !== g.target) { this.cancel(); return; }
+      g.arrived = true;
+      this.maybeGoBack();
+      return;
+    }
+    // The shelf's covers can render before their ids do; wait for this game's own.
+    this.whenReady(g.id, () => Boolean(findCover(g.key)), () => this.landOnShelf());
+  }
+
+  /** Polls, per frame, for the destination to have its data; gives up after a while. */
+  private whenReady(id: number, ready: () => boolean, fn: () => void) {
+    const began = performance.now();
+    const tick = () => {
+      const g = this.g;
+      if (!g || g.id !== id) return;
+      if (ready() || performance.now() - began > READY_PATIENCE) { fn(); return; }
+      g.frames.push(requestAnimationFrame(tick));
+    };
+    tick();
+  }
+
+  /** The page is there: seat it inside the case, reveal it, and once the case is open, dive. */
+  private pageIn() {
+    const g = this.g;
+    if (!g || g.kind !== "open") return;
+    const page = document.querySelector<HTMLElement>(".pk-inside");
+    if (page) {
+      seatPage(page, g.tray, viewport());
+      page.dataset.caseIn = "1";
+    }
+    const revealed = performance.now() + REVEAL;
+    this.settle(g.id, HELD, () => {
+      this.pose(LANDED, "opening");
+      this.settle(g.id, LANDED, () => this.cancel());
+    }, () => performance.now() >= revealed);
+  }
+
+  /** Back has landed: the case glides onto its cover, or fades if the shelf has none. */
+  private landOnShelf() {
+    const g = this.g;
+    if (!g || g.kind !== "close") return;
+    const cover = findCover(g.key);
+    g.ghost?.remove();
+    g.ghost = null;
+    if (!cover) {
+      for (const layer of g.layers) layer.dataset.fade = "1";
+      this.later(g.id, 260, () => this.cancel());
+      return;
+    }
+    const view = viewport();
+    this.geometry(cover.getBoundingClientRect(), g.tray, view);
+    g.cover = cover;
+    cover.dataset.caseFlight = "1";
+    this.pose(SHELF, "return");
+    this.settle(g.id, SHELF, () => this.cancel());
+  }
+}
+
+const machine = new CaseMachine();
+
+/**
+ * Drives the case between a shelf and the page inside it. The machine above owns
+ * every state; this component only lends it the router and tells it when the route
+ * has moved.
  */
 export function CaseTransitionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [overlay, setOverlay] = useState<Overlay | null>(null);
-  const [phase, setPhase] = useState<"open" | "leave">("open");
-  const from = useRef<string | null>(null);
-  const timers = useRef<number[]>([]);
-  /** All three before the case is let go: the new route, its data, and the end of the move. */
-  const arrived = useRef(false);
-  const ready = useRef(false);
-  const settled = useRef(false);
-  const readyCheck = useRef<(() => boolean) | null>(null);
-  const ghost = useRef<HTMLElement | null>(null);
-  /** The route this gesture is heading to; `null` means "wherever back leads". */
-  const target = useRef<string | null>(null);
 
-  const dismiss = useCallback(() => {
-    from.current = null;
-    target.current = null;
-    arrived.current = false;
-    ready.current = false;
-    settled.current = false;
-    readyCheck.current = null;
-    dropGhost(ghost.current);
-    ghost.current = null;
-    holdPage(false);
-    // Letting the case go returns it to whatever cover the new route shows, so it
-    // travels from the middle of the screen into the detail hero instead of cutting.
-    focusStore.set(null);
-    setPhase("leave");
-    timers.current.push(window.setTimeout(() => setOverlay(null), FADE));
-  }, []);
-
-  /**
-   * A gesture started on top of another one — open, then close before the open
-   * has settled, or the browser's own back button mid-move — cancels the first
-   * outright: its timers, its copy of the page, its hold on the case. The case
-   * eases back to wherever it now belongs; nothing is left half-way.
-   */
-  const abort = useCallback(() => {
-    if (!from.current) return;
-    timers.current.forEach(clearTimeout);
-    timers.current = [];
-    setOverlay(null);
-    dismiss();
-  }, [dismiss]);
-
-  const settle = useCallback(() => {
-    if (arrived.current && ready.current && settled.current) dismiss();
-  }, [dismiss]);
-
-  // The new route committing is one of the things the case waits for. Then its data:
-  // polled, because a page renders its skeleton first and its content when Convex
-  // answers, and the case must not be let go — nor the ghost lifted — in between.
-  useEffect(() => {
-    if (!from.current || from.current === pathname) return;
-    if (target.current && pathname !== target.current) {
-      const frame = requestAnimationFrame(abort);
-      return () => cancelAnimationFrame(frame);
-    }
-    arrived.current = true;
-    const check = readyCheck.current;
-    const began = performance.now();
-    let frame = 0;
-    const poll = () => {
-      if (!from.current) return;
-      if (!check || check() || performance.now() - began > READY_PATIENCE) {
-        ready.current = true;
-        // One painted frame first, so the reader never sees the page assemble.
-        frame = requestAnimationFrame(() => requestAnimationFrame(settle));
-        return;
-      }
-      frame = requestAnimationFrame(poll);
-    };
-    poll();
-    return () => cancelAnimationFrame(frame);
-  }, [pathname, settle, abort]);
-
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
-
-
-  const open = useCallback((request: OpenRequest) => {
-    abort();
-    if (request.gameId) rememberTone(request.gameId, request.tone);
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      router.push(request.href);
-      return;
-    }
-
-    // When the 3D stage is drawing this cover, the case itself performs the opening
-    // and the flat overlay is only there to wash the screen in the inside colour.
-    const slot = findSlotByElement(request.el ?? null);
-    const solid = Boolean(slot && request.el?.dataset.case3d === "on");
-    settled.current = !solid;
-    readyCheck.current = null;
-    if (slot && solid) {
-      // The inside the page will rest on, painted now so the settle never pops.
-      if (request.gameId) {
-        const trayW = window.innerWidth * 0.968;
-        const trayH = (trayW * 1.7) / 1.2;
-        const visible = Math.min(1, (window.innerHeight - Math.max(64, window.innerHeight * 0.11)) / trayH);
-        buildInsideArt(request.gameId, request.src?.startsWith("/") ? request.src : `/_next/image?url=${encodeURIComponent(request.src ?? "")}&w=828&q=75`, 1.2 / 1.7, 4, visible).catch(() => undefined);
-      }
-      holdPage(true);
-      ghost.current = ghostPage("page");
-      readyCheck.current = READY.page;
-      const key = slotKey(slot);
-      const started = performance.now();
-      let readyAt: number | null = null;
-      let diveFrom: number | null = null;
-      const step = () => {
-        const now = performance.now() - started;
-        // Out of the shelf and open on one clock; in on another, started only once
-        // the page has arrived (or patience ran out) and has been revealed inside.
-        if (readyAt === null && ready.current) readyAt = performance.now();
-        if (diveFrom === null && now >= CASE_OPEN_TO && readyAt !== null && performance.now() - readyAt >= CASE_REVEAL) diveFrom = performance.now();
-        const dive = diveFrom === null ? 0 : easeIn(phaseOf(performance.now() - diveFrom, 0, CASE_DIVE));
-        focusStore.set({
-          key,
-          rise: easeOut(phaseOf(now, 0, CASE_RISE)),
-          open: easeOut(phaseOf(now, CASE_OPEN_FROM, CASE_OPEN_TO)),
-          dive,
-        });
-        if (!from.current) return;
-        if (dive < 1) requestAnimationFrame(step);
-        else requestAnimationFrame(() => { settled.current = true; settle(); }); // one more frame, so the last pose is drawn before the case is let go
-      };
-      requestAnimationFrame(step);
-    }
-
-    const { top, left, width, height } = request.rect;
-    const cx = left + width / 2;
-    const cy = top + height / 2;
-    // Grow the flood until it clears the furthest corner of the viewport.
-    const reach = Math.max(
-      Math.hypot(cx, cy),
-      Math.hypot(window.innerWidth - cx, cy),
-      Math.hypot(cx, window.innerHeight - cy),
-      Math.hypot(window.innerWidth - cx, window.innerHeight - cy),
-    );
-
-    from.current = window.location.pathname;
-    target.current = request.href.split(/[?#]/)[0];
-    setPhase("open");
-    // The real case needs no overlay: it is its own veil, and then its own page.
-    if (solid) settled.current = false;
-    else setOverlay({ ...request, rect: { top, left, width, height }, flood: (reach * 2) / Math.max(width, 1) + 0.4, solid });
-    timers.current.push(window.setTimeout(() => router.push(request.href), solid ? CASE_ASK : COVERED));
-    timers.current.push(window.setTimeout(() => { if (from.current) dismiss(); }, PATIENCE));
-  }, [router, dismiss, settle, abort]);
-
-  const close = useCallback(() => {
-    abort();
-    const slot = findOpenSlot();
-    const drawn = Boolean(slot && slot.el.dataset.case3d === "on");
-    if (!slot || !drawn || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      router.back();
-      return;
-    }
-    const page = document.querySelector<HTMLElement>(".pk-inside");
-    if (page) page.dataset.caseIn = "away";
-    holdPage(true);
-    ghost.current = ghostPage("surface");
-    readyCheck.current = READY.shelf;
-    from.current = window.location.pathname;
-    settled.current = false;
-    const key = slotKey(slot);
-    const started = performance.now();
-    const step = () => {
-      const now = performance.now() - started;
-      focusStore.set({
-        key,
-        rise: easeOut(phaseOf(now, 0, 520)),
-        open: 1 - easeOut(phaseOf(now, 160, CASE_AWAY)),
-        dive: 0,
-      });
-      if (!from.current) return;
-      if (now < CASE_AWAY) requestAnimationFrame(step);
-      else requestAnimationFrame(() => { settled.current = true; settle(); }); // one more frame, so the last pose is drawn before the case is let go
-    };
-    requestAnimationFrame(step);
-    // With no page to go back to, the shelf is the next best thing.
-    const nav = (window as Window & { navigation?: { canGoBack?: boolean } }).navigation;
-    const canGoBack = nav?.canGoBack ?? window.history.length > 1;
-    timers.current.push(window.setTimeout(() => { if (canGoBack) router.back(); else router.push("/backlog"); }, CASE_AWAY));
-    timers.current.push(window.setTimeout(() => { if (from.current) dismiss(); }, PATIENCE));
-  }, [router, dismiss, settle, abort]);
+  useEffect(() => { machine.router = router; }, [router]);
+  useEffect(() => { machine.route(pathname); }, [pathname]);
+  useEffect(() => () => machine.cancel(), []);
 
   return (
-    <CaseTransitionContext.Provider value={open}>
-      <CaseCloseContext.Provider value={close}>
-      {children}
-      {overlay && (
-        <div
-          className="pk-opening"
-          data-phase={phase}
-          aria-hidden="true"
-          style={{
-            ...toneVars(overlay.tone),
-            "--case-top": `${overlay.rect.top}px`,
-            "--case-left": `${overlay.rect.left}px`,
-            "--case-w": `${overlay.rect.width}px`,
-            "--case-h": `${overlay.rect.height}px`,
-            "--flood-scale": overlay.flood,
-          } as React.CSSProperties}
-          data-solid={overlay.solid || undefined}
-        >
-          <span className="pk-opening-flood" />
-          <span className="pk-opening-case">
-            <span className="pk-opening-tray">
-              <span className="pk-opening-booklet">
-                <b>{overlay.title}</b>
-                <i />
-                <i />
-                <i />
-              </span>
-            </span>
-            <span className="pk-opening-lid">
-              <span className="pk-opening-front">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {overlay.src ? <img src={overlay.src} alt="" /> : null}
-                <span className="pk-opening-band"><i className="pk-case-mark" />playchive</span>
-              </span>
-              <span className="pk-opening-back" />
-            </span>
-          </span>
-        </div>
-      )}
+    <CaseTransitionContext.Provider value={openCase}>
+      <CaseCloseContext.Provider value={closeCase}>
+        {children}
       </CaseCloseContext.Provider>
     </CaseTransitionContext.Provider>
   );
 }
+
+const openCase = (request: OpenRequest) => machine.open(request);
+const closeCase = () => machine.close();
