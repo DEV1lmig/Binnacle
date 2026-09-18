@@ -7,6 +7,7 @@ node_modules/
 /apps/web/.env.local
 .env.local.*
 *.md
+!docs/IGDB-SYNC-PLAN.md
 apps/backend/backup.zip
 *.heapsnapshot
 *.tsbuildinfo
