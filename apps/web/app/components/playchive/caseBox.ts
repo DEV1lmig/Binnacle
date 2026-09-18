@@ -89,6 +89,10 @@ function buildFloor(look: CaseLook) {
 function buildFront(look: CaseLook) {
   const front = el("div", "pk-c-lid-front pk-cover");
   front.dataset.case = "true";
+  // `.pk-cover` carries the brand blue as its own fallback tone; a shelf cover
+  // overrides it inline once its art is read, and so must this one.
+  front.style.setProperty("--case-tint", look.tone.tint);
+  front.style.setProperty("--case-ink", look.tone.ink);
   if (look.front) {
     const art = el("img", "", front);
     art.src = look.front;
