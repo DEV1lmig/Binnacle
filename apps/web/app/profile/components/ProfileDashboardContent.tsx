@@ -89,15 +89,15 @@ export function ProfileDashboardContent({ data, headerAction, socialActions, err
               ) : (
                 <div className="space-y-3">
                   {data.recentReviews.map(review => (
-                    <Link key={review._id} href={`/review/${review._id}`} className="pk-lib-row !grid-cols-[56px_minmax(0,1fr)_auto]">
-                      <Cover src={review.game.coverUrl} title={review.game.title} sizes="56px" tilt={false} />
+                    <OpenCaseLink key={review._id} href={`/review/${review._id}`} gameId={review.game._id} coverUrl={review.game.coverUrl} title={review.game.title} className="pk-lib-row !grid-cols-[56px_minmax(0,1fr)_auto]">
+                      <Cover src={review.game.coverUrl} title={review.game.title} sizes="56px" tilt={false} gameId={review.game._id} />
                       <span className="min-w-0">
                         <span className="pk-lib-title">{review.game.title}</span>
                         {review.text && <span className="mt-1 block text-sm text-textMuted line-clamp-2">{review.text}</span>}
                         <span className="pk-lib-meta mt-1.5 justify-start gap-3"><span>{relativeTime(review._creationTime)}</span>{review.platform && <span className="inline-flex items-center gap-1"><Gamepad2 size={12} aria-hidden="true" />{review.platform}</span>}{!!review.playtimeHours && <span className="inline-flex items-center gap-1"><Clock size={12} aria-hidden="true" />{review.playtimeHours}h</span>}</span>
                       </span>
                       <ScoreMark value={review.rating} size="sm" />
-                    </Link>
+                    </OpenCaseLink>
                   ))}
                 </div>
               )}
