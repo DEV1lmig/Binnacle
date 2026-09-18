@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { getStandardCoverUrl } from "@/lib/igdb-images";
+import { getHighResCoverUrl } from "@/lib/igdb-images";
 import { DEFAULT_TONE, readCoverTone, recallTone } from "@/app/lib/coverColor";
 import { useOpenCase } from "./CaseOpening";
 
@@ -20,7 +20,7 @@ export function useOpenFromCover() {
     if (!open || !cover) { router.push(target.href); return; }
     const img = cover.querySelector("img");
     const tone = (img && img.naturalWidth ? readCoverTone(img) : null) ?? recallTone(target.gameId) ?? DEFAULT_TONE;
-    open({ ...target, src: getStandardCoverUrl(target.coverUrl) ?? img?.currentSrc, tone, rect: cover.getBoundingClientRect(), el: cover });
+    open({ ...target, src: getHighResCoverUrl(target.coverUrl) ?? img?.currentSrc, tone, rect: cover.getBoundingClientRect(), el: cover });
   };
 }
 

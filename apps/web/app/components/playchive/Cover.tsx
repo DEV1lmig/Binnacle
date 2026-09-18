@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, type SyntheticEvent } from "react";
-import { getStandardCoverUrl } from "@/lib/igdb-images";
+import { getHighResCoverUrl } from "@/lib/igdb-images";
 import { DEFAULT_TONE, readCoverTone, recallTone, rememberTone, type CoverTone } from "@/app/lib/coverColor";
 
 /**
@@ -27,7 +27,8 @@ export function Cover({ src, title, tilt = true, className = "", sizes = "160px"
 }) {
   const [failed, setFailed] = useState(false);
   const [tone, setTone] = useState<CoverTone>(() => recallTone(gameId) ?? DEFAULT_TONE);
-  const url = getStandardCoverUrl(src);
+  // The 720p master: Next resizes it for the slot, so a retina grid never upscales the 264px IGDB default.
+  const url = getHighResCoverUrl(src);
 
   const handleLoad = (event: SyntheticEvent<HTMLImageElement>) => {
     const next = readCoverTone(event.currentTarget, url);

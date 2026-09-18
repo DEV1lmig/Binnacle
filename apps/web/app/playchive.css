@@ -512,6 +512,9 @@ html[data-case-anim="off"] { transition: none !important; }
 .pk-c-lid-edge { left: auto; width: var(--lidz); transform-origin: right center; transform: rotateY(90deg); background: var(--case-shade, #141C36); }
 .pk-c-hinge > .pk-c-lid-front { transform: translateZ(var(--lidz)); border-radius: var(--front-r, 10px); transition: border-radius .4s; aspect-ratio: auto; }
 .pk-c-lid-front img { position: absolute; inset: 0; }
+/* The sharp copy of the cover arrives over the shelf-sized one as soon as it has loaded. */
+.pk-c-lid-front .pk-c-hi { opacity: 0; transition: opacity .2s linear; }
+.pk-c-lid-front .pk-c-hi[data-ready] { opacity: 1; }
 
 /* A detail page's background: looking down into the open case, resting on a dark
    surface. The case lies at the page's tray, leaned back, lid folded away left. */

@@ -30,8 +30,10 @@ export const PERSPECTIVE = 1100;
 export const VANISH = { x: 0.5, y: 0.3 };
 
 export type CaseLook = {
-  /** Cover art for the lid's front. */
+  /** Cover art for the lid's front: what is already decoded on screen, so the first frame never waits. */
   front?: string;
+  /** The same art at the size the lid reaches; drawn over `front` once it has loaded. */
+  frontHi?: string;
   /** The artwork printed inside the tray, faded into the plastic. */
   print?: string;
   title: string;
@@ -92,6 +94,14 @@ function buildFront(look: CaseLook) {
     art.src = look.front;
     art.alt = "";
     art.draggable = false;
+    if (look.frontHi && look.frontHi !== look.front) {
+      const hi = el("img", "pk-c-hi", front);
+      hi.alt = "";
+      hi.draggable = false;
+      hi.onload = () => { hi.dataset.ready = "1"; };
+      hi.src = look.frontHi;
+      if (hi.complete && hi.naturalWidth) hi.dataset.ready = "1";
+    }
   } else {
     el("span", "pk-cover-empty", front).textContent = look.title;
   }

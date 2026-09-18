@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { DEFAULT_TONE, recallTone, type CoverTone } from "@/app/lib/coverColor";
-import { getStandardCoverUrl } from "@/lib/igdb-images";
+import { getIgdbImageUrl } from "@/lib/igdb-images";
 import { buildCase, placeBox, trayRect } from "./caseBox";
 import { textureUrl } from "./caseUrl";
 
@@ -16,11 +16,11 @@ export function useCaseTone(gameId?: string): [CoverTone, (tone: CoverTone) => v
   return [tone, setTone];
 }
 
-/** A cover URL good enough to fill a page with, same-origin like every other cover. */
+/** A cover good enough to fill a page with: IGDB's largest master, resized once and served as WebP. */
 export function printUrl(src?: string | null) {
-  const url = getStandardCoverUrl(src);
+  const url = getIgdbImageUrl(src, "1080p");
   if (!url) return undefined;
-  return url.includes("/_next/image") ? url : textureUrl(url, 828);
+  return url.includes("/_next/image") ? url : textureUrl(url, 1080);
 }
 
 /**
