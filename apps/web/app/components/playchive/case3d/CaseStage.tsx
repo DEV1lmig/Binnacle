@@ -87,8 +87,8 @@ function restPose(slot: CaseSlot, rect: Rect, width: number, height: number): Po
 function carryPage(p: Pose, rest: Pose, tray: Rect, width: number, height: number, cameraZ: number) {
   const page = document.querySelector<HTMLElement>(".pk-inside");
   if (!page) return false;
-  // The page arrives asynchronously; the first projected frame fades it in.
-  page.dataset.caseIn = "1";
+  // The page arrives asynchronously; its first projected frame starts the reveal.
+  if (!page.dataset.caseIn) page.dataset.caseIn = "1";
   const pageTop = page.offsetTop - window.scrollY;
   const pageLeft = page.offsetLeft;
   const fcx = tray.left + tray.width / 2;
@@ -357,7 +357,9 @@ export default function CaseStage() {
   useEffect(() => {
     const check = () => {
       const visible = visibleCases();
-      setAwake(visible.length > 0);
+      // A page still loading has no case registered at all; the one in the reader's
+      // hand must go on being drawn regardless, or it blinks out when the page lands.
+      setAwake(visible.length > 0 || Boolean(focusStore.get()));
       setBehind(visible.some(slot => slot.open) && !focusStore.get());
     };
     check();

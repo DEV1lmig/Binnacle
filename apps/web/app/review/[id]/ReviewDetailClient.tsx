@@ -53,6 +53,7 @@ export default function ReviewDetailClient() {
   return (
     <div className="pk-inside min-h-screen pb-24 md:pb-12" style={toneVars(tone)}>
       <CaseBackdrop src={game?.coverUrl} gameId={review.gameId} title={game?.title} />
+      <div className="pk-page">
       <section className="pk-hero pk-hero-inside">
         <div className="pk-hero-inner pk-detail-hero" data-size="sm">
           <button type="button" onClick={() => closeCase()} className="pk-hero-back pk-textlink !text-white/80"><ChevronLeft size={16} />Back</button>
@@ -105,6 +106,7 @@ export default function ReviewDetailClient() {
       </div>
 
       <ShareReviewModal reviewId={reviewId} gameTitle={game?.title || "this game"} open={shareModalOpen} onOpenChange={setShareModalOpen} />
+      </div>
     </div>
   );
 }

@@ -54,6 +54,8 @@ const CASE_OPEN_TO = 680;
  * leave the reader looking at a case that opened onto nothing.
  */
 const CASE_DIVE = 440;
+/** The page is revealed top to bottom inside the open case before the case comes in. */
+const CASE_REVEAL = 560;
 /**
  * The route is asked for as the lid starts to swing, so the page is usually there,
  * drawn inside the case, before the dive begins. Asking at the click would take the
@@ -227,12 +229,14 @@ export function CaseTransitionProvider({ children }: { children: ReactNode }) {
       readyCheck.current = READY.page;
       const key = slotKey(slot);
       const started = performance.now();
+      let readyAt: number | null = null;
       let diveFrom: number | null = null;
       const step = () => {
         const now = performance.now() - started;
-        // Out of the shelf and open on one clock; in on another, started only when
-        // the page has arrived (or patience ran out).
-        if (diveFrom === null && now >= CASE_OPEN_TO && ready.current) diveFrom = performance.now();
+        // Out of the shelf and open on one clock; in on another, started only once
+        // the page has arrived (or patience ran out) and has been revealed inside.
+        if (readyAt === null && ready.current) readyAt = performance.now();
+        if (diveFrom === null && now >= CASE_OPEN_TO && readyAt !== null && performance.now() - readyAt >= CASE_REVEAL) diveFrom = performance.now();
         const dive = diveFrom === null ? 0 : easeIn(phaseOf(performance.now() - diveFrom, 0, CASE_DIVE));
         focusStore.set({
           key,
@@ -275,7 +279,7 @@ export function CaseTransitionProvider({ children }: { children: ReactNode }) {
       return;
     }
     const page = document.querySelector<HTMLElement>(".pk-inside");
-    if (page) page.dataset.caseIn = "1";
+    if (page) page.dataset.caseIn = "away";
     holdPage(true);
     ghost.current = ghostPage("surface");
     readyCheck.current = READY.shelf;

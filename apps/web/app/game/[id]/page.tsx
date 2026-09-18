@@ -262,6 +262,7 @@ export default function GameDetailPage() {
   return (
     <div className="pk-inside min-h-screen pb-24 md:pb-12" style={toneVars(tone)}>
       <CaseBackdrop src={game.coverUrl} gameId={gameId} title={game.title} />
+      <div className="pk-page">
       {/* You are inside the case: the cover's own colour behind the artwork. */}
       <section className="pk-hero pk-hero-inside">
         <div className="pk-hero-inner pk-detail-hero">
@@ -326,6 +327,7 @@ export default function GameDetailPage() {
           {relatedError && !hasRelatedContent && <p className="text-sm text-red px-1">Couldn’t fetch related content right now.</p>}
           <DlcExpansionSection dlcsAndExpansions={undefined} relatedContent={relatedContentEntries} />
         </aside>
+      </div>
       </div>
     </div>
   );
