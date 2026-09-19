@@ -1,97 +1,85 @@
 "use client";
 
-interface WebsiteData {
-  url: string;
-  category: number;
-}
+import { ArrowUpRight, BookOpen, Globe, MessageCircle, Play, Smartphone, Store, type LucideIcon } from "lucide-react";
 
-interface ExternalLinksProps {
-  websites?: string;
+type Website = { url: string; category: number };
+
+// IGDB website ids, in the order they are worth showing
+const SITES: Record<number, { label: string; icon: LucideIcon; order: number }> = {
+  1: { label: "Official site", icon: Globe, order: 0 },
+  13: { label: "Steam", icon: Store, order: 1 },
+  17: { label: "GOG", icon: Store, order: 1 },
+  16: { label: "Epic Games", icon: Store, order: 1 },
+  15: { label: "itch.io", icon: Store, order: 1 },
+  10: { label: "App Store (iPhone)", icon: Smartphone, order: 2 },
+  11: { label: "App Store (iPad)", icon: Smartphone, order: 2 },
+  12: { label: "Google Play", icon: Smartphone, order: 2 },
+  3: { label: "Wikipedia", icon: BookOpen, order: 3 },
+  2: { label: "Fan wiki", icon: BookOpen, order: 3 },
+  9: { label: "YouTube", icon: Play, order: 4 },
+  6: { label: "Twitch", icon: Play, order: 4 },
+  18: { label: "Discord", icon: MessageCircle, order: 5 },
+  14: { label: "Reddit", icon: MessageCircle, order: 5 },
+  5: { label: "X / Twitter", icon: MessageCircle, order: 5 },
+  8: { label: "Instagram", icon: MessageCircle, order: 5 },
+  4: { label: "Facebook", icon: MessageCircle, order: 5 },
+};
+
+function parseWebsites(raw: string | undefined): Array<Website & { host: string }> {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((site: Partial<Website>) => {
+      try {
+        const url = new URL(String(site.url));
+        if (url.protocol !== "https:" && url.protocol !== "http:") return [];
+        return [{ url: url.href, category: Number(site.category) || 0, host: url.hostname.replace(/^www\./, "") }];
+      } catch {
+        return [];
+      }
+    });
+  } catch {
+    return [];
+  }
 }
 
 /**
- * ExternalLinks component for displaying game official websites and social links.
- * Data is stored as JSON array with url and category fields (IGDB category enum).
+ * Places worth visiting for a game: official site, stores, wikis, communities.
+ * `websites` is the JSON string stored on the game ([{ url, category }]).
  */
-export function ExternalLinks({ websites }: ExternalLinksProps) {
-  const parseWebsites = (data: string | undefined): WebsiteData[] => {
-    if (!data) return [];
-    try {
-      return JSON.parse(data);
-    } catch {
-      return [];
-    }
-  };
-
-  const websiteList = parseWebsites(websites);
-
-  if (websiteList.length === 0) return null;
-
-  // IGDB website category mapping
-  const categoryNames: Record<number, { name: string; icon: string }> = {
-    1: { name: "Official Site", icon: "🌐" },
-    2: { name: "Wikia", icon: "📖" },
-    3: { name: "Wikipedia", icon: "📚" },
-    4: { name: "Facebook", icon: "f" },
-    5: { name: "Twitter", icon: "𝕏" },
-    6: { name: "Twitch", icon: "▶" },
-    8: { name: "Instagram", icon: "📷" },
-    9: { name: "Youtube", icon: "▶" },
-    10: { name: "iPhone", icon: "🍎" },
-    11: { name: "iPad", icon: "🍎" },
-    12: { name: "Android", icon: "🤖" },
-    13: { name: "Steam", icon: "🎮" },
-    14: { name: "Reddit", icon: "🔴" },
-    15: { name: "Itch", icon: "🎮" },
-    16: { name: "Epic Games", icon: "🎮" },
-    17: { name: "GOG", icon: "🎮" },
-    18: { name: "Discord", icon: "💬" },
-  };
+export function ExternalLinks({ websites }: { websites?: string }) {
+  const links = parseWebsites(websites).sort(
+    (a, b) => (SITES[a.category]?.order ?? 9) - (SITES[b.category]?.order ?? 9)
+  );
+  if (links.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-stone-900/60 p-6">
-      <h2 className="text-2xl font-semibold">Links</h2>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {websiteList.map((site, idx) => {
-          const categoryInfo = categoryNames[site.category] || {
-            name: "Link",
-            icon: "🔗",
-          };
-          const domain = new URL(site.url).hostname.replace("www.", "");
-
+    <section className="pk-panel">
+      <h3>Go further</h3>
+      <ul className="-mx-2 space-y-0.5">
+        {links.map((link) => {
+          const site = SITES[link.category];
+          const Icon = site?.icon ?? Globe;
           return (
-            <a
-              key={idx}
-              href={site.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-lg border border-white/10 bg-stone-800/50 px-4 py-3 transition hover:border-blue-400/50 hover:bg-stone-800/80"
-            >
-              <span className="text-lg">{categoryInfo.icon}</span>
-              <div className="flex flex-1 flex-col gap-0.5">
-                <span className="text-sm font-semibold text-white">
-                  {categoryInfo.name}
-                </span>
-                <span className="truncate text-xs text-stone-400">{domain}</span>
-              </div>
-              <svg
-                className="h-4 w-4 text-stone-400 transition group-hover:text-blue-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <li key={link.url}>
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-white/5"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
-              </svg>
-            </a>
+                <Icon size={16} className="shrink-0 text-textDim" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium text-white">{site?.label ?? link.host}</span>
+                  {site && <span className="block truncate text-xs text-textDim">{link.host}</span>}
+                </span>
+                <ArrowUpRight size={15} className="shrink-0 text-textDim transition-colors group-hover:text-[#FFC400]" />
+              </a>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </section>
   );
 }

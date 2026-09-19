@@ -7,6 +7,8 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { DlcExpansionSection } from "@/app/components/game/DlcExpansionSection";
+import { MediaGallery } from "@/app/components/game/MediaGallery";
+import { ExternalLinks } from "@/app/components/game/ExternalLinks";
 import { Calendar, ChevronLeft, PenLine, BookOpen, ChevronDown, Check, Trash2, Loader2 } from "lucide-react";
 import { normalizeRatingToTen } from "@binnacle/shared-types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu";
@@ -106,6 +108,7 @@ export default function GameDetailPage() {
   // Fetch game data
   const game = useQuery(api.games.getById, gameId ? { gameId: gameId as Id<"games"> } : "skip");
   const fetchRelatedContent = useAction(api.igdb.fetchRelatedContent);
+  const ensureGameMedia = useAction(api.igdb.ensureGameMedia);
   
   // Fetch backlog status
   const backlogItem = useQuery(
@@ -121,6 +124,14 @@ export default function GameDetailPage() {
   const [relatedContent, setRelatedContent] = useState<RelatedContentItem[]>([]);
   const [isRelatedLoading, setIsRelatedLoading] = useState(false);
   const [relatedError, setRelatedError] = useState<string | null>(null);
+
+  // Media is fetched on first visit (or when stale) and then arrives through the game query
+  useEffect(() => {
+    if (!gameId) return;
+    ensureGameMedia({ gameId: gameId as Id<"games"> }).catch((error) => {
+      console.error("[GameDetailPage] Failed to load media", error);
+    });
+  }, [gameId, ensureGameMedia]);
 
   const [status, setStatus] = useState<string | null>(null);
   const [isUpdatingBacklog, setIsUpdatingBacklog] = useState(false);
@@ -310,6 +321,8 @@ export default function GameDetailPage() {
             </section>
           )}
 
+          <MediaGallery title={game.title} screenshots={game.screenshots} artworks={game.artworks} videos={game.videos} />
+
           <GameReviewsSection gameId={game._id as Id<"games">} />
           <GameArticlesSection gameId={game._id as Id<"games">} />
         </div>
@@ -324,6 +337,8 @@ export default function GameDetailPage() {
               {developers.length === 0 && publishers.length === 0 && genres.length === 0 && <dd className="text-textMuted">No credits on file yet.</dd>}
             </dl>
           </section>
+
+          <ExternalLinks websites={game.websites} />
 
           {isRelatedLoading && !hasRelatedContent && <p className="text-sm text-textDim px-1">Checking IGDB for expansions and DLC…</p>}
           {relatedError && !hasRelatedContent && <p className="text-sm text-red px-1">Couldn’t fetch related content right now.</p>}
