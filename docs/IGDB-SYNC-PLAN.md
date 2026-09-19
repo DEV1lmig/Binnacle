@@ -264,3 +264,62 @@ La decision debe basarse en 30 dias de metricas. Si se migra, se migrara el back
 9. Medir durante 30 dias.
 10. Decidir si Convex permanece o se migra completamente.
 
+
+## Estado de la implementacion
+
+Implementado en `apps/backend/convex` (todo apagado por defecto; nada cambia hasta activar las variables):
+
+| Pieza | Archivo |
+| --- | --- |
+| Campos basicos, normalizacion, checksum, cursor, errores | `lib/igdbSync.ts` |
+| `igdbUpdatedAt`, `igdbChecksum`, `syncStatus`, `lastSyncError`, tablas `syncJobs` y `syncEvents` | `schema.ts` |
+| `upsertBatchFromIgdb` (max. 100, idempotente, `dryRun`) y `markMissingInIgdb` | `games.ts` |
+| Bloqueo, heartbeat, cursor, contadores, cola de eventos, `getStatus` (admin), `checkHealth` | `syncJobs.ts` |
+| Jobs por pagina con reintentos y backoff, registro de webhooks | `catalogSync.ts` |
+| Cron diario / 12 h / semanal / drenaje horario / salud | `crons.ts` |
+| `POST /sync/trigger` y `POST /igdb/webhook/{create,update,delete}` | `syncHttp.ts` |
+| Tarjeta "Catalogue Sync" en el panel de administracion | `apps/web/app/admin/components/CatalogSyncStatus.tsx` |
+| Pruebas unitarias y de integracion (`pnpm --filter backend test`) | `lib/igdbSync.test.ts`, `catalogSync.test.ts` |
+
+Decisiones tomadas al implementar:
+
+- Cada invocacion procesa una sola pagina (max. 100 juegos, 1-2 solicitudes a IGDB) y programa la siguiente con 1 s de separacion; el presupuesto por ejecucion se da en paginas (`maxPages`).
+- La reconciliacion recorre el catalogo por `igdbId` con cursor propio y solo consulta a IGDB los juegos con `lastUpdated` mayor a 30 dias. Como los juegos sin cambios no se escriben, la posicion no puede vivir en `lastUpdated`.
+- `recent_releases` filtra por `(hypes >= 3 | total_rating_count >= 5)`. Medido el 2026-09-19 contra IGDB: sin filtro entran ~2.600 juegos/dia (18.360 en 7 dias) y el cursor nunca alcanzaria el presente con 300/dia; con el filtro son ~240/dia (1.672 en 7 dias). Lo que queda por debajo sigue entrando bajo demanda desde la busqueda.
+- `recent_releases` usa una marca de agua sobre `updated_at` (`>=`, orden ascendente). Los empates en el borde se releen y se omiten por checksum.
+- Los juegos que IGDB deja de devolver (o elimina por webhook) se marcan con `syncStatus: "error"` y `lastSyncError: "not_found_in_igdb"`; nunca se borran porque resenas, backlog y articulos pueden referenciarlos.
+- Los webhooks solo encolan el ID (tabla `syncEvents`, job adicional `events`); la descarga se hace despues en lotes. Un evento fallido se reintenta hasta 5 veces.
+- Las sincronizaciones generales no piden ni tocan artworks, screenshots, videos ni websites. La ficha web los muestra (`MediaGallery`, `ExternalLinks`) y los obtiene bajo demanda con `igdb.ensureGameMedia`: una sola solicitud a IGDB al abrir la ficha si faltan o tienen mas de 30 dias (`mediaFetchedAt`), escribiendo solo esos campos.
+- `_generated/api.d.ts` se actualizo a mano porque no habia deployment configurado; `npx convex dev` lo regenera igual.
+
+### Variables de entorno (Convex)
+
+| Variable | Efecto |
+| --- | --- |
+| `CATALOG_SYNC_ENABLED=true` | Activa cron, trigger HTTP y drenaje de webhooks. Sin ella son no-ops. Las ejecuciones manuales la ignoran. |
+| `SYNC_TRIGGER_SECRET` | Secreto Bearer de `POST /sync/trigger`. Sin ella el endpoint responde 401. |
+| `IGDB_WEBHOOK_SECRET` | Secreto `X-Secret` de los webhooks. Sin ella el endpoint responde 401. |
+
+### Operacion
+
+```bash
+# Paso 3 del despliegue: lote de 100 en seco (no escribe ni mueve el cursor)
+npx convex run catalogSync:start '{"jobType":"recent_releases","manual":true,"dryRun":true,"maxPages":1}'
+# Paso 4: el mismo lote con escritura
+npx convex run catalogSync:start '{"jobType":"recent_releases","manual":true,"maxPages":1}'
+# Backfill manual, una pagina; repetir para continuar desde el cursor
+npx convex run catalogSync:start '{"jobType":"backfill","manual":true,"minRatingCount":20}'
+# Webhooks (una vez por deployment, con IGDB_WEBHOOK_SECRET definido)
+npx convex run catalogSync:registerIgdbWebhooks
+# Disparador externo (solo si el cron de Convex resulta ser el limite)
+curl -X POST "$CONVEX_SITE_URL/sync/trigger" -H "Authorization: Bearer $SYNC_TRIGGER_SECRET" \
+  -d '{"jobType":"recent_releases","maxPages":3}'
+```
+
+Los contadores de cada ejecucion quedan en `syncJobs` y en el panel de administracion. `checkHealth` escribe un `console.error` con el prefijo `[catalogSync] ALERT` cuando un job pierde dos periodos; la alerta externa se configura sobre ese log.
+
+### Pendiente (requiere un deployment real)
+
+- Fase 0: tabla de mediciones iniciales y finales (solicitudes, lecturas/escrituras, transferencia, duracion) con el lote de 100 en desarrollo.
+- Pasos 3 a 8 del despliegue gradual y la observacion de 7 y 30 dias.
+- Paso 9: retirar `seedTrendingGames`, `seedNewReleases`, `seedTopRatedGames`, `seedGamesByCategory` y `upsertFromIgdb` cuando el panel de administracion deje de usarlos.
