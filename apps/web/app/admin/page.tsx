@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AdminGuard } from "./components/AdminGuard";
+import { CatalogSyncStatus } from "./components/CatalogSyncStatus";
 
 type SeedCategory = "trending" | "newReleases" | "topRated";
 type LaunchMode = "minimal" | "standard" | "comprehensive" | "custom";
@@ -731,6 +732,8 @@ export default function AdminPage() {
             )}
           </CardContent>
         </Card>
+
+        <CatalogSyncStatus />
 
         {/* Phase 3 Seeding - Individual Seed Functions */}
         <Card>
