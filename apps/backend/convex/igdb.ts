@@ -1541,7 +1541,7 @@ limit ${Math.min(chunk.length, IGDB_MAX_PAGE_SIZE)};`;
         else if (sourceName.toLowerCase().includes("steam")) {
           if (typeName.includes("24") || typeName.toLowerCase().includes("peak")) {
             result[prim.game_id].steam24hr = value;
-          } else if (typeName.includes("total") || typeName.includes("reviews")) {
+          } else if (typeName.toLowerCase().includes("total")) {
             result[prim.game_id].steamTotal = value;
           }
         }
@@ -1559,6 +1559,8 @@ limit ${Math.min(chunk.length, IGDB_MAX_PAGE_SIZE)};`;
  * Formula: 0.4*wantToPlay + 0.3*playing + 0.2*steam24hr + 0.1*steamTotal
  * Normalized to 0-100 scale
  */
+const POP_SHARE_SCALE = 100_000;
+
 export function calculatePopScore(primitives: { wantToPlay: number; playing: number; steam24hr: number; steamTotal: number }): number {
   // Updated weights for 2025 trending:
   // Steam 24hr Peak (0.4) - real-time players right now
@@ -1566,10 +1568,11 @@ export function calculatePopScore(primitives: { wantToPlay: number; playing: num
   // Want to Play (0.20) - interest signal
   // Steam Total Reviews (0.05) - historical data
   const rawScore = primitives.steam24hr * 0.4 + primitives.playing * 0.35 + primitives.wantToPlay * 0.2 + primitives.steamTotal * 0.05;
-  
-  // Normalize to 0-100 scale using log scale for better distribution
-  // Most values are in 1-1000 range
-  const logScore = Math.log1p(rawScore) / Math.log1p(10000) * 100;
+
+  // IGDB reports each primitive as a share of the global total (top games sit
+  // around 0.005, obscure ones around 1e-7), so scale before the log curve:
+  // ~0.004 -> 86, 1e-5 -> 10, 1e-7 -> 0.1
+  const logScore = Math.log1p(rawScore * POP_SHARE_SCALE) / Math.log1p(1000) * 100;
   return Math.min(100, Math.max(0, logScore));
 }
 

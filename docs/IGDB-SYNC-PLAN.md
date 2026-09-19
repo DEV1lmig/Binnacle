@@ -323,3 +323,9 @@ Los contadores de cada ejecucion quedan en `syncJobs` y en el panel de administr
 - Fase 0: tabla de mediciones iniciales y finales (solicitudes, lecturas/escrituras, transferencia, duracion) con el lote de 100 en desarrollo.
 - Pasos 3 a 8 del despliegue gradual y la observacion de 7 y 30 dias.
 - Paso 9: retirar `seedTrendingGames`, `seedNewReleases`, `seedTopRatedGames`, `seedGamesByCategory` y `upsertFromIgdb` cuando el panel de administracion deje de usarlos.
+
+### Estado de los deployments (2026-09-19)
+
+- Desarrollo (`doting-tern-292`): codigo desplegado; lote en seco, lote con escritura y job de 3 paginas verificados.
+- Produccion (`adorable-emu-111`): codigo desplegado, backfill manual con `minRatingCount: 20` (7.161 juegos, 0 fallidos, 72 paginas) y `CATALOG_SYNC_ENABLED=true`. Sin `SYNC_TRIGGER_SECRET` ni `IGDB_WEBHOOK_SECRET`: el trigger HTTP y los webhooks siguen cerrados.
+- `calculatePopScore` se reescalo: IGDB entrega las primitivas de popularidad como fracciones (~0,005 para los juegos mas jugados) y la formula anterior daba ~0 para todo el catalogo.

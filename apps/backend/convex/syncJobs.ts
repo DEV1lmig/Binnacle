@@ -19,6 +19,8 @@ import {
 export const LOCK_TTL_MS = 10 * 60 * 1000;
 const MAX_EVENT_ATTEMPTS = 5;
 const EVENT_DRAIN_DELAY_MS = 30_000;
+const RECENT_WINDOW_SECONDS = 18 * 30 * 24 * 60 * 60;
+const RECENT_CANDIDATES = 400;
 
 export const jobTypeValidator = v.union(
   v.literal("recent_releases"),
@@ -348,16 +350,27 @@ export const listPopularityTargets = internalQuery({
       }
     };
 
-    // Discover: current trending candidates and the newest releases
-    const popular = await ctx.db.query("games").withIndex("by_popularity").order("desc").take(perSource);
-    popular.forEach(add);
+    // Discover's trending row only considers the last 18 months, so the recent
+    // releases people actually engage with go first and get half the slots
     const nowSeconds = Math.floor(Date.now() / 1000);
+    const windowStart = nowSeconds - RECENT_WINDOW_SECONDS;
     const released = await ctx.db
       .query("games")
-      .withIndex("by_release_date", (q) => q.lte("firstReleaseDate", nowSeconds))
+      .withIndex("by_release_date", (q) => q.gte("firstReleaseDate", windowStart).lte("firstReleaseDate", nowSeconds))
       .order("desc")
-      .take(perSource);
-    released.forEach(add);
+      .take(RECENT_CANDIDATES);
+    const engagement = (game: (typeof released)[number]) => (game.hypes ?? 0) * 5 + (game.totalRatingCount ?? 0);
+    released
+      .filter((game) => engagement(game) > 0)
+      .sort((a, b) => engagement(b) - engagement(a))
+      .slice(0, perSource * 2)
+      .forEach(add);
+
+    const popular = await ctx.db.query("games").withIndex("by_popularity").order("desc").take(perSource);
+    popular.forEach(add);
+    // Discover's top rated row; also how well-known games get their first score
+    const topRated = await ctx.db.query("games").withIndex("by_rating_descending").order("desc").take(perSource);
+    topRated.forEach(add);
 
     // Libraries: latest backlog entries, reviews and favorites
     const backlog = await ctx.db.query("backlogItems").order("desc").take(perSource);
