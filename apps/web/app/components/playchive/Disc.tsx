@@ -5,7 +5,7 @@ import { useState, type SyntheticEvent } from "react";
 import { getHighResCoverUrl } from "@/lib/igdb-images";
 import { readCoverTone, rememberTone, type CoverTone } from "@/app/lib/coverColor";
 import type { Medium } from "@/app/lib/medium";
-import { Cover } from "./Cover";
+import { Cartridge } from "./Cover";
 
 /**
  * The game's disc, seated in the tray's hub, with the cover printed on it as the
@@ -29,7 +29,7 @@ export function Disc({ src, title, sizes = "280px", priority, gameId, onTone, me
   const url = getHighResCoverUrl(src);
 
   if (medium !== "case") {
-    return <Cover src={src} title={title} sizes={sizes} priority={priority} gameId={gameId} onTone={onTone} medium={medium} tilt={false} className="pk-hero-cart" />;
+    return <Cartridge src={src} title={title} sizes={sizes} priority={priority} gameId={gameId} onTone={onTone} medium={medium} className="pk-hero-cart" />;
   }
 
   const handleLoad = (event: SyntheticEvent<HTMLImageElement>) => {

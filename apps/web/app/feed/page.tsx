@@ -16,7 +16,6 @@ import { PenLine, BookOpen, ArrowRight, Compass, ChevronRight, Sparkles } from "
 import { Cover, OpenCaseLink, PageHero, Pill, Prompt, SectionHeading, Segmented, StatusChip, type LibraryItem } from "@/app/components/playchive";
 import { MoveMenu } from "@/app/components/playchive/LibraryCard";
 import { useScrollReveal } from "@/app/lib/useScrollReveal";
-import { mediumOf } from "@/app/lib/medium";
 
 type ActivityTab = "friends" | "community";
 
@@ -102,7 +101,7 @@ export default function FeedPage() {
                 <div key={item._id} className="pk-lib">
                   <OpenCaseLink href={`/game/${item.game._id}`} gameId={item.game._id} coverUrl={item.game.coverUrl} title={item.game.title} className="pk-lib-cover" aria-label={item.game.title}>
                     <StatusChip status={item.status} />
-                    <Cover src={item.game.coverUrl} title={item.game.title} sizes="148px" gameId={item.game._id} medium={mediumOf(item.game)} />
+                    <Cover src={item.game.coverUrl} title={item.game.title} sizes="148px" gameId={item.game._id} />
                   </OpenCaseLink>
                   <p className="pk-lib-title">{item.game.title}</p>
                   <div className="pk-lib-meta"><span>{item.platform ?? item.game.releaseYear ?? ""}</span><MoveMenu item={item} compact /></div>
@@ -139,7 +138,7 @@ export default function FeedPage() {
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
                   {friendShelf.map(game => (
                     <OpenCaseLink key={game._id} href={`/game/${game._id}`} gameId={game._id} coverUrl={game.coverUrl} title={game.title} className="pk-lib" aria-label={game.title}>
-                      <Cover src={game.coverUrl} title={game.title} sizes="180px" gameId={game._id} medium={mediumOf(game)} />
+                      <Cover src={game.coverUrl} title={game.title} sizes="180px" gameId={game._id} />
                       <p className="pk-lib-title">{game.title}</p>
                     </OpenCaseLink>
                   ))}
@@ -155,7 +154,7 @@ export default function FeedPage() {
                 <div className="pk-shelf">
                   {trendingGames.map(game => (
                     <OpenCaseLink key={game._id} href={`/game/${game._id}`} gameId={game._id} coverUrl={game.coverUrl} title={game.title} className="pk-lib" aria-label={game.title}>
-                      <Cover src={game.coverUrl} title={game.title} sizes="148px" gameId={game._id} medium={mediumOf(game)} />
+                      <Cover src={game.coverUrl} title={game.title} sizes="148px" gameId={game._id} />
                       <p className="pk-lib-title">{game.title}</p>
                     </OpenCaseLink>
                   ))}

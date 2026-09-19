@@ -11,7 +11,6 @@ import { Id } from "@/convex/_generated/dataModel";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/app/components/ui/dropdown-menu";
 import { Cover } from "./Cover";
 import { StatusChip, STATUS_LABEL, STATUS_ORDER, normalizeStatus, type LibraryStatus } from "./StatusChip";
-import { mediumOf } from "@/app/lib/medium";
 
 export type LibraryItem = {
   _id: Id<"backlogItems">;
@@ -84,7 +83,7 @@ export function LibraryCard({ item, canEdit = true }: { item: LibraryItem; canEd
     <div className="pk-lib">
       <OpenCaseLink href={`/game/${item.game._id}`} gameId={item.game._id} coverUrl={item.game.coverUrl} title={item.game.title} className="pk-lib-cover" aria-label={item.game.title}>
         <StatusChip status={item.status} />
-        <Cover src={item.game.coverUrl} title={item.game.title} sizes="(max-width: 639px) 45vw, 200px" gameId={item.game._id} medium={mediumOf(item.game)} />
+        <Cover src={item.game.coverUrl} title={item.game.title} sizes="(max-width: 639px) 45vw, 200px" gameId={item.game._id} />
       </OpenCaseLink>
       <p className="pk-lib-title">{item.game.title}</p>
       <div className="pk-lib-meta">
@@ -100,7 +99,7 @@ export function LibraryRow({ item, canEdit = true }: { item: LibraryItem; canEdi
   if (!item.game) return null;
   return (
     <div className="pk-lib-row">
-      <OpenCaseLink href={`/game/${item.game._id}`} gameId={item.game._id} coverUrl={item.game.coverUrl} title={item.game.title} aria-label={item.game.title}><Cover src={item.game.coverUrl} title={item.game.title} sizes="56px" tilt={false} gameId={item.game._id} medium={mediumOf(item.game)} /></OpenCaseLink>
+      <OpenCaseLink href={`/game/${item.game._id}`} gameId={item.game._id} coverUrl={item.game.coverUrl} title={item.game.title} aria-label={item.game.title}><Cover src={item.game.coverUrl} title={item.game.title} sizes="56px" tilt={false} gameId={item.game._id} /></OpenCaseLink>
       <div className="min-w-0">
         <Link href={`/game/${item.game._id}`} className="pk-lib-title hover:text-gold">{item.game.title}</Link>
         <div className="pk-lib-meta mt-1 justify-start gap-3">

@@ -556,13 +556,6 @@ button.pk-stat[aria-pressed="true"] span { color: inherit; opacity: .75; }
 .pk-c-lid-front .pk-c-hi { opacity: 0; transition: opacity .2s linear; }
 .pk-c-lid-front .pk-c-hi[data-ready] { opacity: 1; }
 
-/* A cartridge or cassette has no walls and no lid to swing. Its face is the
-   cover itself; as the case "opens" it lifts up out of frame, the way a game is
-   pulled from its slot, and the page comes in on the tray beneath it. */
-.pk-case3[data-medium]:not([data-medium="case"]) :is(.pk-c-wall, .pk-c-lip, .pk-c-lid-back, .pk-c-lid-edge) { display: none; }
-.pk-case3[data-medium]:not([data-medium="case"]) .pk-c-hinge { transform-origin: center top; transform: translateZ(var(--d)) translateY(calc(var(--fl-open) * -125%)) rotateX(calc(var(--fl-open) * 50deg)); }
-.pk-case3[data-medium]:not([data-medium="case"]) .pk-c-hinge > .pk-c-lid-front { transform: none; border-radius: 0; box-shadow: none; background: transparent; overflow: visible; }
-
 /* A detail page's background: looking down into the open case, resting on a dark
    surface. The case lies at the page's tray, leaned back, lid folded away left. */
 .pk-case-view { position: fixed; inset: 0; pointer-events: none; overflow: hidden; background: radial-gradient(120% 70% at 50% 110%, #121a30, #05070e 70%); }

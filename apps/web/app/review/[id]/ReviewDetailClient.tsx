@@ -53,7 +53,7 @@ export default function ReviewDetailClient() {
 
   return (
     <div className="pk-inside min-h-screen pb-24 md:pb-12" style={toneVars(tone)}>
-      <CaseBackdrop src={game?.coverUrl} gameId={review.gameId} title={game?.title} medium={mediumOf(game)} />
+      <CaseBackdrop src={game?.coverUrl} gameId={review.gameId} title={game?.title} />
       <div className="pk-page">
       <section className="pk-hero pk-hero-inside">
         <div className="pk-hero-inner pk-detail-hero" data-size="sm">

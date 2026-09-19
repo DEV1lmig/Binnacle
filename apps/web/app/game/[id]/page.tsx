@@ -274,7 +274,7 @@ export default function GameDetailPage() {
   const current = (status ?? null) as LibraryStatus | null;
   return (
     <div className="pk-inside min-h-screen pb-24 md:pb-12" style={toneVars(tone)}>
-      <CaseBackdrop src={game.coverUrl} gameId={gameId} title={game.title} medium={medium} />
+      <CaseBackdrop src={game.coverUrl} gameId={gameId} title={game.title} />
       <div className="pk-page">
       {/* You are inside the case: the cover's own colour behind the artwork. */}
       <section className="pk-hero pk-hero-inside">

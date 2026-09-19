@@ -4,7 +4,6 @@ import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { DEFAULT_TONE, rememberTone, type CoverTone } from "@/app/lib/coverColor";
 import { buildCase, trayRect, vanishingPoint, type CaseHalves, type CaseLook, type Rect, type View } from "./caseBox";
-import type { Medium } from "@/app/lib/medium";
 import { textureUrl } from "./caseUrl";
 
 type OpenRequest = { href: string; gameId?: string; tone: CoverTone; rect: DOMRect; src?: string; title: string; el?: HTMLElement };
@@ -376,7 +375,6 @@ class CaseMachine {
     const rect = cover.getBoundingClientRect();
     const look: CaseLook = {
       from: cover,
-      medium: (cover.dataset.medium as Medium | undefined) ?? "case",
       print: textureUrl(request.src, 1080),
       title: request.title,
       tone: request.tone,
@@ -448,7 +446,7 @@ class CaseMachine {
       deep: style.getPropertyValue("--case-deep").trim() || DEFAULT_TONE.deep,
       shade: style.getPropertyValue("--case-shade").trim() || DEFAULT_TONE.shade,
     };
-    const look: CaseLook = { front: rest.dataset.print, frontHi: rest.dataset.print, print: rest.dataset.print, title: rest.dataset.title ?? "", tone, medium: (rest.dataset.medium as Medium | undefined) ?? "case" };
+    const look: CaseLook = { front: rest.dataset.print, frontHi: rest.dataset.print, print: rest.dataset.print, title: rest.dataset.title ?? "", tone };
     this.geometry(null, tray, view);
     this.pose(LANDED, "instant");
     const { flight, layers } = this.mount(look, tray, view);

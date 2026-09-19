@@ -12,7 +12,6 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Search, Loader2, X, ArrowRight, Compass } from "lucide-react";
 import { Cover, OpenCaseLink, PageHero, Pill, SectionHeading } from "@/app/components/playchive";
-import { mediumOf } from "@/app/lib/medium";
 
 type DiscoverGame = {
   _id?: string | { toString(): string };
@@ -35,7 +34,7 @@ function GameTile({ game, index, sizes = "180px" }: { game: DiscoverGame; index:
   const title = game.title ?? "Untitled";
   return (
     <OpenCaseLink href={gameHref(game, index)} gameId={resolveId(game.convexId) ?? resolveId(game._id)} coverUrl={game.coverUrl ?? game.cover} title={title} className="pk-lib" aria-label={title}>
-      <Cover src={game.coverUrl ?? game.cover} title={title} sizes={sizes} gameId={resolveId(game.convexId) ?? resolveId(game._id)} medium={mediumOf(game)} />
+      <Cover src={game.coverUrl ?? game.cover} title={title} sizes={sizes} gameId={resolveId(game.convexId) ?? resolveId(game._id)} />
       <p className="pk-lib-title">{title}</p>
       <div className="pk-lib-meta"><span>{game.releaseYear ?? ""}</span>{game.aggregatedRating ? <span>{Math.round(game.aggregatedRating)}%</span> : null}</div>
     </OpenCaseLink>
