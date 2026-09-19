@@ -263,6 +263,77 @@ limit 500;`,
   },
 });
 
+const MEDIA_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const MEDIA_LIMIT = 12;
+
+function igdbImageUrl(url: string): string {
+  const filename = url.split("/").pop() || "";
+  return `https://images.igdb.com/igdb/image/upload/t_1080p/${filename.includes(".") ? filename : `${filename}.jpg`}`;
+}
+
+/**
+ * Fetches the media of a game page (artworks, screenshots, videos, links) when
+ * it is missing or older than 30 days. The general sync never requests these,
+ * so opening the page is what fills them in. The page reads them reactively
+ * from games.getById, which is why this returns nothing but a status.
+ */
+export const ensureGameMedia = action({
+  args: { gameId: v.id("games") },
+  handler: async (ctx, args): Promise<{ status: "fresh" | "fetched" | "not_found" }> => {
+    const state: { igdbId: number; mediaFetchedAt?: number } | null = await ctx.runQuery(
+      internal.games.getMediaState,
+      { gameId: args.gameId }
+    );
+    if (!state) return { status: "not_found" };
+    if (state.mediaFetchedAt && Date.now() - state.mediaFetchedAt < MEDIA_TTL_MS) {
+      return { status: "fresh" };
+    }
+
+    const { accessToken } = await getValidIgdbToken(ctx);
+    const response = await fetch("https://api.igdb.com/v4/games", {
+      method: "POST",
+      headers: {
+        "Client-ID": getClientId(),
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "text/plain",
+      },
+      body: `fields artworks.url,screenshots.url,videos.video_id,videos.name,websites.url,websites.category,websites.type;
+where id = ${state.igdbId};`,
+    });
+    if (!response.ok) {
+      throw new Error(`IGDB error (${response.status}): ${await safeReadError(response)}`);
+    }
+
+    type MediaPayload = {
+      artworks?: Array<{ url?: string }>;
+      screenshots?: Array<{ url?: string }>;
+      videos?: Array<{ video_id?: string; name?: string }>;
+      websites?: Array<{ url?: string; category?: number; type?: number }>;
+    };
+    const [game] = (await response.json()) as MediaPayload[];
+
+    const images = (items?: Array<{ url?: string }>) =>
+      (items ?? []).flatMap((item) => (item.url ? [igdbImageUrl(item.url)] : [])).slice(0, MEDIA_LIMIT);
+    const videos = (game?.videos ?? [])
+      .flatMap((video) => (video.video_id ? [{ video_id: video.video_id, name: video.name }] : []))
+      .slice(0, MEDIA_LIMIT);
+    // IGDB is moving websites from `category` to `type`; the ids mean the same
+    const websites = (game?.websites ?? []).flatMap((site) =>
+      site.url ? [{ url: site.url, category: site.category ?? site.type ?? 0 }] : []
+    );
+
+    // Always write, even when empty, so a game without media is not re-fetched on every visit
+    await ctx.runMutation(internal.games.setMedia, {
+      gameId: args.gameId,
+      artworks: JSON.stringify(images(game?.artworks)),
+      screenshots: JSON.stringify(images(game?.screenshots)),
+      videos: JSON.stringify(videos),
+      websites: JSON.stringify(websites),
+    });
+    return { status: "fetched" };
+  },
+});
+
 /**
  * Optimized search pipeline: Database first, IGDB fallback with caching.
  * 
@@ -835,11 +906,15 @@ limit 500;`,
 /**
  * Fetches a valid IGDB access token, refreshing it if needed.
  */
-async function getValidIgdbToken(ctx: ActionCtx): Promise<{ accessToken: string }> {
+export async function getValidIgdbToken(
+  ctx: ActionCtx,
+  options: { forceRefresh?: boolean } = {}
+): Promise<{ accessToken: string }> {
   const cachedToken = await ctx.runQuery(internal.igdbTokens.getIgdbToken, {});
   const now = Date.now();
 
   if (
+    !options.forceRefresh &&
     cachedToken &&
     cachedToken.accessToken &&
     cachedToken.expiresAt - now > minimumTokenTtlMs
@@ -1068,7 +1143,7 @@ function normalizeGames(rawGames: IgdbGame[]): NormalizedGame[] {
 /**
  * Returns the IGDB client identifier from the environment.
  */
-function getClientId() {
+export function getClientId() {
   const clientId = process.env.IGDB_CLIENT_ID;
   if (!clientId) {
     throw new Error("IGDB_CLIENT_ID env var is not configured");
@@ -1399,7 +1474,7 @@ function generateSearchTermsFromTitle(title: string): Array<{ term: string; prio
  * Helper: Fetch popularity primitives for a batch of games
  * Returns a map of gameId -> { wantToPlay, playing, steam24hr, steamTotal }
  */
-async function fetchPopularityPrimitives(
+export async function fetchPopularityPrimitives(
   gameIds: number[],
   accessToken: string,
   clientId: string
@@ -1484,7 +1559,7 @@ limit ${Math.min(chunk.length, IGDB_MAX_PAGE_SIZE)};`;
  * Formula: 0.4*wantToPlay + 0.3*playing + 0.2*steam24hr + 0.1*steamTotal
  * Normalized to 0-100 scale
  */
-function calculatePopScore(primitives: { wantToPlay: number; playing: number; steam24hr: number; steamTotal: number }): number {
+export function calculatePopScore(primitives: { wantToPlay: number; playing: number; steam24hr: number; steamTotal: number }): number {
   // Updated weights for 2025 trending:
   // Steam 24hr Peak (0.4) - real-time players right now
   // Playing (0.35) - active IGDB users

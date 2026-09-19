@@ -134,12 +134,20 @@ export default defineSchema({
     // PopScore popularity (weighted combination of primitives)
     popularity_score: v.optional(v.number()), // Weighted PopScore: 0.4*WantToPlay + 0.3*Playing + 0.2*Steam24hrPeak + 0.1*SteamTotalReviews
 
-    // PHASE 2B Migration: Temporary fields for data cleanup (will be removed after migration)
-    // These fields are deprecated but kept optional to allow existing documents to be read/migrated
-    artworks: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
-    screenshots: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
-    videos: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
-    websites: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
+    // Incremental sync bookkeeping (see docs/IGDB-SYNC-PLAN.md)
+    igdbUpdatedAt: v.optional(v.number()), // IGDB updated_at (unix seconds)
+    igdbChecksum: v.optional(v.string()), // IGDB checksum, unchanged checksum = no write
+    syncStatus: v.optional(v.union(v.literal("fresh"), v.literal("stale"), v.literal("error"))),
+    lastSyncError: v.optional(v.string()), // Short message, never contains secrets
+
+    // Game page media, fetched on demand by igdb.ensureGameMedia (never by the general sync)
+    artworks: v.optional(v.string()), // JSON array of CDN URLs
+    screenshots: v.optional(v.string()), // JSON array of CDN URLs
+    videos: v.optional(v.string()), // JSON array: [{ video_id, name }]
+    websites: v.optional(v.string()), // JSON array: [{ url, category }]
+    mediaFetchedAt: v.optional(v.number()), // Last media fetch; refreshed after 30 days
+
+    // Deprecated enriched fields, kept optional so existing documents still validate
     languageSupports: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
     multiplayerModes: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
     dlcsAndExpansions: v.optional(v.string()), // DEPRECATED: Will be removed in next deployment
@@ -159,6 +167,47 @@ export default defineSchema({
       searchField: "title",
       filterFields: ["gameType"],
     }),
+
+  // == Sync Jobs Table ==
+  // One row per job type: lock, cursor and counters of the latest run
+  syncJobs: defineTable({
+    jobType: v.union(
+      v.literal("recent_releases"),
+      v.literal("popular"),
+      v.literal("reconcile"),
+      v.literal("backfill"),
+      v.literal("events"),
+    ),
+    status: v.union(v.literal("idle"), v.literal("running"), v.literal("completed"), v.literal("failed")),
+    cursor: v.optional(v.string()), // Where the next page continues; survives across runs
+    runId: v.optional(v.string()), // Fences out pages of a run whose lock was taken over
+    dryRun: v.optional(v.boolean()),
+    startedAt: v.optional(v.number()),
+    finishedAt: v.optional(v.number()),
+    heartbeatAt: v.optional(v.number()),
+    lastCompletedAt: v.optional(v.number()),
+    pages: v.number(),
+    recordsFetched: v.number(),
+    recordsChanged: v.number(),
+    recordsSkipped: v.number(),
+    recordsFailed: v.number(),
+    failedIds: v.optional(v.array(v.number())), // Bounded, for manual reprocessing
+    lastError: v.optional(v.string()),
+    attempt: v.number(),
+  })
+    .index("by_job_type", ["jobType"])
+    .index("by_status", ["status"]),
+
+  // == Sync Events Table ==
+  // IGDB webhook events waiting to be applied in small batches
+  syncEvents: defineTable({
+    igdbId: v.number(),
+    event: v.union(v.literal("create"), v.literal("update"), v.literal("delete")),
+    receivedAt: v.number(),
+    attempts: v.number(),
+  })
+    .index("by_received_at", ["receivedAt"])
+    .index("by_igdb_id", ["igdbId"]),
 
   // == Reviews Table (The core of the app) ==
   // A user's log entry for a specific game

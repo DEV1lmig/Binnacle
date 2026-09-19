@@ -9,6 +9,7 @@ import { groupByFranchiseAndRank } from "./franchiseRanking";
 import { queryCache, cacheKey } from "./utils/queryCache";
 import { paginateArray } from "./utils/pagination";
 import { measureQuerySize } from "./lib/bandwidthMonitor";
+import { isUnchanged, SYNC_MAX_PAGE_SIZE } from "./lib/igdbSync";
 
 const defaultSearchLimit = 20;
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -113,6 +114,158 @@ export const upsertFromIgdb = internalMutation({
       igdbId: args.igdbId,
       ...gamePayload,
     });
+  },
+});
+
+/**
+ * Basic game columns written by the incremental sync (see lib/igdbSync.ts).
+ */
+export const syncGameValidator = v.object({
+  igdbId: v.number(),
+  title: v.string(),
+  coverUrl: v.optional(v.string()),
+  releaseYear: v.optional(v.number()),
+  firstReleaseDate: v.optional(v.number()),
+  gameType: v.optional(v.number()),
+  category: v.optional(v.number()),
+  parentGame: v.optional(v.number()),
+  summary: v.optional(v.string()),
+  genres: v.optional(v.string()),
+  platforms: v.optional(v.string()),
+  themes: v.optional(v.string()),
+  developers: v.optional(v.string()),
+  publishers: v.optional(v.string()),
+  aggregatedRating: v.optional(v.number()),
+  aggregatedRatingCount: v.optional(v.number()),
+  rating: v.optional(v.number()),
+  ratingCount: v.optional(v.number()),
+  totalRating: v.optional(v.number()),
+  totalRatingCount: v.optional(v.number()),
+  hypes: v.optional(v.number()),
+  franchise: v.optional(v.string()),
+  franchises: v.optional(v.string()),
+  igdbUpdatedAt: v.optional(v.number()),
+  igdbChecksum: v.optional(v.string()),
+});
+
+/**
+ * Inserts or updates up to 100 games in one mutation.
+ * Idempotent: games whose checksum (or updated_at) did not change are not
+ * written, so replaying a batch creates no duplicates and no writes.
+ * Enriched fields already stored on a game are left untouched.
+ */
+export const upsertBatchFromIgdb = internalMutation({
+  args: {
+    games: v.array(syncGameValidator),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    if (args.games.length > SYNC_MAX_PAGE_SIZE) {
+      throw new ConvexError(`Batch exceeds ${SYNC_MAX_PAGE_SIZE} games`);
+    }
+
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+    const failedIds: number[] = [];
+    const seen = new Set<number>();
+    const now = Date.now();
+
+    for (const game of args.games) {
+      if (seen.has(game.igdbId)) {
+        skipped++;
+        continue;
+      }
+      seen.add(game.igdbId);
+
+      try {
+        // first() instead of unique(): tolerate duplicates left by old seeds
+        const existing = await ctx.db
+          .query("games")
+          .withIndex("by_igdb_id", (q) => q.eq("igdbId", game.igdbId))
+          .first();
+
+        if (existing && existing.syncStatus !== "error" && isUnchanged(existing, game)) {
+          skipped++;
+          continue;
+        }
+
+        if (!args.dryRun) {
+          const { igdbId, ...fields } = game;
+          const payload = {
+            ...fields,
+            lastUpdated: now,
+            syncStatus: "fresh" as const,
+            lastSyncError: undefined,
+          };
+          if (existing) {
+            await ctx.db.patch(existing._id, payload);
+          } else {
+            await ctx.db.insert("games", { igdbId, ...payload });
+          }
+        }
+        if (existing) updated++;
+        else inserted++;
+      } catch (error) {
+        console.error(`[upsertBatchFromIgdb] Failed for IGDB ${game.igdbId}:`, error);
+        failedIds.push(game.igdbId);
+      }
+    }
+
+    return { inserted, updated, skipped, failedIds };
+  },
+});
+
+/**
+ * Flags cached games that IGDB no longer returns (deleted or merged).
+ * They are kept because reviews, backlogs and articles may reference them.
+ */
+export const markMissingInIgdb = internalMutation({
+  args: { igdbIds: v.array(v.number()) },
+  handler: async (ctx, args) => {
+    let marked = 0;
+    for (const igdbId of args.igdbIds.slice(0, SYNC_MAX_PAGE_SIZE)) {
+      const existing = await ctx.db
+        .query("games")
+        .withIndex("by_igdb_id", (q) => q.eq("igdbId", igdbId))
+        .first();
+      if (existing && existing.lastSyncError !== "not_found_in_igdb") {
+        await ctx.db.patch(existing._id, {
+          syncStatus: "error",
+          lastSyncError: "not_found_in_igdb",
+        });
+        marked++;
+      }
+    }
+    return { marked };
+  },
+});
+
+/**
+ * What igdb.ensureGameMedia needs to decide whether a game page's media is due.
+ */
+export const getMediaState = internalQuery({
+  args: { gameId: v.id("games") },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    return game ? { igdbId: game.igdbId, mediaFetchedAt: game.mediaFetchedAt } : null;
+  },
+});
+
+/**
+ * Stores game page media. Touches nothing else, so it cannot fight the sync.
+ */
+export const setMedia = internalMutation({
+  args: {
+    gameId: v.id("games"),
+    artworks: v.optional(v.string()),
+    screenshots: v.optional(v.string()),
+    videos: v.optional(v.string()),
+    websites: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { gameId, ...media } = args;
+    await ctx.db.patch(gameId, { ...media, mediaFetchedAt: Date.now() });
   },
 });
 

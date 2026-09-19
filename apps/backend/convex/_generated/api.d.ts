@@ -14,8 +14,10 @@ import type * as articleLikes from "../articleLikes.js";
 import type * as articles from "../articles.js";
 import type * as backlog from "../backlog.js";
 import type * as blocking from "../blocking.js";
+import type * as catalogSync from "../catalogSync.js";
 import type * as clerk from "../clerk.js";
 import type * as comments from "../comments.js";
+import type * as crons from "../crons.js";
 import type * as favorites from "../favorites.js";
 import type * as feed from "../feed.js";
 import type * as followers from "../followers.js";
@@ -28,6 +30,7 @@ import type * as igdb from "../igdb.js";
 import type * as igdbTokens from "../igdbTokens.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_bandwidthMonitor from "../lib/bandwidthMonitor.js";
+import type * as lib_igdbSync from "../lib/igdbSync.js";
 import type * as likes from "../likes.js";
 import type * as migrations from "../migrations.js";
 import type * as moderation from "../moderation.js";
@@ -39,6 +42,8 @@ import type * as reviews from "../reviews.js";
 import type * as seedBatch from "../seedBatch.js";
 import type * as seedFranchises from "../seedFranchises.js";
 import type * as settings from "../settings.js";
+import type * as syncHttp from "../syncHttp.js";
+import type * as syncJobs from "../syncJobs.js";
 import type * as users from "../users.js";
 import type * as utils_pagination from "../utils/pagination.js";
 import type * as utils_queryCache from "../utils/queryCache.js";
@@ -49,14 +54,6 @@ import type {
   FunctionReference,
 } from "convex/server";
 
-/**
- * A utility for referencing Convex functions in your app's API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   articleComments: typeof articleComments;
@@ -64,8 +61,10 @@ declare const fullApi: ApiFromModules<{
   articles: typeof articles;
   backlog: typeof backlog;
   blocking: typeof blocking;
+  catalogSync: typeof catalogSync;
   clerk: typeof clerk;
   comments: typeof comments;
+  crons: typeof crons;
   favorites: typeof favorites;
   feed: typeof feed;
   followers: typeof followers;
@@ -78,6 +77,7 @@ declare const fullApi: ApiFromModules<{
   igdbTokens: typeof igdbTokens;
   "lib/auth": typeof lib_auth;
   "lib/bandwidthMonitor": typeof lib_bandwidthMonitor;
+  "lib/igdbSync": typeof lib_igdbSync;
   likes: typeof likes;
   migrations: typeof migrations;
   moderation: typeof moderation;
@@ -89,18 +89,36 @@ declare const fullApi: ApiFromModules<{
   seedBatch: typeof seedBatch;
   seedFranchises: typeof seedFranchises;
   settings: typeof settings;
+  syncHttp: typeof syncHttp;
+  syncJobs: typeof syncJobs;
   users: typeof users;
   "utils/pagination": typeof utils_pagination;
   "utils/queryCache": typeof utils_queryCache;
 }>;
-declare const fullApiWithMounts: typeof fullApi;
 
+/**
+ * A utility for referencing Convex functions in your app's public API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 export declare const api: FilterApi<
-  typeof fullApiWithMounts,
+  typeof fullApi,
   FunctionReference<any, "public">
 >;
+
+/**
+ * A utility for referencing Convex functions in your app's internal API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = internal.myModule.myFunction;
+ * ```
+ */
 export declare const internal: FilterApi<
-  typeof fullApiWithMounts,
+  typeof fullApi,
   FunctionReference<any, "internal">
 >;
 

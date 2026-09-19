@@ -7,6 +7,7 @@
     "dev:local": "convex dev --local",
     "dashboard": "convex dashboard",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "enable-development": "convex disable-local-deployments",
     "codegen": "convex codegen"
   },
@@ -18,11 +19,14 @@
     "svix": "^1.77.0"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "convex-test": "^0.0.38",
     "eslint": "^9",
     "prettier": "^3.5.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.9"
   }
 }

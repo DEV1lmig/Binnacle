@@ -1,3 +1,6 @@
-import clerkHttp from "./clerk";
+import http from "./clerk";
+import { registerSyncRoutes } from "./syncHttp";
 
-export default clerkHttp;
+registerSyncRoutes(http);
+
+export default http;
